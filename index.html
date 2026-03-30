@@ -321,13 +321,16 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
     </div>
     <div class="fbar">
       <input class="fi fi-grow" id="s-q" type="text" placeholder="🔍 بحث بالكود، العميل، المندوب..." oninput="renderShipments()">
-      <select class="fi" id="s-fd" onchange="renderShipments()">
+      <button class="btn btn-ghost btn-sm" onclick="resetAllFilters()" title="مسح كل الفلاتر">✕ مسح الفلاتر</button>
+    </div>
+    <div class="fbar" style="margin-top:6px;flex-wrap:wrap">
+      <select class="fi" id="s-fd" onchange="renderShipments()" style="min-width:120px">
         <option value="">كل التأخير</option>
         <option value="critical">🔴 +15 يوم</option>
         <option value="warning">🟡 7-15 يوم</option>
         <option value="ok">🟢 في الموعد</option>
       </select>
-      <select class="fi" id="s-fst" onchange="renderShipments()">
+      <select class="fi" id="s-fst" onchange="renderShipments()" style="min-width:120px">
         <option value="">كل الحالات</option>
         <option value="with_driver">مع المندوب</option>
         <option value="in_company">في الشركة</option>
@@ -335,9 +338,24 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
         <option value="returned">مرتجع</option>
         <option value="delivered">مُسلَّم</option>
       </select>
-      <select class="fi" id="s-fb" onchange="renderShipments()"><option value="">كل الفروع</option></select>
-      <select class="fi" id="s-fd2" onchange="renderShipments()"><option value="">كل المناديب</option></select>
-      <select class="fi" id="s-fr" onchange="renderShipments()"><option value="">كل المناطق</option></select>
+      <select class="fi" id="s-fb" onchange="renderShipments()" style="min-width:120px"><option value="">كل الفروع</option></select>
+      <select class="fi" id="s-fd2" onchange="renderShipments()" style="min-width:120px"><option value="">كل المناديب</option></select>
+      <select class="fi" id="s-fr" onchange="renderShipments()" style="min-width:120px"><option value="">كل المناطق</option></select>
+      <select class="fi" id="s-fstore" onchange="renderShipments()" style="min-width:120px"><option value="">كل المتاجر</option></select>
+      <select class="fi" id="s-fdays" onchange="renderShipments()" style="min-width:130px">
+        <option value="">أيام التأخير</option>
+        <option value="0-5">0-5 أيام</option>
+        <option value="6-10">6-10 أيام</option>
+        <option value="11-15">11-15 يوم</option>
+        <option value="16-30">16-30 يوم</option>
+        <option value="31-60">31-60 يوم</option>
+        <option value="60+">+60 يوم</option>
+      </select>
+      <select class="fi" id="s-fcontact" onchange="renderShipments()" style="min-width:130px">
+        <option value="">كل التواصل</option>
+        <option value="contacted">✅ تم التواصل</option>
+        <option value="not_contacted">⏳ لم يتم</option>
+      </select>
     </div>
     
     <div style="background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden">
@@ -895,6 +913,7 @@ function buildDropdowns(){
   const bn=[...new Set(shipments.map(s=>s.branch_name).filter(Boolean))].sort();
   const dn=[...new Set(shipments.map(s=>s.driver_name).filter(Boolean))].sort();
   const rn=[...new Set(shipments.map(s=>s.region_name).filter(Boolean))].sort();
+  const sn=[...new Set(shipments.map(s=>s.customer_name).filter(Boolean))].sort();
 
   const sfb=document.getElementById('s-fb');
   if(sfb)sfb.innerHTML='<option value="">كل الفروع</option>'+bn.map(b=>`<option>${b}</option>`).join('');
@@ -905,11 +924,23 @@ function buildDropdowns(){
   const sfr=document.getElementById('s-fr');
   if(sfr)sfr.innerHTML='<option value="">كل المناطق</option>'+rn.map(r=>`<option>${r}</option>`).join('');
 
+  const sfs=document.getElementById('s-fstore');
+  if(sfs)sfs.innerHTML='<option value="">كل المتاجر</option>'+sn.map(s=>`<option>${s}</option>`).join('');
+
   const wad=document.getElementById('wa-d');
   if(wad)wad.innerHTML='<option value="">— اختر —</option>'+dn.map(d=>`<option>${d}</option>`).join('');
 
   const opts=WA_TPLS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   ['wa-t','bulk-t'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">— اختر قالب —</option>'+opts;});
+}
+
+function resetAllFilters(){
+  ['s-q','s-fd','s-fst','s-fb','s-fd2','s-fr','s-fstore','s-fdays','s-fcontact'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){if(el.tagName==='INPUT')el.value='';else el.selectedIndex=0;}
+  });
+  setAlpha('');
+  setSeg('all');
 }
 
 // ══════════════════════════════════════════
@@ -980,6 +1011,9 @@ function renderShipments(){
   const fb=document.getElementById('s-fb')?.value||'';
   const fd2=document.getElementById('s-fd2')?.value||'';
   const fr=document.getElementById('s-fr')?.value||'';
+  const fstore=document.getElementById('s-fstore')?.value||'';
+  const fdays=document.getElementById('s-fdays')?.value||'';
+  const fcontact=document.getElementById('s-fcontact')?.value||'';
   let list=shipments;
   document.getElementById('sn-all').textContent=list.length;
   document.getElementById('sn-wait').textContent=list.filter(s=>!contacted.has(String(s.id))).length;
@@ -994,7 +1028,19 @@ function renderShipments(){
     if(fb&&s.branch_name!==fb)return false;
     if(fd2&&s.driver_name!==fd2)return false;
     if(fr&&s.region_name!==fr)return false;
-    if(q&&!`${s.tracking_code} ${s.customer_name} ${s.driver_name} ${s.region_name} ${s.branch_name}`.toLowerCase().includes(q))return false;
+    if(fstore&&(s.customer_name||'')!==fstore)return false;
+    if(fdays){
+      const d=s.delay_days||0;
+      if(fdays==='0-5'&&(d<0||d>5))return false;
+      if(fdays==='6-10'&&(d<6||d>10))return false;
+      if(fdays==='11-15'&&(d<11||d>15))return false;
+      if(fdays==='16-30'&&(d<16||d>30))return false;
+      if(fdays==='31-60'&&(d<31||d>60))return false;
+      if(fdays==='60+'&&d<61)return false;
+    }
+    if(fcontact==='contacted'&&!contacted.has(String(s.id)))return false;
+    if(fcontact==='not_contacted'&&contacted.has(String(s.id)))return false;
+    if(q&&!`${s.tracking_code} ${s.customer_name} ${s.driver_name} ${s.region_name} ${s.branch_name} ${s.customer_phone}`.toLowerCase().includes(q))return false;
     if(alphaFilter){
       const first=(s.customer_name||s.tracking_code||'')[0]||'';
       if(alphaFilter==='0-9'){if(!/^[0-9]/.test(first))return false;}
@@ -1014,13 +1060,17 @@ function renderShipments(){
     const note=(localStorage.getItem('note_'+s.id)||'').replace(/"/g,'&quot;');
     const att=parseInt(localStorage.getItem('att_'+s.id)||'0');
     const lct=localStorage.getItem('lct_'+s.id)||'';
+    // Enrich driver phone from drivers_db if missing
+    const drv=drivers_db.find(d=>d.id===s.driver_id || d.name===s.driver_name)||{};
+    const drvPhone=drv.phone||s.driver_phone||'';
+    const brn=branches.find(b=>b.id===s.current_branch_id || b.name===s.branch_name)||{};
     return`<tr class="pr" data-sid="${sid}" style="${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
       <td onclick="event.stopPropagation()"><input type="checkbox" data-sid="${sid}" ${checked.has(String(s.id))?'checked':''} onchange="this.checked?checked.add(this.dataset.sid):checked.delete(this.dataset.sid)"></td>
       <td style="color:var(--dim);font-size:10px;text-align:center">${(sPage-1)*PER+idx+1}</td>
       <td class="code-cell">${s.tracking_code}</td>
       <td style="color:var(--white);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis" title="${s.customer_name||''}">${s.customer_name||'—'}</td>
-      <td style="font-family:var(--mono);font-size:11px">${s.customer_phone||'—'}</td>
-      <td style="color:var(--white)">${s.driver_name||'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${s.customer_phone&&s.customer_phone!=='—'?`<a href="tel:${s.customer_phone}" style="color:var(--blu)">${s.customer_phone}</a>`:'—'}</td>
+      <td style="color:var(--white)">${s.driver_name||'—'}${drvPhone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${drvPhone}</div>`:''}</td>
       <td style="font-size:11px;color:var(--mute)">${s.branch_name||'—'}</td>
       <td>${dBadge(s.delay_days)}</td>
       <td>${stBadge(s.status)}</td>
@@ -1075,6 +1125,22 @@ function buildPgn(total,totalP){
 function openDetail(sid){
   sid=String(sid);
   const s=shipments.find(x=>String(x.id)===sid);if(!s)return;
+  // Enrich from local data
+  const drv=drivers_db.find(d=>d.id===s.driver_id || d.name===s.driver_name)||{};
+  const brn=branches.find(b=>b.id===s.current_branch_id || b.name===s.branch_name)||{};
+  const rgn=regions.find(r=>r.id===s.region_id || r.name===s.region_name)||{};
+  const driverPhone=drv.phone||s.driver_phone||'';
+  const driverName=drv.name||s.driver_name||'';
+  const branchName=brn.name||s.branch_name||'';
+  const branchManager=brn.manager_name||s.branch_manager||'';
+  const branchManagerPhone=brn.manager_phone||s.branch_manager_phone||'';
+  const regionName=rgn.name||s.region_name||'';
+  const custPhone=s.customer_phone||'';
+  // Smart contact: customer first, then driver, then branch manager
+  let contactName=s.customer_name||'';
+  let contactPhone=custPhone;
+  if(!contactPhone||contactPhone==='—'){contactName=driverName;contactPhone=driverPhone;}
+  if(!contactPhone||contactPhone==='—'){contactName=branchManager;contactPhone=branchManagerPhone;}
   document.getElementById('sd-title').textContent=s.tracking_code;
   document.getElementById('sd-body').innerHTML=`
     <div class="g2" style="margin-bottom:14px">
@@ -1082,22 +1148,23 @@ function openDetail(sid){
         <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:9px">📦 بيانات الطرد</div>
         ${rrow('الكود',`<span class="code-cell">${s.tracking_code}</span>`)}
         ${rrow('العميل',`<strong>${s.customer_name||'—'}</strong>`)}
-        ${rrow('هاتف العميل',s.customer_phone||'—')}
+        ${rrow('هاتف العميل',custPhone?`<a href="tel:${custPhone}" style="color:var(--blu);font-family:var(--mono)">${custPhone}</a>`:'—')}
         ${rrow('الحالة',stBadge(s.status))}
         ${rrow('التأخير',dBadge(s.delay_days))}
       </div>
       <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--pur)">
         <div style="font-size:10px;font-weight:700;color:var(--pur);margin-bottom:9px">👤 المندوب والموقع</div>
-        ${rrow('المندوب',`<strong>${s.driver_name||'—'}</strong>`)}
-        ${rrow('المنطقة',s.region_name||'—')}
-        ${rrow('الفرع',s.branch_name||'—')}
-        ${rrow('مدير الفرع',s.branch_manager||'—')}
+        ${rrow('المندوب',`<strong>${driverName||'—'}</strong>`)}
+        ${rrow('هاتف المندوب',driverPhone?`<a href="tel:${driverPhone}" style="color:var(--blu);font-family:var(--mono)">${driverPhone}</a>`:'—')}
+        ${rrow('المنطقة',regionName||'—')}
+        ${rrow('الفرع',branchName||'—')}
+        ${rrow('مدير الفرع',branchManager||'—')}
       </div>
     </div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--grn);margin-bottom:14px">
       <div style="font-size:10px;font-weight:700;color:var(--grn);margin-bottom:9px">🔗 منطق التواصل الذكي</div>
-      ${rrow('اسم المتواصَل معه',`<strong style="color:var(--grn)">${s.contact_name||'—'}</strong>`)}
-      ${rrow('رقم التواصل',`<span style="font-family:var(--mono);color:var(--grn)">${s.contact_phone||'—'}</span>`)}
+      ${rrow('اسم المتواصَل معه',`<strong style="color:var(--grn)">${contactName||'—'}</strong>`)}
+      ${rrow('رقم التواصل',contactPhone&&contactPhone!=='—'?`<a href="tel:${contactPhone}" style="font-family:var(--mono);color:var(--grn)">${contactPhone}</a>`:'—')}
       ${rrow('التواصل',ctBadge(s.id))}
     </div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;margin-bottom:14px;border-right:3px solid var(--wa)">
@@ -1107,21 +1174,21 @@ function openDetail(sid){
           <div style="font-size:18px;margin-bottom:4px">🏪</div>
           <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">الزبون / المتجر</div>
           <div style="font-size:10px;color:var(--mute);margin-bottom:8px">${s.customer_name||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${s.customer_phone||'—'}</div>
+          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${custPhone||'—'}</div>
           <button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="sendToCustomer('${s.id}');closeM('sd-modal')">📱 تأكيد الوصول</button>
         </div>
         <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
           <div style="font-size:18px;margin-bottom:4px">🚗</div>
           <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">المندوب</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${s.driver_name||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${s.driver_phone||'—'}</div>
+          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${driverName||'—'}</div>
+          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${driverPhone||'—'}</div>
           <button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="sendToDriver2('${s.id}');closeM('sd-modal')">📱 تأكيد التوجه</button>
         </div>
         <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
           <div style="font-size:18px;margin-bottom:4px">🏢</div>
           <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">مدير الفرع</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${s.branch_manager||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${s.branch_manager_phone||'—'}</div>
+          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${branchManager||'—'}</div>
+          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${branchManagerPhone||'—'}</div>
           <button class="btn btn-red btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="sendToBranchManager('${s.id}');closeM('sd-modal')">🚨 تبليغ عن خطأ</button>
         </div>
       </div>
@@ -1363,7 +1430,8 @@ function copyWAMsg(){const msg=document.getElementById('wa-msg').value;if(!msg){
 function doWA(sid){
   sid=String(sid);
   const s=shipments.find(x=>String(x.id)===sid);if(!s)return;
-  const ph=normPhone(s.contact_phone||s.driver_phone||'');
+  const drv=drivers_db.find(d=>d.id===s.driver_id || d.name===s.driver_name)||{};
+  const ph=normPhone(s.contact_phone||drv.phone||s.driver_phone||s.customer_phone||'');
   const tpl=cls(s.delay_days)==='critical'?WA_TPLS.find(t=>t.id==='urgent')||WA_TPLS[0]:WA_TPLS[0];
   const stats=getDStats(s.driver_name||'');
   const msg=buildMsg(tpl.body,s.driver_name||'المندوب',stats)+'\n\n📦 رقم الطرد: '+s.tracking_code+'\nالعميل: '+s.customer_name+(s.customer_phone&&s.customer_phone!=='—'?'\nهاتف العميل: '+s.customer_phone:'');
@@ -1894,13 +1962,13 @@ async function loadDbStats(){
   }catch(e){console.warn('stats',e);}
 }
 async function clearTodayShipments(){
-  if(!confirm('مسح طرود اليوم من قاعدة البيانات؟'))return;
+  if(!confirm('⚠️ هل أنت متأكد من مسح طرود اليوم؟ لا يمكن التراجع!'))return;
   const today=new Date().toISOString().split('T')[0];
   try{
-    const r=await fetch(`${SB}/rest/v1/shipments?upload_date=eq.${today}`,{method:'DELETE',headers:H});
-    if(!r.ok)throw new Error(await r.text());
-    toast('تم مسح طرود اليوم','w');await loadShipments();loadDbStats();
-  }catch(e){toast('خطأ: '+e.message,'e');}
+    const r=await fetch(`${SB}/rest/v1/shipments?upload_date=eq.${today}`,{method:'DELETE',headers:{...H,'Prefer':'return=minimal'}});
+    if(!r.ok){const e=await r.text();throw new Error(e);}
+    toast('✅ تم مسح طرود اليوم','w');await loadShipments();loadDbStats();
+  }catch(e){toast('خطأ في المسح: '+e.message,'e');console.error('clearToday',e);}
 }
 
 // ══════════════════════════════════════════
@@ -1984,11 +2052,12 @@ function startClock(){
 function sendToCustomer(sid){
   sid=String(sid);
   const s=shipments.find(x=>String(x.id)===sid);if(!s)return;
+  const drv=drivers_db.find(d=>d.id===s.driver_id||d.name===s.driver_name)||{};
   const ph=normPhone(s.customer_phone||'');
   const msg=`السلام عليكم ${s.customer_name||''}
 🕊️ ${CFG.company}
 
-نود إعلامكم أن المندوب ${s.driver_name||'—'} في طريقه إليكم لتسليم طردكم رقم: ${s.tracking_code}
+نود إعلامكم أن المندوب ${drv.name||s.driver_name||'—'} في طريقه إليكم لتسليم طردكم رقم: ${s.tracking_code}
 
 يرجى التواجد لاستلام الطرد.
 شكراً لتعاملكم معنا 🙏`;
@@ -2000,8 +2069,9 @@ function sendToCustomer(sid){
 function sendToDriver2(sid){
   sid=String(sid);
   const s=shipments.find(x=>String(x.id)===sid);if(!s)return;
-  const ph=normPhone(s.driver_phone||'');
-  const msg=`السلام عليكم ${s.driver_name||''}
+  const drv=drivers_db.find(d=>d.id===s.driver_id||d.name===s.driver_name)||{};
+  const ph=normPhone(drv.phone||s.driver_phone||'');
+  const msg=`السلام عليكم ${drv.name||s.driver_name||''}
 🕊️ ${CFG.company}
 
 تذكير بطرد العميل: ${s.customer_name||'—'}
@@ -2018,15 +2088,17 @@ ${s.customer_phone&&s.customer_phone!=='—'?'هاتف العميل: '+s.custome
 function sendToBranchManager(sid){
   sid=String(sid);
   const s=shipments.find(x=>String(x.id)===sid);if(!s)return;
-  const ph=normPhone(s.branch_manager_phone||'');
+  const brn=branches.find(b=>b.id===s.current_branch_id||b.name===s.branch_name)||{};
+  const drv=drivers_db.find(d=>d.id===s.driver_id||d.name===s.driver_name)||{};
+  const ph=normPhone(brn.manager_phone||s.branch_manager_phone||'');
   const msg=`🚨 تنبيه — ${CFG.company}
 
-مدير فرع ${s.branch_name||'—'} / ${s.branch_manager||'—'}
+مدير فرع ${brn.name||s.branch_name||'—'} / ${brn.manager_name||s.branch_manager||'—'}
 
 يوجد مشكلة في تسليم الطرد التالي:
 📦 رقم الطرد: ${s.tracking_code}
 👤 العميل: ${s.customer_name||'—'}
-🚗 المندوب: ${s.driver_name||'—'}
+🚗 المندوب: ${drv.name||s.driver_name||'—'}
 ⏱️ التأخير: ${s.delay_days} يوم
 📊 الحالة: ${s.status||'—'}
 
