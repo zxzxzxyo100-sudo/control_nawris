@@ -383,7 +383,19 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
         </table>
       </div>
       <div style="padding:10px 16px;border-top:1px solid var(--rim);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--mute);flex:1" id="s-pginfo">—</span>
+        <span style="font-size:11px;color:var(--mute)" id="s-pginfo">—</span>
+        <select class="fi" id="s-perpage" onchange="changePerPage(this.value)" style="font-size:11px;padding:3px 8px;min-width:auto">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+          <option value="75">75</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="500">500</option>
+          <option value="1000">1000</option>
+        </select>
+        <span style="font-size:11px;color:var(--mute)">لكل صفحة</span>
+        <div style="flex:1"></div>
         <div class="pgn" id="s-pgn"></div>
       </div>
     </div>
@@ -656,6 +668,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="loadDbStats()">↻ تحديث</button>
         <button class="btn btn-red btn-sm" onclick="clearTodayShipments()">🗑️ مسح طرود اليوم</button>
+        <button class="btn btn-red btn-sm" onclick="clearAllShipments()" style="background:rgba(255,58,92,.2)">🚨 مسح كل الطرود</button>
       </div>
     </div>
   </div>
@@ -723,7 +736,7 @@ const USERS = {
 let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[];
 let returns_data=[], transfers_data=[], contacted=new Set(), checked=new Set();
 let seg='all', sPage=1, masterSeg='regions', meTable='', meRecord=null, alphaFilter='';
-const PER=25;
+let PER=25;
 let autoFetchTimer=null;
 let CFG={critDays:15,warnDays:7,discount:50,company:'النورس للشحن',mgrPhone:''};
 let WA_TPLS=[
@@ -1118,6 +1131,7 @@ function buildPgn(total,totalP){
     b.onclick=()=>{sPage=i;renderShipments();};pgn.appendChild(b);
   }
 }
+function changePerPage(val){PER=parseInt(val)||25;sPage=1;renderShipments();}
 
 // ══════════════════════════════════════════
 // SHIPMENT DETAIL
@@ -1962,13 +1976,50 @@ async function loadDbStats(){
   }catch(e){console.warn('stats',e);}
 }
 async function clearTodayShipments(){
-  if(!confirm('⚠️ هل أنت متأكد من مسح طرود اليوم؟ لا يمكن التراجع!'))return;
   const today=new Date().toISOString().split('T')[0];
+  // Count today's shipments first
   try{
-    const r=await fetch(`${SB}/rest/v1/shipments?upload_date=eq.${today}`,{method:'DELETE',headers:{...H,'Prefer':'return=minimal'}});
+    const countR=await fetch(`${SB}/rest/v1/shipments?upload_date=eq.${today}&select=id`,{headers:{...H,'Prefer':'count=exact','Range':'0-0'}});
+    const cr=countR.headers.get('content-range');
+    const countBefore=cr?parseInt((cr.match(/\/(\d+)/)||[])[1]||'0'):0;
+    
+    if(countBefore===0){
+      toast('⚠️ لا توجد طرود بتاريخ اليوم ('+today+')','w');
+      return;
+    }
+    if(!confirm(`⚠️ هل تريد مسح ${countBefore} طرد بتاريخ ${today}؟\nلا يمكن التراجع!`))return;
+    
+    const r=await fetch(`${SB}/rest/v1/shipments?upload_date=eq.${today}`,{
+      method:'DELETE',
+      headers:{...H,'Prefer':'return=representation','Content-Type':'application/json'}
+    });
     if(!r.ok){const e=await r.text();throw new Error(e);}
-    toast('✅ تم مسح طرود اليوم','w');await loadShipments();loadDbStats();
+    const deleted=await r.json();
+    const deletedCount=Array.isArray(deleted)?deleted.length:0;
+    
+    if(deletedCount>0){
+      toast(`✅ تم مسح ${deletedCount} طرد بنجاح`,'s');
+    } else {
+      toast('⚠️ لم يتم حذف أي طرود — تحقق من صلاحيات RLS في Supabase','e');
+    }
+    await loadShipments();loadDbStats();
   }catch(e){toast('خطأ في المسح: '+e.message,'e');console.error('clearToday',e);}
+}
+async function clearAllShipments(){
+  if(!confirm('🚨 تحذير خطير!\nهل تريد مسح كل الطرود من قاعدة البيانات؟\nهذا الإجراء لا يمكن التراجع عنه!'))return;
+  if(!confirm('⚠️ تأكيد أخير — سيتم مسح كل الطرود نهائياً!'))return;
+  try{
+    const r=await fetch(`${SB}/rest/v1/shipments?id=gt.0`,{
+      method:'DELETE',
+      headers:{...H,'Prefer':'return=representation'}
+    });
+    if(!r.ok){const e=await r.text();throw new Error(e);}
+    const deleted=await r.json();
+    const cnt=Array.isArray(deleted)?deleted.length:0;
+    if(cnt>0) toast(`🗑️ تم مسح ${cnt} طرد`,'w');
+    else toast('⚠️ لم يتم الحذف — تحقق من RLS','e');
+    await loadShipments();loadDbStats();
+  }catch(e){toast('خطأ: '+e.message,'e');}
 }
 
 // ══════════════════════════════════════════
