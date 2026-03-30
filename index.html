@@ -764,7 +764,7 @@ const USERS = {
   'fatima':  {pass:'emp123',  role:'employee',name:'فاطمة محمد'},
 };
 
-let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[];
+let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[], contact_results_db=[];
 let returns_data=[], transfers_data=[], contacted=new Set(), checked=new Set();
 let seg='all', sPage=1, masterSeg='regions', meTable='', meRecord=null, alphaFilter='';
 let PER=25;
@@ -866,7 +866,7 @@ function applyRole(){
 async function loadAll(){
   setSyncState('busy','تحميل...');
   try{
-    const [sh,dr,br,re,st,ct,tpls,cfg]=await Promise.all([
+    const [sh,dr,br,re,st,ct,tpls,cfg,crdb]=await Promise.all([
       sb('shipments_view','GET',null,'?order=delay_days.desc&limit=10000'),
       sb('drivers','GET',null,'?select=*&order=name'),
       sb('branches','GET',null,'?select=*&order=name'),
@@ -875,9 +875,11 @@ async function loadAll(){
       sb('contacted_log','GET',null,'?select=shipment_id'),
       sb('wa_templates','GET',null,'?select=*'),
       sb('settings','GET',null,'?select=key,value'),
+      sb('contact_results','GET',null,'?select=*'),
     ]);
     shipments=sh; drivers_db=dr; branches=br; regions=re; stores=st;
     contacted=new Set(ct.map(r=>r.shipment_id));
+    contact_results_db=crdb||[];
     if(tpls.length) WA_TPLS=tpls;
     cfg.forEach(r=>{
       if(r.key==='critDays')CFG.critDays=parseInt(r.value)||15;
@@ -939,6 +941,29 @@ function stBadge(s){
 }
 function ctBadge(id){return contacted.has(String(id))?'<span class="badge b-grn">✅ تم</span>':'<span class="badge b-dim">⏳</span>';}
 function normPhone(p){if(!p)return'';p=String(p).replace(/[^0-9]/g,'');if(p.startsWith('0')&&p.length===10)p='218'+p.slice(1);return p;}
+
+// Contact Result helpers — Supabase first, localStorage fallback
+function getCR(sid){
+  const db=contact_results_db.find(r=>String(r.shipment_id)===String(sid));
+  if(db)return{result:db.result||'',note:db.note||'',by:db.updated_by||''};
+  const local=localStorage.getItem('cr_'+sid)||'';
+  return{result:local,note:localStorage.getItem('note_'+sid)||'',by:''};
+}
+async function saveCR(sid,result,note){
+  const s=shipments.find(x=>String(x.id)===String(sid));
+  const userName=CU?.name||'—';
+  try{
+    await fetch(`${SB}/rest/v1/contact_results`,{
+      method:'POST',
+      headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({shipment_id:sid,tracking_code:s?.tracking_code||'',result:result||null,note:note||'',updated_by:userName})
+    });
+    // Update local cache
+    const existing=contact_results_db.find(r=>String(r.shipment_id)===String(sid));
+    if(existing){existing.result=result;existing.note=note;existing.updated_by=userName;}
+    else contact_results_db.push({shipment_id:sid,tracking_code:s?.tracking_code||'',result,note,updated_by:userName});
+  }catch(e){console.warn('saveCR fallback to localStorage',e);localStorage.setItem('cr_'+sid,result);localStorage.setItem('note_'+sid,note);}
+}
 function gf(...keys){return r=>{for(const k of keys){const v=r[k];if(v!==undefined&&String(v).trim()!=='')return String(v).trim();}return'';};}
 
 // ══════════════════════════════════════════
@@ -1086,7 +1111,7 @@ function renderShipments(){
     if(fcontact==='contacted'&&!contacted.has(String(s.id)))return false;
     if(fcontact==='not_contacted'&&contacted.has(String(s.id)))return false;
     if(fcr){
-      const cr=localStorage.getItem('cr_'+s.id)||'';
+      const cr=getCR(s.id).result;
       if(fcr==='none'&&cr!=='')return false;
       if(fcr!=='none'&&cr!==fcr)return false;
     }
@@ -1107,10 +1132,11 @@ function renderShipments(){
   if(!page.length){tbody.innerHTML=`<tr><td colspan="16" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج</td></tr>`;buildPgn(total,totalP);return;}
   tbody.innerHTML=page.map((s,idx)=>{
     const sid=String(s.id).replace(/"/g,'&quot;');
-    const note=(localStorage.getItem('note_'+s.id)||'').replace(/"/g,'&quot;');
+    const crData=getCR(s.id);
+    const note=(crData.note||localStorage.getItem('note_'+s.id)||'').replace(/"/g,'&quot;');
     const att=parseInt(localStorage.getItem('att_'+s.id)||'0');
     const lct=localStorage.getItem('lct_'+s.id)||'';
-    const cResult=localStorage.getItem('cr_'+s.id)||'';
+    const cResult=crData.result;
     // Enrich driver phone from drivers_db if missing
     const drv=drivers_db.find(d=>d.id===s.driver_id || d.name===s.driver_name)||{};
     const drvPhone=drv.phone||s.driver_phone||'';
@@ -1156,9 +1182,10 @@ function renderShipments(){
           doWA(sid);
         } else if(a==='save'){
           const ni=row?.querySelector('.note-inp');
-          if(ni)localStorage.setItem('note_'+sid,ni.value);
           const cr=row?.querySelector('.cr-sel');
-          if(cr)localStorage.setItem('cr_'+sid,cr.value);
+          const noteVal=ni?ni.value:'';
+          const crVal=cr?cr.value:'';
+          saveCR(sid,crVal,noteVal);
           markCt(sid);
           btn.textContent='✅';setTimeout(()=>btn.textContent='💾',1500);
         } else if(a==='detail') openDetail(sid);
@@ -1167,7 +1194,7 @@ function renderShipments(){
     });
     tbody.addEventListener('change',e=>{
       const cr=e.target.closest('.cr-sel');
-      if(cr){localStorage.setItem('cr_'+cr.dataset.sid,cr.value);}
+      if(cr){saveCR(cr.dataset.sid,cr.value,'');}
     });
   }
   buildPgn(total,totalP);
@@ -2222,18 +2249,20 @@ function sendToBranchManager(sid){
 // ══════════════════════════════════════════
 function renderStaff(){
   const users=Object.entries(USERS);
-  const crMap={solved:'✅ تم الحل',contacted:'📞 تم التواصل',no_answer:'📵 لا يرد',pending:'⏳ قيد المتابعة'};
 
-  // Count contact results across all shipments
+  // Count from Supabase contact_results_db
   let totalFollowed=0,totalSolved=0,totalContacted=0,totalNoAnswer=0,totalPending=0,totalNone=0;
+  const crIndex={};
+  contact_results_db.forEach(r=>{crIndex[r.shipment_id]=r;});
   shipments.forEach(s=>{
-    const cr=localStorage.getItem('cr_'+s.id)||'';
-    if(cr==='solved')totalSolved++;
-    else if(cr==='contacted')totalContacted++;
-    else if(cr==='no_answer')totalNoAnswer++;
-    else if(cr==='pending')totalPending++;
-    else totalNone++;
-    if(cr)totalFollowed++;
+    const cr=crIndex[s.id];
+    if(cr&&cr.result){
+      totalFollowed++;
+      if(cr.result==='solved')totalSolved++;
+      else if(cr.result==='contacted')totalContacted++;
+      else if(cr.result==='no_answer')totalNoAnswer++;
+      else if(cr.result==='pending')totalPending++;
+    } else totalNone++;
   });
 
   // KPIs
@@ -2245,31 +2274,27 @@ function renderStaff(){
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--pur);font-family:var(--mono)">${shipments.length?Math.round(totalFollowed/shipments.length*100):0}%</div><div style="font-size:11px;color:var(--mute)">نسبة الإنجاز</div></div>
   `;
 
-  // Per-employee stats (based on contacted_log and localStorage actions)
+  // Per-employee stats from Supabase data
   const empStats={};
   users.forEach(([uname,u])=>{empStats[u.name]={name:u.name,role:u.role,followed:0,solved:0,contacted:0,no_answer:0,pending:0};});
-
-  // Track who did what based on localStorage timestamps
-  // For now, attribute all to the current logged-in user (since localStorage is per-browser)
-  const currentUser=CU?.name||'—';
-  if(!empStats[currentUser])empStats[currentUser]={name:currentUser,role:'employee',followed:0,solved:0,contacted:0,no_answer:0,pending:0};
-  shipments.forEach(s=>{
-    const cr=localStorage.getItem('cr_'+s.id)||'';
-    if(!cr)return;
-    empStats[currentUser].followed++;
-    if(cr==='solved')empStats[currentUser].solved++;
-    else if(cr==='contacted')empStats[currentUser].contacted++;
-    else if(cr==='no_answer')empStats[currentUser].no_answer++;
-    else if(cr==='pending')empStats[currentUser].pending++;
+  contact_results_db.forEach(r=>{
+    if(!r.result||!r.updated_by)return;
+    const name=r.updated_by;
+    if(!empStats[name])empStats[name]={name,role:'employee',followed:0,solved:0,contacted:0,no_answer:0,pending:0};
+    empStats[name].followed++;
+    if(r.result==='solved')empStats[name].solved++;
+    else if(r.result==='contacted')empStats[name].contacted++;
+    else if(r.result==='no_answer')empStats[name].no_answer++;
+    else if(r.result==='pending')empStats[name].pending++;
   });
 
   const rows=Object.values(empStats).sort((a,b)=>b.followed-a.followed);
   const tbody=document.getElementById('staff-tbody');
   if(!rows.length||!rows.some(r=>r.followed>0)){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا توجد بيانات متابعة بعد</td></tr>';
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا توجد بيانات متابعة بعد — اضغط 💾 لحفظ نتائج التواصل</td></tr>';
   } else {
     tbody.innerHTML=rows.filter(r=>r.followed>0).map(r=>{
-      const pct=totalFollowed?Math.round(r.followed/shipments.length*100):0;
+      const pct=shipments.length?Math.round(r.followed/shipments.length*100):0;
       const pctColor=pct>70?'var(--grn)':pct>30?'var(--gold)':'var(--red)';
       return`<tr>
         <td><strong>${r.name}</strong><div style="font-size:10px;color:var(--dim)">${r.role==='manager'?'مدير':'موظف'}</div></td>
