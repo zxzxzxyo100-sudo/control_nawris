@@ -2066,11 +2066,11 @@ async function uploadShipments(rows,forceStatus){
 
   try{
     let uploaded=0;
-    for(let i=0;i<normalized.length;i+=200){
+    for(let i=0;i<normalized.length;i+=100){
       const res=await fetch(`${SB}/rest/v1/shipments`,{
         method:'POST',
         headers:{...H,'Prefer':'resolution=ignore-duplicates,return=minimal'},
-        body:JSON.stringify(normalized.slice(i,i+200))
+        body:JSON.stringify(normalized.slice(i,i+100))
       });
       if(!res.ok){const e=await res.text();if(!e.includes('duplicate')&&!e.includes('23505'))throw new Error(e);}
       uploaded+=200;
@@ -2136,7 +2136,7 @@ async function fetchFromAPI(){
       if(seen.has(code))continue;seen.add(code);
       mapped.push({tracking_code:code,customer_name:String(r.customer_name||r.client_name||r.name||'—').trim(),customer_phone:String(r.customer_phone||r.phone||'—').trim(),status:stMap[r.status]||r.status||'with_driver',delay_days:parseInt(r[delayField]||0)||0,upload_date:new Date().toISOString().split('T')[0]});
     }
-    for(let i=0;i<mapped.length;i+=200)await sbUp('shipments',mapped.slice(i,i+200));
+    for(let i=0;i<mapped.length;i+=100)await sbUp('shipments',mapped.slice(i,i+100));
     el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} طرد من API</span>`;
     toast(`✅ ${mapped.length} طرد من API`,'s');
     await loadShipments();loadDbStats();
