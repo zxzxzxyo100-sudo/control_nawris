@@ -817,17 +817,21 @@ async function sb(table,method='GET',body=null,params=''){
   return method==='GET'?r.json():true;
 }
 async function sbAll(table,params=''){
-  let all=[],from=0;
+  let all=[],page=0;
   const batchSize=1000;
   while(true){
     const sep=params.includes('?')?'&':'?';
-    const url=`${SB}/rest/v1/${table}${params}${sep}limit=${batchSize}`;
-    const r=await fetch(url,{headers:{...H,'Range':`${from}-${from+batchSize-1}`}});
-    if(!r.ok){const e=await r.text();throw new Error(e);}
+    const r=await fetch(`${SB}/rest/v1/${table}${params}${sep}limit=${batchSize}&offset=${page*batchSize}`,{headers:H});
+    if(!r.ok){
+      // If 416 range error, we've gone past the end
+      if(r.status===416)break;
+      const e=await r.text();throw new Error(e);
+    }
     const batch=await r.json();
+    if(!batch.length)break;
     all=all.concat(batch);
     if(batch.length<batchSize)break;
-    from+=batchSize;
+    page++;
   }
   return all;
 }
