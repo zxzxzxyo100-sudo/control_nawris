@@ -798,7 +798,7 @@ let returns_data=[], transfers_data=[], contacted=new Set(), checked=new Set();
 let seg='all', sPage=1, masterSeg='regions', meTable='', meRecord=null, alphaFilter='';
 let PER=25;
 let autoFetchTimer=null;
-let CFG={critDays:15,warnDays:7,discount:50,company:'النورس للشحن',mgrPhone:''};
+let CFG={critDays:3,warnDays:2,discount:50,company:'النورس للشحن',mgrPhone:''};
 let WA_TPLS=[
   {id:'reminder',name:'تذكير بالتسليم',tag:'عام',body:'السلام عليكم {اسم} 👋\nتذكير من {شركة}\n\nلديك {طرود} طرد متأخر\nأعلى تأخير: {أيام} يوم\n\n📦 أكواد الطرود:\n{أكواد}\n\n⚠️ يرجى اتخاذ إجراء فوري\nشكراً'},
   {id:'urgent',name:'تنبيه عاجل',tag:'عاجل',body:'🚨 تنبيه عاجل — {شركة}\n\nالأخ {اسم}\nلديك {طرود} طرد في وضع حرج ({أيام} يوم)\n\n📦 أكواد الطرود الحرجة:\n{أكواد}\n\nيرجى التواصل فوراً مع المشرف\n— إدارة {شركة}'},
