@@ -817,17 +817,17 @@ async function sb(table,method='GET',body=null,params=''){
   return method==='GET'?r.json():true;
 }
 async function sbAll(table,params=''){
-  // Load all rows in batches of 1000 (Supabase default max)
-  let all=[],offset=0;
+  let all=[],from=0;
   const batchSize=1000;
   while(true){
     const sep=params.includes('?')?'&':'?';
-    const r=await fetch(`${SB}/rest/v1/${table}${params}${sep}limit=${batchSize}&offset=${offset}`,{headers:H});
+    const url=`${SB}/rest/v1/${table}${params}${sep}limit=${batchSize}`;
+    const r=await fetch(url,{headers:{...H,'Range':`${from}-${from+batchSize-1}`}});
     if(!r.ok){const e=await r.text();throw new Error(e);}
     const batch=await r.json();
     all=all.concat(batch);
     if(batch.length<batchSize)break;
-    offset+=batchSize;
+    from+=batchSize;
   }
   return all;
 }
