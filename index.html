@@ -1920,8 +1920,8 @@ async function uploadShipments(rows,forceStatus){
     let days=0;
     try{days=parseInt(gf('عدد الايام المتأخرة','التأخير (أيام)','التأخير','delay_days','الأيام')(r))||0;}catch{}
 
-    // Calculate delay from "تاريخ التسليم للمندوب" if available
-    const deliveryDateRaw=gf('تاريخ التسليم للمندوب','تاريخ التسليم','تاريخ الاستلام','delivery_date')(r)||'';
+    // Calculate delay from delivery date if available
+    const deliveryDateRaw=gf('تاريخ الإرسال','تاريخ التسليم للمندوب','تاريخ التسليم','تاريخ الاستلام','delivery_date')(r)||'';
     if(deliveryDateRaw){
       try{
         let dDate;
@@ -2039,6 +2039,11 @@ async function uploadShipments(rows,forceStatus){
     if(resolvedDriver?.id)  rec.driver_id=resolvedDriver.id;
     if(resolvedRegionId)    rec.region_id=resolvedRegionId;
     if(resolvedBranch?.id)  rec.current_branch_id=resolvedBranch.id;
+    // If no branch but driver has a branch, use driver's branch
+    if(!rec.current_branch_id && resolvedDriver){
+      const drvBranch=branches.find(b=>b.name&&resolvedDriver.branch&&b.name.includes(resolvedDriver.branch));
+      if(drvBranch) rec.current_branch_id=drvBranch.id;
+    }
 
     // Resolve store by customer name
     const custNameLower=(customerName||'').trim().toLowerCase();
