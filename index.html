@@ -2295,17 +2295,29 @@ async function fetchFromAPI(){
   if(!url){toast('أدخل رابط API أولاً','e');return;}
   el.textContent='⏳ جارٍ جلب البيانات...';
   try{
-    const res=await apiFetch(url,token);
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
-    const json=await res.json();
-    const rawData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+    // Paginated fetch
+    let rawData=[],cursor='',pg=0;
+    while(pg<20){
+      pg++;
+      const sep=url.includes('?')?'&':'?';
+      const fUrl=cursor?`${url}${sep}cursor=${encodeURIComponent(cursor)}`:url;
+      el.textContent=`⏳ صفحة ${pg}...`;
+      const res=await apiFetch(fUrl,token);
+      if(!res.ok)throw new Error(`HTTP ${res.status}`);
+      const json=await res.json();
+      const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+      if(pageData.length)rawData=rawData.concat(pageData);
+      const nc=json?.meta?.next_cursor||json?.next_cursor||null;
+      if(!nc||!pageData.length)break;
+      cursor=nc;
+    }
     if(!rawData.length){el.textContent='⚠️ لا بيانات في الرد';return;}
     const stMap={'مع المندوب':'with_driver','في الشركة':'in_company','delivered':'delivered','مرتجع':'returned'};
     const seen=new Set();const mapped=[];
     for(const [i,r] of rawData.entries()){
-      const code=String(r.id||r.code||r.tracking_code||r.order_id||('API-'+Date.now()+'-'+i)).trim();
+      const code=String(r.code||r.id||r.tracking_code||r.order_id||('API-'+Date.now()+'-'+i)).trim();
       if(seen.has(code))continue;seen.add(code);
-      mapped.push({tracking_code:code,customer_name:String(r.customer_name||r.client_name||r.name||'—').trim(),customer_phone:String(r.customer_phone||r.phone||'—').trim(),status:stMap[r.status]||r.status||'with_driver',delay_days:parseInt(r[delayField]||0)||0,upload_date:new Date().toISOString().split('T')[0]});
+      mapped.push({tracking_code:code,customer_name:String(r.client_name||r.customer_name||r.name||'—').trim(),customer_phone:String(r.receiver_phone||r.customer_phone||r.phone||'—').trim(),status:stMap[r.status]||r.status||'with_driver',delay_days:parseInt(r[delayField]||r.delay_days||0)||0,upload_date:new Date().toISOString().split('T')[0]});
     }
     for(let i=0;i<mapped.length;i+=100){
       await fetch(`${SB}/rest/v1/shipments`,{
@@ -2314,7 +2326,7 @@ async function fetchFromAPI(){
         body:JSON.stringify(mapped.slice(i,i+100))
       });
     }
-    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب وتحديث ${mapped.length} طرد من API</span>`;
+    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب وتحديث ${mapped.length} طرد من API (${pg} صفحة)</span>`;
     toast(`✅ ${mapped.length} طرد من API`,'s');
     await loadShipments();loadDbStats();
   }catch(e){el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;toast('خطأ في API: '+e.message,'e');}
@@ -2773,10 +2785,33 @@ async function fetchAPIShipments(){
   if(stEl)stEl.textContent='جارٍ الجلب...';
 
   try{
-    const res=await apiFetch(url,token);
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
-    const json=await res.json();
-    const rawData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+    // ── PAGINATED FETCH: Follow next_cursor to get ALL shipments ──
+    let rawData=[];
+    let cursor='';
+    let pageNum=0;
+    const maxPages=20; // Safety limit
+
+    while(pageNum<maxPages){
+      pageNum++;
+      const sep=url.includes('?')?'&':'?';
+      const fetchUrl=cursor?`${url}${sep}cursor=${encodeURIComponent(cursor)}`:url;
+      if(el)el.textContent=`⏳ جارٍ جلب الصفحة ${pageNum}...`;
+
+      const res=await apiFetch(fetchUrl,token);
+      if(!res.ok)throw new Error(`HTTP ${res.status}`);
+      const json=await res.json();
+
+      // Extract data array
+      const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+      if(pageData.length)rawData=rawData.concat(pageData);
+
+      // Check for next page (cursor pagination)
+      const nextCursor=json?.meta?.next_cursor||json?.next_cursor||null;
+      if(!nextCursor||!pageData.length){
+        break; // No more pages
+      }
+      cursor=nextCursor;
+    }
 
     if(!rawData.length){
       if(el)el.textContent='⚠️ لا بيانات في رد API';
@@ -2853,7 +2888,7 @@ async function fetchAPIShipments(){
     localStorage.setItem('api_fetch_log',JSON.stringify(apiFetchLog));
 
     // Update UI
-    if(el)el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${apiShipments.length} طرد — ${new Date().toLocaleTimeString('ar-LY')}</span>`;
+    if(el)el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${apiShipments.length} طرد (${pageNum} صفحة) — ${new Date().toLocaleTimeString('ar-LY')}</span>`;
     if(dot)dot.className='sync-dot';
     if(stEl)stEl.textContent='متصل — '+apiShipments.length+' طرد';
     document.getElementById('api-last-fetch').textContent='آخر جلب: '+new Date().toLocaleTimeString('ar-LY');
