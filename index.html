@@ -2259,12 +2259,15 @@ async function uploadShipments(rows,forceStatus){
 // ══════════════════════════════════════════
 // API INTEGRATION
 // ══════════════════════════════════════════
-// CORS proxy via Cloudflare Worker
+// CORS proxy via Cloudflare Worker — uses POST to avoid URL encoding issues
 const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
 async function apiFetch(fullUrl,token){
   const cleanToken=token?token.replace(/^(Bearer|Token)\s*/i,'').trim():'';
-  const proxyUrl=`${PROXY}?url=${encodeURIComponent(fullUrl)}&token=${encodeURIComponent(cleanToken)}`;
-  const r=await fetch(proxyUrl,{method:'GET',headers:{'Accept':'application/json'}});
+  const r=await fetch(PROXY,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({url:fullUrl,token:cleanToken})
+  });
   return r;
 }
 async function testAPI(){
