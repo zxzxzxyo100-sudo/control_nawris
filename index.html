@@ -2125,16 +2125,24 @@ async function testAPI(){
   if(!url){toast('أدخل رابط API','e');return;}
   el.textContent='⏳ جارٍ الاختبار...';
   try{
-    const headers={'Content-Type':'application/json'};
-    if(token)headers['Authorization']=token.startsWith('Bearer ')?token:'Bearer '+token;
+    const headers={'Accept':'application/json'};
+    if(token){
+      headers['Authorization']=token.startsWith('Bearer ')?token:'Bearer '+token;
+      headers['Api-Token']=token.replace(/^Bearer\s*/i,'');
+      headers['api-token']=token.replace(/^Bearer\s*/i,'');
+      headers['X-Api-Key']=token.replace(/^Bearer\s*/i,'');
+    }
     const res=await fetch(url,{method:'GET',headers});
     if(res.ok){
       const data=await res.json();
-      const count=Array.isArray(data)?data.length:data?.data?.length||data?.results?.length||'?';
+      const count=Array.isArray(data)?data.length:data?.data?.length||data?.results?.length||data?.orders?.length||'?';
       el.innerHTML=`<span style="color:var(--grn)">✅ اتصال ناجح — ${count} سجل متاح</span>`;
       toast('✅ API يعمل','s');
       await sbUp('settings',[{key:'api_url',value:url},{key:'api_token',value:token}]);
-    } else el.innerHTML=`<span style="color:var(--red)">❌ خطأ ${res.status}</span>`;
+    } else {
+      const errText=await res.text().catch(()=>'');
+      el.innerHTML=`<span style="color:var(--red)">❌ خطأ ${res.status} ${errText.substring(0,100)}</span>`;
+    }
   }catch(e){el.innerHTML=`<span style="color:var(--red)">❌ تعذّر الاتصال: ${e.message}</span>`;}
 }
 async function fetchFromAPI(){
@@ -2145,8 +2153,13 @@ async function fetchFromAPI(){
   if(!url){toast('أدخل رابط API أولاً','e');return;}
   el.textContent='⏳ جارٍ جلب البيانات...';
   try{
-    const headers={'Content-Type':'application/json'};
-    if(token)headers['Authorization']=token.startsWith('Bearer ')?token:'Bearer '+token;
+    const headers={'Accept':'application/json'};
+    if(token){
+      headers['Authorization']=token.startsWith('Bearer ')?token:'Bearer '+token;
+      headers['Api-Token']=token.replace(/^Bearer\s*/i,'');
+      headers['api-token']=token.replace(/^Bearer\s*/i,'');
+      headers['X-Api-Key']=token.replace(/^Bearer\s*/i,'');
+    }
     const res=await fetch(url,{method:'GET',headers});
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const json=await res.json();
