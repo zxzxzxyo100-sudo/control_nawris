@@ -1040,9 +1040,9 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
       <div class="g2">
         <div class="fg"><label class="fl">اسم المستخدم (للدخول)</label><input class="fi" style="width:100%" id="um-username" placeholder="مثال: ahmed" dir="ltr"></div>
         <div class="fg"><label class="fl">كلمة المرور</label>
-          <div style="position:relative">
-            <input class="fi" style="width:100%;padding-left:36px" id="um-pass" placeholder="كلمة مرور قوية" type="text" dir="ltr">
-            <button type="button" onclick="togglePassVis()" id="um-pass-toggle" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;color:var(--mute)">👁️</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="fi" style="flex:1" id="um-pass" placeholder="كلمة مرور قوية" type="text" dir="ltr" autocomplete="off">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="togglePassVis()" id="um-pass-toggle">🙈 إخفاء</button>
           </div>
         </div>
       </div>
@@ -3966,8 +3966,8 @@ function editUser(k){openUserModal(k);}
 function togglePassVis(){
   const inp=document.getElementById('um-pass');
   const btn=document.getElementById('um-pass-toggle');
-  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
-  else{inp.type='password';btn.textContent='👁️';}
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈 إخفاء';}
+  else{inp.type='password';btn.textContent='👁️ إظهار';}
 }
 
 function onRoleChange(){
