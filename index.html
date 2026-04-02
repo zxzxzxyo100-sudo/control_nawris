@@ -2799,8 +2799,10 @@ async function fetchAPIShipments(){
     const baseUrl=url.replace(/[?&]delay_days=\d+/g,''); // Strip existing delay_days
     const sep=baseUrl.includes('?')?'&':'?';
 
-    // Fetch ranges: high to low delay to get all unique shipments (1-100+ days)
-    const ranges=[100,90,80,70,60,50,40,30,25,20,15,12,10,8,6,5,4,3,2,1];
+    // Fetch ranges: API returns max 100 per request, cursor is broken
+    // delay>=6 returns 96 (all), delay 1-5 each return 100 (capped)
+    // Fetch from high to low, deduplicate by tracking code
+    const ranges=[100,80,60,40,30,20,15,12,10,8,6,5,4,3,2,1];
     let totalFetched=0;
 
     for(let ri=0;ri<ranges.length;ri++){
@@ -3089,8 +3091,8 @@ function renderAPIShipments(){
     const note=(crData.note||'').replace(/"/g,'&quot;');
     const cResult=crData.result;
     const ph=s.customer_phone&&s.customer_phone!=='—'&&s.customer_phone!=='undefined';
-    return`<tr class="pr" data-asid="${sid}" style="${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
-      <td><input type="checkbox" data-asid="${sid}" ${apiChecked.has(sid)?'checked':''} onchange="this.checked?apiChecked.add(this.dataset.asid):apiChecked.delete(this.dataset.asid)"></td>
+    return`<tr class="pr" data-asid="${sid}" onclick="openAPIDetail('${sid}')" style="cursor:pointer;${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
+      <td onclick="event.stopPropagation()"><input type="checkbox" data-asid="${sid}" ${apiChecked.has(sid)?'checked':''} onchange="this.checked?apiChecked.add(this.dataset.asid):apiChecked.delete(this.dataset.asid)"></td>
       <td style="color:var(--dim);font-size:10px;text-align:center">${(aPage-1)*aPER+idx+1}</td>
       <td class="code-cell">${s.tracking_code}</td>
       <td style="color:var(--white);font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${s.client_name||''}">${s.client_name||'—'}</td>
@@ -3102,17 +3104,17 @@ function renderAPIShipments(){
       <td style="font-size:11px;color:var(--mute)">${s.area||'—'}</td>
       <td>${stBadge(s.status)}</td>
       <td>${dBadge(s.delay_days)}</td>
-      <td><select class="acr-sel" data-asid="${sid}" data-code="${tc}" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--white);font-family:var(--font)">
+      <td onclick="event.stopPropagation()"><select class="acr-sel" data-asid="${sid}" data-code="${tc}" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--white);font-family:var(--font)">
         <option value="" ${!cResult?'selected':''}>—</option>
         <option value="solved" ${cResult==='solved'?'selected':''}>✅ تم الحل</option>
         <option value="contacted" ${cResult==='contacted'?'selected':''}>📞 تم التواصل</option>
         <option value="no_answer" ${cResult==='no_answer'?'selected':''}>📵 لا يرد</option>
         <option value="pending" ${cResult==='pending'?'selected':''}>⏳ قيد المتابعة</option>
       </select></td>
-      <td><input type="text" value="${note}" placeholder="ملاحظة..." data-asid="${sid}" data-code="${tc}" class="anote-inp" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--white);font-family:var(--font);width:100px"></td>
-      <td style="white-space:nowrap"><div style="display:flex;gap:3px">${ph?`<button class="btn btn-wa btn-sm" onclick="apiWA('${sid}','receiver')" style="font-size:10px;padding:3px 6px" title="واتساب للمستلم">📱</button>`:''}${s.captain_phone?`<button class="btn btn-ghost btn-sm" onclick="apiWA('${sid}','captain')" style="font-size:10px;padding:3px 6px;border-color:var(--wa);color:var(--wa)" title="واتساب للمندوب ${s.captain}">🚗</button>`:''}</div></td>
-      <td><button class="btn btn-ghost btn-sm" onclick="apiSave('${sid}',this)" style="font-size:11px;padding:4px 9px">💾</button></td>
-      <td><button class="btn btn-pur btn-sm" onclick="apiMove('${sid}')" style="font-size:10px;padding:4px 8px" title="نقل للطرود الرئيسية">📦→</button></td>
+      <td onclick="event.stopPropagation()"><input type="text" value="${note}" placeholder="ملاحظة..." data-asid="${sid}" data-code="${tc}" class="anote-inp" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--white);font-family:var(--font);width:100px"></td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap"><div style="display:flex;gap:3px">${ph?`<button class="btn btn-wa btn-sm" onclick="apiWA('${sid}','receiver')" style="font-size:10px;padding:3px 6px" title="واتساب للمستلم">📱</button>`:''}${s.captain_phone?`<button class="btn btn-ghost btn-sm" onclick="apiWA('${sid}','captain')" style="font-size:10px;padding:3px 6px;border-color:var(--wa);color:var(--wa)" title="واتساب للمندوب ${s.captain}">🚗</button>`:''}</div></td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-sm" onclick="apiSave('${sid}',this)" style="font-size:11px;padding:4px 9px">💾</button></td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-pur btn-sm" onclick="apiMove('${sid}')" style="font-size:10px;padding:4px 8px" title="نقل للطرود الرئيسية">📦→</button></td>
     </tr>`;
   }).join('');
 
@@ -3147,6 +3149,73 @@ function buildAPIPgn(total,totalP){
 function changeAPIPerPage(val){aPER=parseInt(val)||25;aPage=1;renderAPIShipments();}
 
 // Global onclick handlers for API shipment buttons
+function openAPIDetail(sid){
+  const s=apiShipments.find(x=>x.id===sid);if(!s)return;
+  const custPhone=s.customer_phone||'';
+  const capPhone=s.captain_phone||'';
+  const ph=custPhone&&custPhone!=='—'&&custPhone!=='undefined';
+  const stLabel=s.raw_status||s.status||'—';
+
+  document.getElementById('sd-title').textContent=s.tracking_code;
+  document.getElementById('sd-body').innerHTML=`
+    <div class="g2" style="margin-bottom:14px">
+      <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--gold)">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:9px">📦 بيانات الطرد</div>
+        ${rrow('الكود',`<span class="code-cell">${s.tracking_code}</span>`)}
+        ${rrow('المتجر / العميل',`<strong>${s.client_name||'—'}</strong>`)}
+        ${rrow('المستلم',`<strong>${s.receiver_name||'—'}</strong>`)}
+        ${rrow('هاتف المستلم',ph?`<a href="tel:${custPhone}" style="color:var(--blu);font-family:var(--mono)">${custPhone}</a>`:'—')}
+        ${rrow('الحالة',stBadge(s.status))}
+        ${rrow('الحالة الأصلية',`<span style="color:var(--pale)">${stLabel}</span>`)}
+        ${rrow('التأخير',dBadge(s.delay_days))}
+      </div>
+      <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--pur)">
+        <div style="font-size:10px;font-weight:700;color:var(--pur);margin-bottom:9px">👤 المندوب والموقع</div>
+        ${rrow('المندوب',`<strong>${s.captain||'—'}</strong>`)}
+        ${rrow('هاتف المندوب',capPhone?`<a href="tel:${capPhone}" style="color:var(--blu);font-family:var(--mono)">${capPhone}</a>`:'—')}
+        ${rrow('المنطقة',s.area||'—')}
+        ${rrow('المحافظة',s.government||'—')}
+        ${rrow('الفرع',s.current_branch||'—')}
+      </div>
+    </div>
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--grn);margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--grn);margin-bottom:9px">🔗 منطق التواصل الذكي</div>
+      ${rrow('اسم المتواصَل معه',`<strong style="color:var(--grn)">${s.receiver_name||s.client_name||'—'}</strong>`)}
+      ${rrow('رقم التواصل',ph?`<a href="tel:${custPhone}" style="font-family:var(--mono);color:var(--grn)">${custPhone}</a>`:'—')}
+    </div>
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;margin-bottom:14px;border-right:3px solid var(--wa)">
+      <div style="font-size:10px;font-weight:700;color:var(--wa);margin-bottom:10px">💬 نظام التواصل الثلاثي</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
+          <div style="font-size:18px;margin-bottom:4px">🏪</div>
+          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">الزبون / المتجر</div>
+          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${s.receiver_name||s.client_name||'—'}</div>
+          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${custPhone||'—'}</div>
+          ${ph?`<button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="apiWA('${sid}','receiver');closeM('sd-modal')">📱 تأكيد الوصول</button>`:`<div style="font-size:10px;color:var(--mute)">لا رقم</div>`}
+        </div>
+        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
+          <div style="font-size:18px;margin-bottom:4px">🚗</div>
+          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">المندوب</div>
+          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${s.captain||'—'}</div>
+          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${capPhone||'—'}</div>
+          ${capPhone?`<button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="apiWA('${sid}','captain');closeM('sd-modal')">📱 تأكيد التوجه</button>`:`<div style="font-size:10px;color:var(--mute)">لا رقم</div>`}
+        </div>
+        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
+          <div style="font-size:18px;margin-bottom:4px">🏢</div>
+          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">مدير الفرع</div>
+          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${s.current_branch||'—'}</div>
+          <div style="font-size:10px;color:var(--mute);margin-bottom:8px">—</div>
+          <div style="font-size:10px;color:var(--mute)">—</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeM('sd-modal')">✅ تم التواصل</button>
+        <button class="btn btn-pur btn-sm" style="flex:1" onclick="apiMove('${sid}');closeM('sd-modal')">📦 نقل للطرود الرئيسية</button>
+      </div>
+    </div>`;
+  document.getElementById('sd-modal').classList.add('on');
+}
+
 function apiWA(sid,target){
   const s=apiShipments.find(x=>x.id===sid);
   if(!s){toast('لم يتم العثور على الطرد','e');return;}
