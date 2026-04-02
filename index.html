@@ -343,6 +343,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
       <div class="sb-item" data-tab="whatsapp"><span class="sb-item-icon">💬</span> واتساب</div>
       <div class="sb-divider"></div>
       <div class="sb-section manager-only">الإدارة</div>
+      <div class="sb-item manager-only" data-tab="users"><span class="sb-item-icon">🔐</span> المستخدمون</div>
       <div class="sb-item manager-only" data-tab="reports"><span class="sb-item-icon">📊</span> التقارير</div>
       <div class="sb-item manager-only" data-tab="staff"><span class="sb-item-icon">👥</span> متابعة الموظفين</div>
       <div class="sb-item manager-only" data-tab="master"><span class="sb-item-icon">⚙️</span> البيانات الثابتة</div>
@@ -983,10 +984,137 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
       </div>
     </div>
   </div><!-- /tab-upload -->
+
+  <!-- ══ USERS MANAGEMENT ══ -->
+  <div class="page manager-only" id="tab-users">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:18px;font-weight:800">🔐 إدارة المستخدمين</div>
+      <button class="btn btn-pur" onclick="openUserModal()">+ إضافة مستخدم</button>
+    </div>
+
+    <!-- Users KPIs -->
+    <div class="kgrid" style="margin-bottom:16px">
+      <div class="kcard pur"><div class="klbl">إجمالي المستخدمين</div><div class="kval" id="u-total">0</div></div>
+      <div class="kcard grn"><div class="klbl">مديرين</div><div class="kval" id="u-mgr">0</div></div>
+      <div class="kcard blu"><div class="klbl">مشرفين</div><div class="kval" id="u-sup">0</div></div>
+      <div class="kcard gold"><div class="klbl">موظفين</div><div class="kval" id="u-emp">0</div></div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+      <div class="ctitle">👥 قائمة المستخدمين</div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الصورة</th>
+              <th>اسم المستخدم</th>
+              <th>الاسم الكامل</th>
+              <th>الدور</th>
+              <th>الهاتف</th>
+              <th>البريد</th>
+              <th>الصلاحيات</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="10" style="text-align:center;padding:36px;color:var(--mute)">جارٍ التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   </div><!-- /main-content -->
 </div><!-- /app -->
 
 <!-- MODALS -->
+<!-- User Add/Edit Modal -->
+<div class="overlay" id="user-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="mh"><div class="mt" id="user-modal-title">إضافة مستخدم جديد</div><button class="mclose" onclick="closeM('user-modal')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="um-edit-key">
+      <div class="g2">
+        <div class="fg"><label class="fl">اسم المستخدم (للدخول)</label><input class="fi" style="width:100%" id="um-username" placeholder="مثال: ahmed" dir="ltr"></div>
+        <div class="fg"><label class="fl">كلمة المرور</label><input class="fi" style="width:100%" id="um-pass" placeholder="كلمة مرور قوية" type="password"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label class="fl">الاسم الكامل</label><input class="fi" style="width:100%" id="um-name" placeholder="الاسم بالعربي"></div>
+        <div class="fg"><label class="fl">الدور</label>
+          <select class="fi" style="width:100%" id="um-role" onchange="onRoleChange()">
+            <option value="manager">مدير</option>
+            <option value="supervisor">مشرف</option>
+            <option value="employee" selected>موظف</option>
+          </select>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label class="fl">رقم الهاتف</label><input class="fi" style="width:100%" id="um-phone" placeholder="09xxxxxxxx" dir="ltr"></div>
+        <div class="fg"><label class="fl">البريد الإلكتروني</label><input class="fi" style="width:100%" id="um-email" placeholder="email@example.com" dir="ltr"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">الحالة</label>
+        <select class="fi" style="width:100%" id="um-status">
+          <option value="active">نشط</option>
+          <option value="inactive">معطّل</option>
+        </select>
+      </div>
+      <div class="fg" id="um-perms-section">
+        <label class="fl">الصلاحيات — الصفحات المسموحة</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:6px" id="um-perms-grid">
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="home" checked disabled> 🏠 الرئيسية
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="shipments" checked> 📦 الطرود
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="drivers"> 👤 المناديب
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="returns"> ↩️ المرتجعات
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="transfers"> 🔄 التحويلات
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="api-shipments"> 🔗 طرود API
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="whatsapp"> 💬 واتساب
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="reports"> 📊 التقارير
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="staff"> 👥 متابعة الموظفين
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="master"> ⚙️ البيانات الثابتة
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="upload"> 📥 رفع البيانات
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="users"> 🔐 المستخدمون
+          </label>
+        </div>
+        <div style="margin-top:6px;display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="toggleAllPerms(true)" type="button">✅ تحديد الكل</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleAllPerms(false)" type="button">✕ إلغاء الكل</button>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeM('user-modal')">إلغاء</button>
+      <button class="btn btn-pur" onclick="saveUser()">💾 حفظ المستخدم</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="sd-modal">
   <div class="modal">
     <div class="mh"><div class="mt" id="sd-title">تفاصيل الطرد</div><button class="mclose" onclick="closeM('sd-modal')">✕</button></div>
@@ -1073,11 +1201,49 @@ const SB = 'https://kdlcoqcwqlxawejxfjss.supabase.co';
 const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbGNvcWN3cWx4YXdlanhmanNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MzU0NzIsImV4cCI6MjA5MDIxMTQ3Mn0.rlxHDrJagHk8EiPsdVPy62bDicPXhwjZn0g6cdVQkv0';
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 
-const USERS = {
-  'mohamed': {pass:'admin123',role:'manager',name:'محمد سعد'},
-  'ahmed':   {pass:'emp123',  role:'employee',name:'أحمد علي'},
-  'fatima':  {pass:'emp123',  role:'employee',name:'فاطمة محمد'},
+// All available tabs for permission system
+const ALL_TABS = [
+  {id:'home',label:'🏠 الرئيسية',always:true},
+  {id:'shipments',label:'📦 الطرود'},
+  {id:'drivers',label:'👤 المناديب'},
+  {id:'returns',label:'↩️ المرتجعات'},
+  {id:'transfers',label:'🔄 التحويلات'},
+  {id:'api-shipments',label:'🔗 طرود API'},
+  {id:'whatsapp',label:'💬 واتساب'},
+  {id:'reports',label:'📊 التقارير'},
+  {id:'staff',label:'👥 متابعة الموظفين'},
+  {id:'master',label:'⚙️ البيانات الثابتة'},
+  {id:'upload',label:'📥 رفع البيانات'},
+  {id:'users',label:'🔐 المستخدمون'},
+];
+const ALL_TAB_IDS = ALL_TABS.map(t=>t.id);
+const MANAGER_TABS = ALL_TAB_IDS; // managers get all
+
+// Default users (seed)
+const DEFAULT_USERS = {
+  'mohamed': {pass:'admin123',role:'manager',name:'محمد سعد',phone:'',email:'',status:'active',perms:ALL_TAB_IDS},
+  'ahmed':   {pass:'emp123',role:'employee',name:'أحمد علي',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments']},
+  'fatima':  {pass:'emp123',role:'employee',name:'فاطمة محمد',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments']},
 };
+
+// Load users from localStorage, falling back to defaults
+function loadUsers(){
+  try{
+    const saved=localStorage.getItem('nawris_users');
+    if(saved){
+      const parsed=JSON.parse(saved);
+      // Ensure all users have perms array
+      Object.keys(parsed).forEach(k=>{
+        if(!parsed[k].perms) parsed[k].perms=parsed[k].role==='manager'?ALL_TAB_IDS:['home','shipments','api-shipments'];
+        if(!parsed[k].status) parsed[k].status='active';
+      });
+      return parsed;
+    }
+  }catch(e){console.warn('loadUsers',e);}
+  return JSON.parse(JSON.stringify(DEFAULT_USERS));
+}
+function saveUsers(users){ localStorage.setItem('nawris_users',JSON.stringify(users)); }
+let USERS = loadUsers();
 
 let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[], contact_results_db=[];
 let returns_data=[], transfers_data=[], contacted=new Set(), checked=new Set();
@@ -1180,6 +1346,7 @@ function doLogin(){
   const p=document.getElementById('lp').value;
   const el=document.getElementById('lerr');
   if(USERS[u]&&USERS[u].pass===p){
+    if(USERS[u].status==='inactive'){el.textContent='❌ هذا الحساب معطّل — تواصل مع المدير';return;}
     CU={username:u,...USERS[u]};
     sessionStorage.setItem('nu',JSON.stringify(CU));
     el.textContent='';
@@ -1229,15 +1396,48 @@ async function startApp(){
 
 function applyRole(){
   const mgr=CU.role==='manager';
+  const perms=CU.perms||['home','shipments','api-shipments'];
   document.getElementById('uname').textContent=CU.name;
   document.getElementById('uav').textContent=CU.name[0];
-  document.querySelectorAll('.manager-only').forEach(el=>el.style.display=mgr?'':'none');
-  if(!mgr){
-    document.querySelectorAll('#nav-tabs .sb-item').forEach(t=>{
-      const tab=t.dataset.tab;
-      if(tab&&tab!=='home'&&tab!=='shipments'&&tab!=='api-shipments') t.style.display='none';
-    });
-  }
+  // Update footer role label
+  const roleLabel=CU.role==='manager'?'مدير النظام':CU.role==='supervisor'?'مشرف':'موظف';
+  const roleEl=document.querySelector('.sb-footer .sb-user div:last-child div:last-child');
+  if(roleEl) roleEl.textContent=roleLabel;
+  // Show/hide sidebar items based on permissions
+  document.querySelectorAll('#nav-tabs .sb-item').forEach(t=>{
+    const tab=t.dataset.tab;
+    if(!tab) return;
+    if(mgr){
+      // Managers see all except manager-only class is handled separately
+      t.style.display='';
+    } else {
+      t.style.display=perms.includes(tab)?'':'none';
+    }
+  });
+  // Show/hide manager-only sections and dividers
+  document.querySelectorAll('.manager-only').forEach(el=>{
+    if(el.classList.contains('sb-item')){
+      // sb-items are handled above by perms
+      const tab=el.dataset.tab;
+      if(!mgr) el.style.display=perms.includes(tab)?'':'none';
+      else el.style.display='';
+    } else {
+      // non-sb-item manager-only elements (pages, sections, dividers)
+      if(mgr) el.style.display='';
+      else {
+        // Check if any admin tab is permitted to show section headers
+        const adminTabs=['reports','staff','master','upload','users'];
+        const hasAdmin=adminTabs.some(t=>perms.includes(t));
+        if(el.classList.contains('sb-section')||el.classList.contains('sb-divider')){
+          el.style.display=hasAdmin?'':'none';
+        } else if(el.classList.contains('page')){
+          // pages visibility controlled by gTab, just keep
+        } else {
+          el.style.display='none';
+        }
+      }
+    }
+  });
 }
 
 async function loadAll(){
@@ -2711,6 +2911,7 @@ function gTab(id){
     staff:renderStaff,
     master:()=>{setMasterSeg(masterSeg);renderMasterContent();setTimeout(renderStatusLists,100);},
     upload:()=>{loadDbStats();},
+    users:renderUsersPage,
   };
   if(renders[id])renders[id]();
 }
@@ -3674,6 +3875,159 @@ function loadCachedAPIShipments(){
     const logCached=localStorage.getItem('api_fetch_log');
     if(logCached)apiFetchLog=JSON.parse(logCached);
   }catch(e){}
+}
+
+// ══════════════════════════════════════════
+// USERS MANAGEMENT
+// ══════════════════════════════════════════
+function renderUsersPage(){
+  const users=USERS;
+  const keys=Object.keys(users);
+  // KPIs
+  document.getElementById('u-total').textContent=keys.length;
+  document.getElementById('u-mgr').textContent=keys.filter(k=>users[k].role==='manager').length;
+  document.getElementById('u-sup').textContent=keys.filter(k=>users[k].role==='supervisor').length;
+  document.getElementById('u-emp').textContent=keys.filter(k=>users[k].role==='employee').length;
+  // Table
+  const tbody=document.getElementById('users-tbody');
+  if(!keys.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:36px;color:var(--mute)">لا يوجد مستخدمون</td></tr>';return;}
+  const roleMap={manager:['b-grn','مدير'],supervisor:['b-blu','مشرف'],employee:['b-gold','موظف']};
+  const colors=['var(--pur)','var(--blu)','var(--grn)','var(--gold)','var(--orn)','var(--red)'];
+  tbody.innerHTML=keys.map((k,i)=>{
+    const u=users[k];
+    const [rc,rl]=roleMap[u.role]||['b-dim','—'];
+    const permsCount=(u.perms||[]).length;
+    const totalPerms=ALL_TAB_IDS.length;
+    const stBadge=u.status==='active'?'<span class="badge b-grn">نشط</span>':'<span class="badge b-red">معطّل</span>';
+    const isSelf=CU&&CU.username===k;
+    const color=colors[i%colors.length];
+    return `<tr class="pr">
+      <td>${i+1}</td>
+      <td><div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff">${(u.name||k)[0]}</div></td>
+      <td><span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--blu)">${k}</span></td>
+      <td style="font-weight:600">${u.name||'—'}</td>
+      <td><span class="badge ${rc}">${rl}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;direction:ltr">${u.phone||'—'}</td>
+      <td style="font-size:11px;direction:ltr">${u.email||'—'}</td>
+      <td><span class="badge b-pur">${permsCount}/${totalPerms}</span></td>
+      <td>${stBadge}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${k}')">✏️ تعديل</button>
+        ${!isSelf?`<button class="btn btn-ghost btn-sm" onclick="deleteUser('${k}')" style="color:var(--red)">🗑️</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openUserModal(editKey){
+  document.getElementById('um-edit-key').value=editKey||'';
+  if(editKey&&USERS[editKey]){
+    const u=USERS[editKey];
+    document.getElementById('user-modal-title').textContent='تعديل المستخدم: '+u.name;
+    document.getElementById('um-username').value=editKey;
+    document.getElementById('um-username').disabled=true;
+    document.getElementById('um-pass').value=u.pass;
+    document.getElementById('um-name').value=u.name||'';
+    document.getElementById('um-role').value=u.role||'employee';
+    document.getElementById('um-phone').value=u.phone||'';
+    document.getElementById('um-email').value=u.email||'';
+    document.getElementById('um-status').value=u.status||'active';
+    // Set permission checkboxes
+    const perms=u.perms||[];
+    document.querySelectorAll('.um-perm').forEach(cb=>{
+      if(cb.value==='home'){cb.checked=true;return;}
+      cb.checked=perms.includes(cb.value);
+    });
+  } else {
+    document.getElementById('user-modal-title').textContent='إضافة مستخدم جديد';
+    document.getElementById('um-username').value='';
+    document.getElementById('um-username').disabled=false;
+    document.getElementById('um-pass').value='';
+    document.getElementById('um-name').value='';
+    document.getElementById('um-role').value='employee';
+    document.getElementById('um-phone').value='';
+    document.getElementById('um-email').value='';
+    document.getElementById('um-status').value='active';
+    // Default perms for employee
+    document.querySelectorAll('.um-perm').forEach(cb=>{
+      cb.checked=(cb.value==='home'||cb.value==='shipments'||cb.value==='api-shipments');
+    });
+  }
+  onRoleChange();
+  document.getElementById('user-modal').classList.add('on');
+}
+function editUser(k){openUserModal(k);}
+
+function onRoleChange(){
+  const role=document.getElementById('um-role').value;
+  const section=document.getElementById('um-perms-section');
+  if(role==='manager'){
+    // Managers get all perms, disable checkboxes
+    document.querySelectorAll('.um-perm').forEach(cb=>{cb.checked=true;cb.disabled=true;});
+    section.style.opacity='.5';
+  } else {
+    document.querySelectorAll('.um-perm').forEach(cb=>{
+      cb.disabled=(cb.value==='home'); // home always enabled
+    });
+    section.style.opacity='1';
+  }
+}
+
+function toggleAllPerms(val){
+  document.querySelectorAll('.um-perm').forEach(cb=>{
+    if(!cb.disabled) cb.checked=val;
+  });
+}
+
+function saveUser(){
+  const editKey=document.getElementById('um-edit-key').value;
+  const username=document.getElementById('um-username').value.trim().toLowerCase();
+  const pass=document.getElementById('um-pass').value;
+  const name=document.getElementById('um-name').value.trim();
+  const role=document.getElementById('um-role').value;
+  const phone=document.getElementById('um-phone').value.trim();
+  const email=document.getElementById('um-email').value.trim();
+  const status=document.getElementById('um-status').value;
+
+  if(!username){toast('أدخل اسم المستخدم','w');return;}
+  if(!pass){toast('أدخل كلمة المرور','w');return;}
+  if(!name){toast('أدخل الاسم الكامل','w');return;}
+  if(username.includes(' ')){toast('اسم المستخدم لا يحتوي مسافات','w');return;}
+  // Check duplicate username on add
+  if(!editKey&&USERS[username]){toast('اسم المستخدم موجود مسبقاً','w');return;}
+
+  // Collect permissions
+  let perms=[];
+  if(role==='manager'){
+    perms=[...ALL_TAB_IDS];
+  } else {
+    document.querySelectorAll('.um-perm:checked').forEach(cb=>perms.push(cb.value));
+    if(!perms.includes('home')) perms.unshift('home');
+  }
+
+  const key=editKey||username;
+  USERS[key]={pass,role,name,phone,email,status,perms};
+  saveUsers(USERS);
+
+  // If editing self, update session
+  if(CU&&CU.username===key){
+    CU={username:key,...USERS[key]};
+    sessionStorage.setItem('nu',JSON.stringify(CU));
+    applyRole();
+  }
+
+  closeM('user-modal');
+  renderUsersPage();
+  toast('✅ تم حفظ المستخدم: '+name,'s');
+}
+
+function deleteUser(k){
+  if(CU&&CU.username===k){toast('لا يمكنك حذف حسابك الحالي!','w');return;}
+  if(!confirm('هل أنت متأكد من حذف المستخدم: '+(USERS[k]?.name||k)+'؟')) return;
+  delete USERS[k];
+  saveUsers(USERS);
+  renderUsersPage();
+  toast('🗑️ تم حذف المستخدم','s');
 }
 
 // ═════════════════════════════════
