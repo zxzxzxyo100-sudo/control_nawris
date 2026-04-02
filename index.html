@@ -3254,59 +3254,39 @@ async function fetchAPIShipments(){
   if(stEl)stEl.textContent='جارٍ الجلب...';
 
   try{
-    // ── RANGE-BASED FETCH: Get all shipments by fetching multiple delay ranges ──
-    // API cursor pagination is broken on Nawris, so we fetch by ranges instead
-    // Strategy: fetch high delay first (fewer results), then lower delay (more results)
-    // Deduplicate by tracking_code to merge overlapping ranges
+    // ── CURSOR PAGINATION FETCH ──
+    // API returns 100 items per page with next_cursor for pagination
     let rawData=[];
     const seen=new Set();
-    const baseUrl=url.replace(/[?&]delay_days=\d+/g,''); // Strip existing delay_days
+    const baseUrl=url.replace(/[?&]delay_days=[^&]*/g,'').replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
     const sep=baseUrl.includes('?')?'&':'?';
+    const startUrl=`${baseUrl}${sep}delay_days=1`;
 
-    // Step 1: Try fetching ALL shipments without any delay filter first
-    if(el)el.textContent='⏳ جلب جميع الطرود...';
-    try{
-      const res=await apiFetch(baseUrl,token);
-      if(res.ok){
-        const json=await res.json();
-        const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
-        for(const item of pageData){
-          const code=String(item.code||item.id||item.tracking_code||'').trim();
-          if(code&&!seen.has(code)){seen.add(code);rawData.push(item);}
-        }
-        console.log(`No-filter fetch: ${pageData.length} shipments`);
+    let nextCursor=null;
+    let pageNum=0;
+    const MAX_PAGES=200; // safety limit ~20,000 shipments
+
+    do{
+      pageNum++;
+      const pageUrl=nextCursor?`${startUrl}&cursor=${encodeURIComponent(nextCursor)}`:startUrl;
+      if(el)el.textContent=`⏳ جلب الصفحة ${pageNum}... [${rawData.length} طرد حتى الآن]`;
+
+      const res=await apiFetch(pageUrl,token);
+      if(!res.ok){console.warn(`Page ${pageNum} failed: ${res.status}`);break;}
+      const json=await res.json();
+
+      const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+      nextCursor=json?.meta?.next_cursor||json?.next_cursor||null;
+
+      let newCount=0;
+      for(const item of pageData){
+        const code=String(item.code||item.id||item.tracking_code||'').trim();
+        if(code&&!seen.has(code)){seen.add(code);rawData.push(item);newCount++;}
       }
-    }catch(e){console.warn('No-filter fetch error:',e.message);}
+      console.log(`Page ${pageNum}: ${pageData.length} items, ${newCount} new, total: ${rawData.length}, next_cursor: ${nextCursor?'yes':'no'}`);
 
-    // Step 2: Range-based fetch to capture missed shipments (API cap 100/request)
-    // Ranges include 0 to capture new shipments with no delay
-    const ranges=[100,80,60,40,30,20,15,12,10,8,6,5,4,3,2,1,0];
-    let totalFetched=rawData.length;
-
-    for(let ri=0;ri<ranges.length;ri++){
-      const days=ranges[ri];
-      const rangeUrl=`${baseUrl}${sep}delay_days=${days}`;
-      if(el)el.textContent=`⏳ جلب الطرود (تأخير ${days}+ يوم)... [${totalFetched} حتى الآن]`;
-
-      try{
-        const res=await apiFetch(rangeUrl,token);
-        if(!res.ok){console.warn(`Range delay>=${days} failed: ${res.status}`);continue;}
-        const json=await res.json();
-        const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
-
-        let newCount=0;
-        for(const item of pageData){
-          const code=String(item.code||item.id||item.tracking_code||'').trim();
-          if(code&&!seen.has(code)){
-            seen.add(code);
-            rawData.push(item);
-            newCount++;
-          }
-        }
-        totalFetched=rawData.length;
-        console.log(`Range delay>=${days}: ${pageData.length} fetched, ${newCount} new, total: ${totalFetched}`);
-      }catch(e){console.warn(`Range delay>=${days} error:`,e.message);continue;}
-    }
+      if(!pageData.length)break;
+    }while(nextCursor&&pageNum<MAX_PAGES);
 
     if(!rawData.length){
       if(el)el.textContent='⚠️ لا بيانات في رد API';
