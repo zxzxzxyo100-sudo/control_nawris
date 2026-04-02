@@ -4325,9 +4325,10 @@ function getActiveEmployees(){
 // ── AUTO ASSIGN ──
 function autoAssign(method){
   const empChecks=document.querySelectorAll('#assign-emp-checks input:checked');
-  let emps=empChecks.length>0?[...empChecks].map(c=>c.value):getActiveEmployees();
-  if(!emps.length){emps=Object.values(USERS).map(u=>u.name);}
-  if(!emps.length){toast('لا يوجد موظفون للتوزيع','w');return;}
+  let emps=empChecks.length>0
+    ?[...empChecks].map(c=>c.value)
+    :Object.values(USERS).filter(u=>u.status!=='inactive'&&u.name).map(u=>u.name);
+  if(!emps.length){toast('لا يوجد موظفون للتوزيع — أضف موظفين من تبويب المستخدمون','w');return;}
 
   const a=getAPIAssignments();
   const unassigned=apiShipments.filter(s=>!a[s.tracking_code]);
@@ -4367,7 +4368,7 @@ function autoAssign(method){
   saveAPIAssignments(a);
   renderAPIShipments();
   renderAssignStats();
-  const total=Object.keys(a).length;
+  refreshAssignPanelEmps();
   toast(`✅ تم توزيع ${unassigned.length} طرد على ${emps.length} موظفين`,'s');
 }
 
@@ -4384,6 +4385,7 @@ function assignSelected(){
   saveAPIAssignments(a);
   renderAPIShipments();
   renderAssignStats();
+  refreshAssignPanelEmps();
   toast(`✅ تم تعيين ${count} طرد إلى ${emp}`,'s');
 }
 
@@ -4397,6 +4399,7 @@ function unassignSelected(){
   saveAPIAssignments(a);
   renderAPIShipments();
   renderAssignStats();
+  refreshAssignPanelEmps();
   toast(`تم إلغاء تعيين ${count} طرد`,'s');
 }
 
@@ -4405,6 +4408,7 @@ function clearAllAssignments(){
   saveAPIAssignments({});
   renderAPIShipments();
   renderAssignStats();
+  refreshAssignPanelEmps();
   toast('تم مسح جميع التعيينات','s');
 }
 
@@ -4412,13 +4416,36 @@ function clearAllAssignments(){
 function openAssignPanel(){
   document.getElementById('assign-panel').style.display='block';
   renderAssignStats();
-  // Populate employee checkboxes
-  const emps=Object.values(USERS).filter(u=>u.status!=='inactive');
+  refreshAssignPanelEmps();
+}
+
+function refreshAssignPanelEmps(){
+  const a=getAPIAssignments();
+  // Get all users (active or no status field)
+  const emps=Object.values(USERS).filter(u=>u.status!=='inactive'&&u.name);
+  if(!emps.length){
+    const checksEl=document.getElementById('assign-emp-checks');
+    if(checksEl)checksEl.innerHTML='<span style="color:var(--mute);font-size:11px">لا يوجد موظفون — أضف من تبويب المستخدمون</span>';
+    return;
+  }
+  // Count assignments per employee
+  const counts={};
+  emps.forEach(u=>{counts[u.name]=0;});
+  Object.values(a).forEach(name=>{if(counts[name]!==undefined)counts[name]++;else counts[name]=1;});
+
+  // Employee checkboxes as cards
   const checksEl=document.getElementById('assign-emp-checks');
-  if(checksEl)checksEl.innerHTML=emps.map(u=>`<label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" value="${u.name}" checked style="accent-color:var(--pur)"> ${u.name}</label>`).join('');
-  // Populate manual assign dropdown
+  if(checksEl)checksEl.innerHTML=emps.map(u=>`
+    <label style="display:flex;align-items:center;gap:6px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r2);padding:7px 12px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--pur)'" onmouseout="this.style.borderColor='var(--rim)'">
+      <input type="checkbox" value="${u.name}" checked style="accent-color:var(--pur);width:13px;height:13px">
+      <span style="font-size:12px;font-weight:700;color:var(--white)">${u.name}</span>
+      <span style="font-size:10px;color:var(--mute)">${u.role==='manager'?'مدير':'موظف'}</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--pur);margin-right:auto">${counts[u.name]||0} طرد</span>
+    </label>`).join('');
+
+  // Manual assign dropdown
   const manEl=document.getElementById('manual-assign-emp');
-  if(manEl)manEl.innerHTML='<option value="">اختر موظف...</option>'+emps.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
+  if(manEl)manEl.innerHTML='<option value="">اختر موظف...</option>'+emps.map(u=>`<option value="${u.name}">${u.name} (${counts[u.name]||0} طرد)</option>`).join('');
 }
 
 function closeAssignPanel(){document.getElementById('assign-panel').style.display='none';}
