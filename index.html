@@ -399,10 +399,21 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--rim2);border-radius:3px}
+
+/* ── STAGING BANNER ── */
+#staging-banner{position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(90deg,#0a0c14,#14093e,#0a0c14);border-bottom:2px solid rgba(155,109,255,.4);padding:5px 0;text-align:center;font-size:11px;font-weight:700;color:rgba(180,140,255,.95);letter-spacing:.7px;box-shadow:0 2px 20px rgba(155,109,255,.18);font-family:'IBM Plex Mono',monospace}
+#staging-banner .sb-inner{background:rgba(155,109,255,.1);padding:3px 18px;border-radius:99px;border:1px solid rgba(155,109,255,.3);display:inline-flex;align-items:center;gap:8px}
+#staging-banner .sb-dot{width:6px;height:6px;border-radius:50%;background:#9b6dff;display:inline-block;animation:pulseDot 2s ease infinite}
+body:has(#staging-banner) #app{padding-top:32px}
+body:has(#staging-banner) #login-screen{padding-top:32px}
 </style>
 </head>
 <body>
 
+<!-- STAGING INDICATOR -->
+<div id="staging-banner">
+  <span class="sb-inner"><span class="sb-dot"></span> ⬡ بيئة تجريبية — nawris7-dev &nbsp;·&nbsp; التغييرات هنا لم تُطبَّق على الإنتاج بعد <span class="sb-dot"></span></span>
+</div>
 
 <!-- LOADING -->
 <div id="loading">
@@ -1641,7 +1652,7 @@ async function startApp(){
   try{document.getElementById('hero-date').textContent=new Intl.DateTimeFormat('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date());}catch(e){document.getElementById('hero-date').textContent=new Date().toLocaleDateString('ar-LY',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
   // Show environment tag in hero
   const envTag=document.getElementById('hero-env-tag');
-  if(envTag){envTag.textContent='⬡ Production';envTag.style.color='rgba(34,216,150,.7)';}
+  if(envTag){envTag.textContent='⬡ Staging / Dev';envTag.style.color='rgba(155,109,255,.75)';}
   await loadAll();
   gTab('home');
   loadStatusCfg();
