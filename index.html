@@ -38,11 +38,14 @@ html.light{
   --wa:#1da851;
 }
 html.light body{color:var(--white)}
-html.light .topbar{box-shadow:0 1px 4px rgba(0,0,0,.06)}
-html.light .hero{background:linear-gradient(135deg,#eee5ff 0%,#e0ecff 50%,#dff5f0 100%);border-color:var(--rim2)}
-html.light .hero::before{background:radial-gradient(circle,rgba(124,77,219,.08),transparent 65%)}
-html.light .kcard{box-shadow:0 1px 3px rgba(0,0,0,.04)}
-html.light .card{box-shadow:0 1px 3px rgba(0,0,0,.04)}
+html.light .topbar{box-shadow:0 1px 6px rgba(0,0,0,.07);border-bottom-color:var(--rim)}
+html.light .hero{background:linear-gradient(135deg,#f0eaff 0%,#e4eeff 55%,#eaf5f0 100%);border-color:rgba(124,77,219,.25)}
+html.light .hero::before{background:radial-gradient(circle,rgba(124,77,219,.06),transparent 65%)}
+html.light .kcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+html.light .kcard:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
+html.light .card{box-shadow:0 1px 4px rgba(0,0,0,.05)}
+html.light .api-kcard{box-shadow:0 2px 8px rgba(0,0,0,.05)}
+html.light #staging-banner{background:linear-gradient(90deg,#0a0c14,#14093e,#0a0c14)!important}
 html.light .modal{background:var(--bg2);box-shadow:0 8px 40px rgba(0,0,0,.15)}
 html.light .overlay{background:rgba(0,0,0,.35)}
 html.light .lbox{background:var(--bg2);box-shadow:0 4px 40px rgba(0,0,0,.1)}
@@ -137,9 +140,10 @@ html.light .sidebar{background:rgba(255,255,255,.9);backdrop-filter:blur(22px);-
 /* ── TOPBAR ── */
 .topbar{height:52px;background:rgba(16,19,31,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(155,109,255,.14);display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.3)}
 html.light .topbar{background:rgba(255,255,255,.9);border-bottom-color:var(--rim)}
-.tlogo{font-size:16px;font-weight:900;color:var(--pur);display:flex;align-items:center;gap:6px;display:none}
-.tver{font-size:10px;background:var(--prd);color:var(--pur);padding:2px 6px;border-radius:99px;font-weight:700}
+.tlogo{font-size:16px;font-weight:900;color:var(--pur);display:flex;align-items:center;gap:6px;display:none;font-family:var(--ar-font)}
+.tver{font-size:10px;background:var(--prd);color:var(--pur);padding:2px 6px;border-radius:99px;font-weight:700;border:1px solid var(--prb);font-family:var(--mono)}
 .tspace{flex:1}
+.topbar-divider{width:1px;height:20px;background:var(--rim);flex-shrink:0}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn)}
 .sync-dot.err{background:var(--red);box-shadow:0 0 6px var(--red)}
 .sync-dot.busy{background:var(--gold);animation:blink 1s infinite}
@@ -154,14 +158,16 @@ html.light .topbar{background:rgba(255,255,255,.9);border-bottom-color:var(--rim
 .sb-toggle:hover{border-color:var(--pur);color:var(--pur)}
 
 /* ── MAIN CONTENT ── */
-.main-content{flex:1;margin-right:248px;display:flex;flex-direction:column;min-height:100vh}
+.main-content{flex:1;margin-right:248px;display:flex;flex-direction:column;min-height:100vh;background:var(--bg)}
 
 /* ── TABS (hidden, replaced by sidebar) ── */
 .tabs{display:none !important}
 
 /* ── PAGES ── */
-.page{display:none;padding:22px;animation:pageIn .3s cubic-bezier(.4,0,.2,1)}
+.page{display:none;padding:28px 24px;animation:pageIn .3s cubic-bezier(.4,0,.2,1)}
 .page.on{display:block}
+/* Wide screen content container */
+.page-inner{max-width:1400px;width:100%}
 @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -193,12 +199,19 @@ tbody tr:nth-child(5){animation-delay:.1s}
   .main-content{margin-right:0}
   .sb-toggle{display:flex}
   .tlogo{display:flex}
-  .page{padding:14px}
+  .page{padding:16px}
+  .api-kgrid{grid-template-columns:repeat(3,1fr)}
 }
-@media(max-width:768px){.kgrid{grid-template-columns:repeat(2,1fr)}.page{padding:12px}}
+@media(max-width:640px){
+  .page{padding:12px}
+  .api-kgrid{grid-template-columns:repeat(2,1fr)}
+  .lb-grid{grid-template-columns:1fr}
+  .hero{padding:20px}
+  .kval{font-size:28px}
+}
 
 /* ── HERO ── */
-.hero{background:linear-gradient(135deg,#110830 0%,#0b1540 55%,#060f1e 100%);border-radius:var(--r);padding:28px 32px;margin-bottom:22px;border:1px solid rgba(155,109,255,.2);position:relative;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.hero{background:linear-gradient(135deg,#110830 0%,#0b1540 55%,#060f1e 100%);border-radius:var(--r);padding:28px 32px;margin-bottom:24px;border:1px solid rgba(155,109,255,.2);position:relative;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4)}
 .hero::before{content:'';position:absolute;top:-50%;right:-3%;width:480px;height:480px;background:radial-gradient(circle,rgba(155,109,255,.12),transparent 60%);pointer-events:none}
 .hero::after{content:'';position:absolute;bottom:-40%;left:10%;width:300px;height:300px;background:radial-gradient(circle,rgba(79,138,255,.07),transparent 60%);pointer-events:none}
 .hero-greeting{font-size:26px;font-weight:900;margin-bottom:4px;background:linear-gradient(135deg,#fff 30%,rgba(155,109,255,.9) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:var(--ar-font)}
@@ -212,8 +225,11 @@ html.light .hero{background:linear-gradient(135deg,#f0eaff 0%,#e8eeff 55%,#eaf0f
 html.light .hero-greeting{background:linear-gradient(135deg,#1a1d2e 30%,var(--pur) 100%);-webkit-background-clip:text;background-clip:text}
 
 /* ── KPI ── */
-.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:14px;margin-bottom:22px}
-.kcard{background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r);padding:18px 16px 14px;position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s,border-color .22s;animation:slideUp .35s ease both}
+.kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+@media(min-width:1280px){.kgrid{grid-template-columns:repeat(6,1fr)}}
+@media(max-width:860px){.kgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.kgrid{grid-template-columns:repeat(1,1fr)}}
+.kcard{background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r);padding:20px 18px 50px;position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s,border-color .22s;animation:slideUp .35s ease both;min-height:110px}
 .kcard:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .kcard[onclick]{cursor:pointer}
 .kcard[onclick]:hover{border-color:var(--pur);box-shadow:0 10px 30px rgba(155,109,255,.2)}
@@ -223,14 +239,14 @@ html.light .hero-greeting{background:linear-gradient(135deg,#1a1d2e 30%,var(--pu
 .kcard.grn::before{background:linear-gradient(90deg,var(--grn),rgba(34,216,150,.5))}.kcard.blu::before{background:linear-gradient(90deg,var(--blu),rgba(79,138,255,.5))}
 .kcard.orn::before{background:linear-gradient(90deg,var(--orn),rgba(255,124,42,.5))}.kcard.pur::before{background:linear-gradient(90deg,var(--pur),rgba(155,109,255,.5))}
 .kcard-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-.kval{font-size:30px;font-weight:900;font-family:var(--mono);line-height:1.1;letter-spacing:-1px}
+.kval{font-size:36px;font-weight:900;font-family:var(--mono);line-height:1;letter-spacing:-1.5px;margin:4px 0 2px}
 .kcard.gold .kval{color:var(--gold)}.kcard.red .kval{color:var(--red)}
 .kcard.grn .kval{color:var(--grn)}.kcard.blu .kval{color:var(--blu)}
 .kcard.orn .kval{color:var(--orn)}.kcard.pur .kval{color:var(--pur)}
-.klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--mute);margin-bottom:8px;font-family:var(--ar-font)}
+.klbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--mute);margin-bottom:4px;font-family:var(--mono)}
 /* Sparkline area at bottom of kcard */
-.kcard-sparkline{position:absolute;bottom:0;left:0;right:0;height:36px;opacity:.55}
-.kcard-sparkline polyline,.kcard-sparkline path{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.kcard-sparkline{position:absolute;bottom:0;left:0;right:0;height:44px;opacity:.5}
+.kcard-sparkline polyline,.kcard-sparkline path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .kcard.gold .kcard-sparkline polyline{stroke:var(--gold)}
 .kcard.red .kcard-sparkline polyline{stroke:var(--red)}
 .kcard.grn .kcard-sparkline polyline{stroke:var(--grn)}
@@ -240,15 +256,34 @@ html.light .hero-greeting{background:linear-gradient(135deg,#1a1d2e 30%,var(--pu
 /* Pulse dot for critical card */
 .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;animation:pulseDot 1.5s ease infinite;flex-shrink:0}
 @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(255,58,92,.5)}50%{box-shadow:0 0 0 6px rgba(255,58,92,0)}}
-.kcard-actions{font-size:9px;color:var(--dim);margin-top:6px;display:flex;align-items:center;gap:4px}
+.kcard-actions{font-size:9px;color:var(--dim);margin-top:6px;display:flex;align-items:center;gap:4px;font-family:var(--ar-font)}
 .kcard-actions svg{width:10px;height:10px;opacity:.6}
+/* ── API KPI mini-cards ── */
+.api-kgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:1100px){.api-kgrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.api-kgrid{grid-template-columns:repeat(2,1fr)}}
+.api-kcard{background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r2);padding:16px 14px 12px;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;overflow:hidden}
+.api-kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.api-kcard.pur::before{background:var(--pur)}.api-kcard.red::before{background:var(--red)}
+.api-kcard.gold::before{background:var(--gold)}.api-kcard.grn::before{background:var(--grn)}
+.api-kcard.blu::before{background:var(--blu)}
+.api-kcard:hover{transform:translateY(-3px);border-color:var(--pur);box-shadow:0 6px 20px rgba(155,109,255,.15)}
+.api-kcard .kval{font-size:28px}
 
 /* ── CARD ── */
-.card{background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r);padding:20px;margin-bottom:16px;transition:border-color .2s}
-.card:hover{border-color:var(--rim2)}
-.ctitle{font-size:13px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;letter-spacing:-.1px;font-family:var(--ar-font)}
+.card{background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r);padding:22px;margin-bottom:16px;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--rim2);box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.ctitle{font-size:13.5px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;letter-spacing:-.1px;font-family:var(--ar-font)}
+/* Page section headers */
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.page-title{font-size:20px;font-weight:900;font-family:var(--ar-font);color:var(--white);display:flex;align-items:center;gap:10px}
+.page-title-accent{width:4px;height:24px;border-radius:2px;background:linear-gradient(180deg,var(--pur),var(--blu));flex-shrink:0}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 @media(max-width:860px){.g2{grid-template-columns:1fr}}
+/* Leaderboard grid - equal columns */
+.lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:800px){.lb-grid{grid-template-columns:1fr}}
+.lb-card{min-height:240px}
 
 /* ── TABLE ── */
 .tw{overflow-x:auto;border-radius:var(--r);overflow:hidden;border:1px solid var(--rim)}
@@ -366,18 +401,18 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--rim2);border-radius:3px}
 /* ── STAGING BANNER ── */
-#staging-banner{position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(90deg,#0a0c14,#12093a,#0a0c14);border-bottom:1px solid rgba(155,109,255,.3);padding:4px 0;text-align:center;font-size:10.5px;font-weight:700;color:rgba(155,109,255,.85);letter-spacing:.6px;box-shadow:0 1px 12px rgba(155,109,255,.12);font-family:'IBM Plex Mono',monospace}
-#staging-banner span{background:rgba(155,109,255,.08);padding:2px 14px;border-radius:99px;border:1px solid rgba(155,109,255,.25);display:inline-flex;align-items:center;gap:6px}
-#staging-banner span::before{content:'⬡';font-size:9px;opacity:.7}
-body:has(#staging-banner) #app{padding-top:30px}
-body:has(#staging-banner) #login-screen{padding-top:30px}
+#staging-banner{position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:99999!important;background:linear-gradient(90deg,#0a0c14,#14093e,#0a0c14)!important;border-bottom:2px solid rgba(155,109,255,.4)!important;padding:5px 0!important;text-align:center!important;font-size:11px!important;font-weight:700!important;color:rgba(180,140,255,.95)!important;letter-spacing:.7px!important;box-shadow:0 2px 20px rgba(155,109,255,.18)!important;font-family:'IBM Plex Mono',monospace!important;background-image:none!important;background-size:unset!important}
+#staging-banner .sb-inner{background:rgba(155,109,255,.1);padding:3px 18px;border-radius:99px;border:1px solid rgba(155,109,255,.3);display:inline-flex;align-items:center;gap:8px}
+#staging-banner .sb-dot{width:6px;height:6px;border-radius:50%;background:var(--pur,#9b6dff);display:inline-block;animation:pulseDot 2s ease infinite}
+body:has(#staging-banner) #app{padding-top:32px}
+body:has(#staging-banner) #login-screen{padding-top:32px}
 </style>
 </head>
 <body>
 
 <!-- STAGING INDICATOR -->
-<div id="staging-banner">
-  <span>🧪 بيئة تجريبية — التغييرات هنا لم تُطبَّق على النسخة الأصلية بعد</span>
+<div id="staging-banner" style="position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:99999!important;background:linear-gradient(90deg,#0a0c14,#14093e,#0a0c14)!important;border-bottom:2px solid rgba(155,109,255,.4)!important;padding:5px 0!important;text-align:center!important;font-size:11px!important;font-weight:700!important;color:rgba(180,140,255,.95)!important;letter-spacing:.7px!important;box-shadow:0 2px 20px rgba(155,109,255,.18)!important;font-family:'IBM Plex Mono',monospace!important">
+  <span class="sb-inner"><span class="sb-dot"></span> ⬡ بيئة تجريبية — التغييرات هنا لم تُطبَّق على الإنتاج بعد <span class="sb-dot"></span></span>
 </div>
 
 <!-- LOADING -->
@@ -461,7 +496,8 @@ body:has(#staging-banner) #login-screen{padding-top:30px}
       <div class="tlogo">🕊️ النورس <span class="tver">v3</span></div>
       <div class="tspace"></div>
       <span class="sync-dot" id="sync-dot"></span>
-      <span id="sync-txt" style="font-size:11px;color:var(--mute)">متصل</span>
+      <span id="sync-txt" style="font-size:11px;color:var(--mute);font-family:var(--ar-font)">متصل</span>
+      <div class="topbar-divider"></div>
       <div class="tclock" id="clock">--:--</div>
       <button class="theme-toggle" id="theme-btn-top" onclick="toggleTheme()" title="تبديل المظهر" style="display:flex">
         <svg id="theme-sun-top" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -549,30 +585,49 @@ body:has(#staging-banner) #login-screen{padding-top:30px}
     </div>
 
     <!-- API Shipments Summary -->
-    <div class="card" style="margin-bottom:16px;border-right:3px solid var(--pur)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
-        <div class="ctitle" style="margin-bottom:0">🔗 ملخص طرود API</div>
-        <button class="btn btn-pur btn-sm" onclick="gTab('api-shipments')" style="font-size:11px">عرض الكل ←</button>
+    <div style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:4px;height:22px;border-radius:2px;background:linear-gradient(180deg,var(--pur),var(--blu))"></div>
+          <div style="font-size:14px;font-weight:800;font-family:var(--ar-font);color:var(--white)">ملخص طرود API</div>
+          <span style="background:var(--prd);color:var(--pur);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--prb);font-family:var(--mono)" id="h-ak-badge">0</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')" style="gap:5px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          عرض الكل
+        </button>
       </div>
-      <div class="kgrid" style="margin-bottom:0" id="h-api-kpis">
-        <div style="background:var(--prd);border:1px solid var(--prb);border-radius:var(--r2);padding:12px;text-align:center;cursor:pointer" onclick="goAPIShipments('','')"><div style="font-size:22px;font-weight:900;color:var(--pur);font-family:var(--mono)" id="h-ak-total">0</div><div style="font-size:11px;color:var(--mute)">إجمالي طرود API</div></div>
-        <div style="background:var(--rd);border:1px solid var(--rb);border-radius:var(--r2);padding:12px;text-align:center;cursor:pointer" onclick="goAPIShipments('delay','critical')"><div style="font-size:22px;font-weight:900;color:var(--red);font-family:var(--mono)" id="h-ak-crit">0</div><div style="font-size:11px;color:var(--mute)">حرج +15 يوم</div></div>
-        <div style="background:var(--gd);border:1px solid var(--gb);border-radius:var(--r2);padding:12px;text-align:center;cursor:pointer" onclick="goAPIShipments('delay','warning')"><div style="font-size:22px;font-weight:900;color:var(--gold);font-family:var(--mono)" id="h-ak-warn">0</div><div style="font-size:11px;color:var(--mute)">تحذير 7-15 يوم</div></div>
-        <div style="background:var(--grd);border:1px solid var(--grb);border-radius:var(--r2);padding:12px;text-align:center;cursor:pointer" onclick="goAPIShipments('status','with_driver')"><div style="font-size:22px;font-weight:900;color:var(--grn);font-family:var(--mono)" id="h-ak-driver">0</div><div style="font-size:11px;color:var(--mute)">مع المندوب</div></div>
-        <div style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--r2);padding:12px;text-align:center;cursor:pointer" onclick="goAPIShipments('status','in_company')"><div style="font-size:22px;font-weight:900;color:var(--blu);font-family:var(--mono)" id="h-ak-comp">0</div><div style="font-size:11px;color:var(--mute)">في الشركة</div></div>
+      <div class="api-kgrid" id="h-api-kpis">
+        <div class="api-kcard pur" onclick="goAPIShipments('','')"><div class="klbl">إجمالي API</div><div class="kval" id="h-ak-total">0</div></div>
+        <div class="api-kcard red" onclick="goAPIShipments('delay','critical')"><div class="kcard-header"><div class="klbl">حرج +15 يوم</div><span class="pulse-dot"></span></div><div class="kval" id="h-ak-crit">0</div></div>
+        <div class="api-kcard gold" onclick="goAPIShipments('delay','warning')"><div class="klbl">تحذير 7-15 يوم</div><div class="kval" id="h-ak-warn">0</div></div>
+        <div class="api-kcard grn" onclick="goAPIShipments('status','with_driver')"><div class="klbl">مع المندوب</div><div class="kval" id="h-ak-driver">0</div></div>
+        <div class="api-kcard blu" onclick="goAPIShipments('status','in_company')"><div class="klbl">في الشركة</div><div class="kval" id="h-ak-comp">0</div></div>
       </div>
     </div>
 
-    <div class="g2">
-      <div class="card"><div class="ctitle">🏴 أكثر المناطق تأخيراً (API)</div><div id="area-lb"></div></div>
-      <div class="card"><div class="ctitle">👤 المناديب الأكثر تأخيراً (API)</div><div id="drv-lb"></div></div>
+    <div class="lb-grid">
+      <div class="card lb-card">
+        <div class="ctitle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16" style="color:var(--red)"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          أكثر المناطق تأخيراً (API)
+        </div>
+        <div id="area-lb"></div>
+      </div>
+      <div class="card lb-card">
+        <div class="ctitle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16" style="color:var(--gold)"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          المناديب الأكثر تأخيراً (API)
+        </div>
+        <div id="drv-lb"></div>
+      </div>
     </div>
   </div>
 
   <!-- ══ SHIPMENTS ══ -->
   <div class="page" id="tab-shipments">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div style="font-size:18px;font-weight:800">📦 متابعة الطرود</div>
+    <div class="page-hdr">
+      <div class="page-title"><span class="page-title-accent"></span>متابعة الطرود</div>
       <div style="display:flex;gap:7px">
         <button class="btn btn-ghost btn-sm" onclick="loadShipments()">↻ تحديث</button>
         <button class="btn btn-wa btn-sm" onclick="bulkWA()">💬 واتساب للمحددين</button>
@@ -1844,6 +1899,7 @@ function updateKPIs(){
   if(hak('h-ak-warn'))hak('h-ak-warn').textContent=akWarn;
   if(hak('h-ak-driver'))hak('h-ak-driver').textContent=akDrv;
   if(hak('h-ak-comp'))hak('h-ak-comp').textContent=akComp;
+  if(hak('h-ak-badge'))hak('h-ak-badge').textContent=apiShipments.length;
   // Hero counts: combine both sources
   const allTotal=shipments.length+apiShipments.length;
   const ud=[...new Set([...shipments.map(s=>s.driver_name),...apiShipments.map(s=>s.captain)].filter(Boolean))];
