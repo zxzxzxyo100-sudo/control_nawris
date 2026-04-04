@@ -611,6 +611,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="sb-item" data-tab="returns"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg></span> المرتجعات</div>
       <div class="sb-item" data-tab="transfers"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span> التحويلات</div>
       <div class="sb-item" data-tab="api-shipments"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span> طرود API <span class="tbadge" id="tb-api" style="background:var(--pur)">0</span></div>
+      <div class="sb-item" data-tab="janzour"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> متابعة جنزور <span class="tbadge" id="tb-janzour" style="background:var(--grn)">0</span></div>
       <div class="sb-item" data-tab="whatsapp"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> واتساب</div>
       <div class="sb-divider"></div>
       <div class="sb-section manager-only">الإدارة</div>
@@ -1129,6 +1130,66 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
   </div>
 
   <!-- ══ WHATSAPP ══ -->
+  <!-- ══ JANZOUR STORES MONITORING ══ -->
+  <div class="page" id="tab-janzour">
+    <div class="page-hdr">
+      <div class="page-title"><span class="page-title-accent"></span>متابعة متاجر جنزور</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-grn" id="j-cnt">0 طرد</span>
+        <button class="btn btn-pur btn-sm" onclick="buildJanzourSet();renderJanzour()">🔄 تحديث</button>
+        <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')">← طرود API الكاملة</button>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div class="kgrid" id="j-kgrid" style="margin-bottom:16px">
+      <div class="kcard grn"><div class="klbl">إجمالي جنزور</div><div class="kval" id="jk-total">0</div></div>
+      <div class="kcard red"><div class="klbl">حرج +15 يوم</div><div class="kval" id="jk-crit">0</div></div>
+      <div class="kcard gold"><div class="klbl">تحذير 7-15 يوم</div><div class="kval" id="jk-warn">0</div></div>
+      <div class="kcard blu"><div class="klbl">مع المندوب</div><div class="kval" id="jk-driver">0</div></div>
+      <div class="kcard pur"><div class="klbl">في الشركة</div><div class="kval" id="jk-comp">0</div></div>
+      <div class="kcard orn"><div class="klbl">متاجر نشطة</div><div class="kval" id="jk-stores">0</div></div>
+    </div>
+
+    <!-- Segments -->
+    <div class="segs" id="j-segs">
+      <div class="seg on" data-jseg="all">الكل <span class="seg-n" id="jsn-all">0</span></div>
+      <div class="seg" data-jseg="critical">🔴 حرج <span class="seg-n" id="jsn-crit">0</span></div>
+      <div class="seg" data-jseg="warning">🟡 تحذير <span class="seg-n" id="jsn-warn">0</span></div>
+      <div class="seg" data-jseg="ok">🟢 في الموعد <span class="seg-n" id="jsn-ok">0</span></div>
+      <div class="seg" data-jseg="driver">🚗 مع المندوب <span class="seg-n" id="jsn-driver">0</span></div>
+      <div class="seg" data-jseg="company">🏢 في الشركة <span class="seg-n" id="jsn-comp">0</span></div>
+    </div>
+
+    <!-- Filters — isolated from API tab -->
+    <div class="fbar" style="margin-top:10px">
+      <input class="fi fi-grow" id="j-q" type="text" placeholder="🔍 بحث بالمتجر، الكود، المندوب..." oninput="renderJanzour()">
+      <select class="fi" id="j-fcap" onchange="renderJanzour()"><option value="">كل المناديب</option></select>
+      <button class="btn btn-ghost btn-sm" onclick="resetJanzourFilters()">✕ مسح</button>
+    </div>
+    <div style="font-size:11px;color:var(--mute);margin-bottom:8px;margin-top:4px">
+      المتاجر المرتبطة: <span id="j-store-count" style="color:var(--grn);font-weight:700">0</span> متجر من البيانات الثابتة
+    </div>
+
+    <!-- Table -->
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#</th><th>المتجر / العميل</th><th>الكود</th>
+          <th>المندوب</th><th class="mob-hide">الفرع</th>
+          <th class="mob-hide">المحافظة</th><th>الحالة</th><th>التأخير</th>
+          <th>واتساب</th>
+        </tr></thead>
+        <tbody id="j-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--mute)">اضغط "جلب الآن" في طرود API لتحميل البيانات</td></tr></tbody>
+      </table>
+    </div>
+    <div style="padding:10px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--mute)" id="j-pginfo">—</span>
+      <div style="flex:1"></div>
+      <div class="pgn" id="j-pgn"></div>
+    </div>
+  </div>
+
   <div class="page" id="tab-whatsapp">
     <div style="font-size:18px;font-weight:800;margin-bottom:14px">💬 مراسلة المناديب</div>
     <div class="g2">
@@ -1894,6 +1955,7 @@ async function loadAll(){
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
     loadReturns();loadTransfers();loadDbStats();
+    buildJanzourSet(); // Sync Janzour store set from Supabase stores table
   }catch(e){setSyncState('err','خطأ');toast('خطأ في التحميل: '+e.message,'e');}
 }
 
@@ -3437,6 +3499,7 @@ function gTab(id){
     returns:renderReturns,
     transfers:renderTransfers,
     'api-shipments':()=>{loadCachedAPIShipments();updateAPIKPIs();renderAPIShipments();renderAPIFetchLog();},
+    janzour:()=>{buildJanzourSet();renderJanzour();},
     whatsapp:renderWA,
     reports:genDaily,
     staff:renderStaff,
@@ -3843,6 +3906,37 @@ function updateStatusFilters(){
 let apiShipments=[], apiSeg='all', aPage=1, aPER=25, apiChecked=new Set(), autoFetchTimer2=null;
 let apiFetchLog=[];
 
+// ══════════════════════════════════════════
+// JANZOUR STORES — Isolated view
+// ══════════════════════════════════════════
+// Populated dynamically from Supabase `stores` table (uploaded by user)
+// Falls back to a hardcoded seed list that can be updated anytime
+let JANZOUR_STORES_SEED=[
+  'nawris client','cmd delivery','سوق ليبيا','شركة مكنون','دارك هاوس',
+  'لطفي للساعات','متجر 125','featured store','samara','طلبيات شي ان','القمة'
+];
+let janzourStoreSet=new Set(); // lowercase+trimmed for fast O(1) lookup
+let janzourShipments=[];       // filtered subset — NEVER modified by API tab
+let janzourSeg='all', jPage=1, jPER=25;
+
+function buildJanzourSet(){
+  // Prefer live Supabase stores list over seed
+  const sourceNames= (typeof stores!=='undefined'&&stores.length)
+    ? stores.map(s=>(s.name||'').trim().toLowerCase()).filter(Boolean)
+    : JANZOUR_STORES_SEED.map(n=>n.trim().toLowerCase());
+  janzourStoreSet=new Set(sourceNames);
+  rebuildJanzourShipments();
+}
+function rebuildJanzourShipments(){
+  janzourShipments=apiShipments.filter(s=>{
+    const name=(s.client_name||'').trim().toLowerCase();
+    // Exact match OR partial match (store name is contained in client name)
+    if(janzourStoreSet.has(name))return true;
+    for(const sn of janzourStoreSet){if(name.includes(sn)||sn.includes(name))return true;}
+    return false;
+  });
+}
+
 function resetAPIFilters(){
   ['a-q','a-fd','a-fst','a-fdays','a-fcap','a-fbr','a-fgov'].forEach(id=>{
     const el=document.getElementById(id);
@@ -4041,7 +4135,10 @@ async function fetchAPIShipments(){
     updateKPIs();
     renderHome();
     renderStaff();
-    toast(`✅ ${apiShipments.length} طرد من API`,'s');
+    // ── Janzour: rebuild filtered subset (isolated, never touches main api tab) ──
+    buildJanzourSet();
+    if(document.getElementById('tab-janzour')?.classList.contains('on'))renderJanzour();
+    toast(`✅ ${apiShipments.length} طرد من API — جنزور: ${janzourShipments.length} طرد`,'s');
 
   }catch(e){
     if(el)el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
@@ -4258,6 +4355,121 @@ function renderAPIShipments(){
   }
 
   buildAPIPgn(total,totalP);
+}
+
+// ══════════════════════════════════════════
+// JANZOUR STORES — Render (fully isolated)
+// ══════════════════════════════════════════
+function setJSeg(s){
+  janzourSeg=s;jPage=1;
+  document.querySelectorAll('[data-jseg]').forEach(el=>el.classList.toggle('on',el.dataset.jseg===s));
+  renderJanzour();
+}
+document.addEventListener('click',e=>{
+  const jseg=e.target.closest('[data-jseg]');
+  if(jseg)setJSeg(jseg.dataset.jseg);
+});
+function resetJanzourFilters(){
+  ['j-q','j-fcap'].forEach(id=>{const el=document.getElementById(id);if(el){if(el.tagName==='INPUT')el.value='';else el.selectedIndex=0;}});
+  setJSeg('all');
+}
+
+function updateJanzourKPIs(list){
+  const total=janzourShipments.length;
+  const crit=janzourShipments.filter(s=>cls(s.delay_days)==='critical').length;
+  const warn=janzourShipments.filter(s=>cls(s.delay_days)==='warning').length;
+  const driver=janzourShipments.filter(s=>s.status==='with_driver').length;
+  const comp=janzourShipments.filter(s=>s.status==='in_company').length;
+  const activeStores=new Set(janzourShipments.map(s=>s.client_name)).size;
+  const el=id=>document.getElementById(id);
+  if(el('jk-total'))el('jk-total').textContent=total;
+  if(el('jk-crit'))el('jk-crit').textContent=crit;
+  if(el('jk-warn'))el('jk-warn').textContent=warn;
+  if(el('jk-driver'))el('jk-driver').textContent=driver;
+  if(el('jk-comp'))el('jk-comp').textContent=comp;
+  if(el('jk-stores'))el('jk-stores').textContent=activeStores;
+  if(el('tb-janzour'))el('tb-janzour').textContent=total;
+  if(el('j-store-count'))el('j-store-count').textContent=janzourStoreSet.size;
+  // Segment counts
+  if(el('jsn-all'))el('jsn-all').textContent=total;
+  if(el('jsn-crit'))el('jsn-crit').textContent=crit;
+  if(el('jsn-warn'))el('jsn-warn').textContent=warn;
+  if(el('jsn-ok'))el('jsn-ok').textContent=janzourShipments.filter(s=>cls(s.delay_days)==='ok').length;
+  if(el('jsn-driver'))el('jsn-driver').textContent=driver;
+  if(el('jsn-comp'))el('jsn-comp').textContent=comp;
+}
+
+function renderJanzour(){
+  if(!document.getElementById('j-tbody'))return;
+  // Rebuild filtered set in case stores were updated
+  rebuildJanzourShipments();
+  updateJanzourKPIs();
+
+  const q=(document.getElementById('j-q')?.value||'').toLowerCase().trim();
+  const fcap=document.getElementById('j-fcap')?.value||'';
+
+  // Populate captain filter dropdown (once)
+  const capEl=document.getElementById('j-fcap');
+  if(capEl&&capEl.options.length<=1){
+    const caps=[...new Set(janzourShipments.map(s=>s.captain).filter(Boolean))].sort();
+    capEl.innerHTML='<option value="">كل المناديب</option>'+caps.map(c=>`<option>${c}</option>`).join('');
+  }
+
+  // ── INDEPENDENT FILTER — does NOT affect apiShipments ──
+  let list=[...janzourShipments];
+
+  if(janzourSeg==='critical')list=list.filter(s=>cls(s.delay_days)==='critical');
+  else if(janzourSeg==='warning')list=list.filter(s=>cls(s.delay_days)==='warning');
+  else if(janzourSeg==='ok')list=list.filter(s=>cls(s.delay_days)==='ok');
+  else if(janzourSeg==='driver')list=list.filter(s=>s.status==='with_driver');
+  else if(janzourSeg==='company')list=list.filter(s=>s.status==='in_company');
+
+  if(fcap)list=list.filter(s=>s.captain===fcap);
+  if(q)list=list.filter(s=>`${s.client_name} ${s.tracking_code} ${s.captain} ${s.current_branch}`.toLowerCase().includes(q));
+
+  list.sort((a,b)=>b.delay_days-a.delay_days);
+
+  const total=list.length;
+  const totalP=Math.max(1,Math.ceil(total/jPER));
+  if(jPage>totalP)jPage=1;
+  const page=list.slice((jPage-1)*jPER,jPage*jPER);
+
+  const el=id=>document.getElementById(id);
+  if(el('j-cnt'))el('j-cnt').textContent=total+' طرد';
+
+  const tbody=el('j-tbody');
+  if(!page.length){
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--mute)">${janzourShipments.length?'🔍 لا نتائج مطابقة':'🔌 اضغط "جلب الآن" في طرود API لتحميل البيانات'}</td></tr>`;
+  } else {
+    tbody.innerHTML=page.map((s,i)=>{
+      const ph=s.customer_phone&&s.customer_phone!=='—'&&s.customer_phone!=='undefined';
+      const waBtn=ph?`<button class="btn btn-wa btn-sm" onclick="apiWA('${s.id}','receiver')" style="font-size:10px;padding:3px 6px">📱</button>`:'';
+      return`<tr class="pr" onclick="openAPIDetail('${s.id}')" style="cursor:pointer;${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
+        <td style="color:var(--dim);font-size:10px">${(jPage-1)*jPER+i+1}</td>
+        <td style="font-weight:700;color:var(--white);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.client_name}">${s.client_name||'—'}</td>
+        <td class="code-cell">${s.tracking_code}</td>
+        <td style="font-size:11px">${s.captain||'—'}</td>
+        <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
+        <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
+        <td>${stBadge(s.status)}</td>
+        <td>${dBadge(s.delay_days)}</td>
+        <td onclick="event.stopPropagation()">${waBtn}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Build pagination
+  const info=el('j-pginfo'),pgn=el('j-pgn');
+  if(total>0&&info){const s=(jPage-1)*jPER+1,e=Math.min(jPage*jPER,total);info.textContent=`${s}–${e} من ${total} طرد`;}
+  else if(info)info.textContent='لا نتائج';
+  if(pgn){
+    pgn.innerHTML='';
+    for(let i=Math.max(1,jPage-2);i<=Math.min(totalP,jPage+2);i++){
+      const b=document.createElement('button');
+      b.className='pgbtn'+(i===jPage?' on':'');b.textContent=i;
+      b.onclick=()=>{jPage=i;renderJanzour();};pgn.appendChild(b);
+    }
+  }
 }
 
 function buildAPIPgn(total,totalP){
