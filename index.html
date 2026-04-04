@@ -1796,7 +1796,16 @@ function loadUsers(){
   }catch(e){console.warn('loadUsers',e);}
   return JSON.parse(JSON.stringify(DEFAULT_USERS));
 }
-function saveUsers(users){ localStorage.setItem('nawris_users',JSON.stringify(users)); }
+function saveUsers(users){
+  localStorage.setItem('nawris_users',JSON.stringify(users));
+  // Sync to Supabase so all devices get updated permissions
+  const payload={key:'nawris_users',value:JSON.stringify(users)};
+  fetch(`${SB}/rest/v1/settings`,{
+    method:'POST',
+    headers:{...H,'Prefer':'resolution=merge-duplicates'},
+    body:JSON.stringify(payload)
+  }).catch(e=>console.warn('saveUsers to Supabase failed:',e));
+}
 let USERS = loadUsers();
 
 let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[], contact_results_db=[];
@@ -1958,6 +1967,34 @@ async function init(){
 async function startApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').classList.add('active');
+
+  // ── Fetch latest users from Supabase (multi-device sync) ──
+  try{
+    const cfg=await fetch(`${SB}/rest/v1/settings?key=eq.nawris_users&select=value`,{headers:H});
+    if(cfg.ok){
+      const rows=await cfg.json();
+      if(rows.length&&rows[0].value){
+        const fresh=JSON.parse(rows[0].value);
+        // Merge: apply Supabase data but keep any local-only users as fallback
+        Object.assign(USERS,fresh);
+        localStorage.setItem('nawris_users',JSON.stringify(USERS));
+        // Refresh current user's permissions from updated USERS
+        if(CU&&USERS[CU.username]){
+          const u=USERS[CU.username];
+          if(u.status==='inactive'){
+            // Account disabled — log out
+            sessionStorage.removeItem('nu');CU=null;
+            document.getElementById('app').classList.remove('active');
+            document.getElementById('login-screen').style.display='flex';
+            return;
+          }
+          CU={username:CU.username,...u};
+          sessionStorage.setItem('nu',JSON.stringify(CU));
+        }
+      }
+    }
+  }catch(e){console.warn('User sync from Supabase failed (offline?):', e);}
+
   applyRole();startClock();
   try{document.getElementById('hero-date').textContent=new Intl.DateTimeFormat('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date());}catch(e){document.getElementById('hero-date').textContent=new Date().toLocaleDateString('ar-LY',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
   // Show environment tag in hero
@@ -2052,6 +2089,21 @@ async function loadAll(){
       if(r.key==='mgrPhone')CFG.mgrPhone=r.value;
       if(r.key==='api_url'&&document.getElementById('api-url'))document.getElementById('api-url').value=r.value;
       if(r.key==='api_token'&&document.getElementById('api-token'))document.getElementById('api-token').value=r.value;
+      // Sync users from Supabase (handles case where startApp fetch missed it)
+      if(r.key==='nawris_users'){
+        try{
+          const fresh=JSON.parse(r.value);
+          Object.assign(USERS,fresh);
+          localStorage.setItem('nawris_users',JSON.stringify(USERS));
+          if(CU&&USERS[CU.username]){
+            const u=USERS[CU.username];
+            if(u.status==='inactive'){sessionStorage.removeItem('nu');location.reload();return;}
+            CU={username:CU.username,...u};
+            sessionStorage.setItem('nu',JSON.stringify(CU));
+            applyRole(); // Re-apply with fresh permissions
+          }
+        }catch(e){console.warn('users sync parse error',e);}
+      }
     });
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
