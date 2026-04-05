@@ -1197,7 +1197,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <th>#</th><th>المتجر / العميل</th><th>الكود</th>
           <th>المندوب</th><th class="mob-hide">الفرع</th>
           <th class="mob-hide">المحافظة</th><th>الحالة</th><th>التأخير</th>
-          <th>نتيجة المتابعة</th><th class="mob-hide">ملاحظة</th><th>حفظ</th>
+          <th>نتيجة المتابعة</th><th title="إلزامي قبل الحفظ">ماذا حدث في الطلب *</th><th>حفظ</th>
           <th>واتساب</th>
         </tr></thead>
         <tbody id="j-tbody"><tr><td colspan="12" style="text-align:center;padding:32px;color:var(--mute)">اضغط "جلب الآن" في طرود API لتحميل البيانات</td></tr></tbody>
@@ -1796,13 +1796,7 @@ function loadUsers(){
   }catch(e){console.warn('loadUsers',e);}
   return JSON.parse(JSON.stringify(DEFAULT_USERS));
 }
-function saveUsers(users){
-  localStorage.setItem('nawris_users',JSON.stringify(users));
-  // Sync to Supabase so all devices get updated permissions immediately
-  sbUp('settings',[{key:'nawris_users',value:JSON.stringify(users)}])
-    .then(()=>console.log('✅ Users synced to Supabase'))
-    .catch(e=>console.warn('⚠️ saveUsers Supabase sync failed:',e));
-}
+function saveUsers(users){ localStorage.setItem('nawris_users',JSON.stringify(users)); }
 let USERS = loadUsers();
 
 let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[], contact_results_db=[];
@@ -1964,40 +1958,6 @@ async function init(){
 async function startApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').classList.add('active');
-
-  // ── Fetch latest users from Supabase (multi-device sync) ──
-  try{
-    const rows=await sb('settings','GET',null,'?key=eq.nawris_users&select=value');
-    if(rows&&rows.length&&rows[0].value){
-      const fresh=JSON.parse(rows[0].value);
-      // Override local users with Supabase version (source of truth)
-      Object.keys(fresh).forEach(k=>USERS[k]=fresh[k]);
-      localStorage.setItem('nawris_users',JSON.stringify(USERS));
-      console.log('✅ Users loaded from Supabase:',Object.keys(USERS).length,'users');
-      // Refresh current user's session with latest permissions
-      if(CU&&USERS[CU.username]){
-        const u=USERS[CU.username];
-        if(u.status==='inactive'){
-          sessionStorage.removeItem('nu');CU=null;
-          document.getElementById('app').classList.remove('active');
-          document.getElementById('login-screen').style.display='flex';
-          return;
-        }
-        CU={username:CU.username,...u};
-        sessionStorage.setItem('nu',JSON.stringify(CU));
-      } else if(CU&&!USERS[CU.username]){
-        // User was deleted — log out
-        sessionStorage.removeItem('nu');CU=null;
-        document.getElementById('app').classList.remove('active');
-        document.getElementById('login-screen').style.display='flex';
-        return;
-      }
-    } else {
-      // No users in Supabase yet — push current local users to Supabase
-      sbUp('settings',[{key:'nawris_users',value:JSON.stringify(USERS)}]).catch(()=>{});
-    }
-  }catch(e){console.warn('⚠️ User sync from Supabase failed (offline?):', e);}
-
   applyRole();startClock();
   try{document.getElementById('hero-date').textContent=new Intl.DateTimeFormat('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date());}catch(e){document.getElementById('hero-date').textContent=new Date().toLocaleDateString('ar-LY',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
   // Show environment tag in hero
@@ -2092,21 +2052,6 @@ async function loadAll(){
       if(r.key==='mgrPhone')CFG.mgrPhone=r.value;
       if(r.key==='api_url'&&document.getElementById('api-url'))document.getElementById('api-url').value=r.value;
       if(r.key==='api_token'&&document.getElementById('api-token'))document.getElementById('api-token').value=r.value;
-      // Sync users from Supabase (handles case where startApp fetch missed it)
-      if(r.key==='nawris_users'){
-        try{
-          const fresh=JSON.parse(r.value);
-          Object.assign(USERS,fresh);
-          localStorage.setItem('nawris_users',JSON.stringify(USERS));
-          if(CU&&USERS[CU.username]){
-            const u=USERS[CU.username];
-            if(u.status==='inactive'){sessionStorage.removeItem('nu');location.reload();return;}
-            CU={username:CU.username,...u};
-            sessionStorage.setItem('nu',JSON.stringify(CU));
-            applyRole(); // Re-apply with fresh permissions
-          }
-        }catch(e){console.warn('users sync parse error',e);}
-      }
     });
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
@@ -4242,6 +4187,39 @@ let janzourShipments=[];       // filtered subset — NEVER modified by API tab
 let janzourSeg='all', janzourCrSeg='all', jPage=1, jPER=25;
 let sfPage=1; // Staff shipments table page
 
+/** Janzour tab: mandatory dropdown — what happened with the order (saved to contact_results.note) */
+const JANZOUR_ORDER_NOTE_OPTIONS=[
+  'تم تسليم الطرد للعميل',
+  'رفض العميل استلام الطرد',
+  'العميل غير متواجد',
+  'عنوان خاطئ أو ناقص',
+  'تأجيل التسليم بطلب العميل',
+  'تأجيل التسليم بطلب المتجر',
+  'لا يجيب على الهاتف',
+  'هاتف مغلق أو غير صحيح',
+  'مشكلة في محتويات الطرد',
+  'الطرد في الشركة — بانتظار إجراء',
+  'جاري التواصل — بانتظار رد العميل أو المتجر',
+  'تم الإرجاع للفرع',
+  'تم الحل — تأكيد تسليم لاحقاً',
+  'لا يوجد رد من المتجر أو العميل',
+  'طلب إلغاء من المتجر',
+  'طرد مكرر / خطأ في البيانات'
+];
+function janzourNoteSelectHtml(selectedNote){
+  const esc=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const safeTxt=t=>String(t).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let h='<option value="">— اختر ماذا حدث في الطلب —</option>';
+  JANZOUR_ORDER_NOTE_OPTIONS.forEach(t=>{
+    const sel=t===selectedNote?' selected':'';
+    h+=`<option value="${esc(t)}"${sel}>${safeTxt(t)}</option>`;
+  });
+  if(selectedNote&&!JANZOUR_ORDER_NOTE_OPTIONS.includes(selectedNote)){
+    h+=`<option value="${esc(selectedNote)}" selected>📝 ${safeTxt(selectedNote)}</option>`;
+  }
+  return h;
+}
+
 function buildJanzourSet(){
   // Prefer live Supabase stores list over seed
   const sourceNames= (typeof stores!=='undefined'&&stores.length)
@@ -4812,11 +4790,13 @@ function renderJanzour(){
             ${crOpts}
           </select>
         </td>
-        <td class="mob-hide" onclick="event.stopPropagation()">
-          <input class="fi" id="jnote-${i}" type="text" placeholder="ملاحظة..." value="${(crData.note||'').replace(/"/g,'&quot;')}" style="font-size:11px;padding:3px 6px;min-width:110px">
+        <td onclick="event.stopPropagation()" style="min-width:160px">
+          <select class="fi jnote-sel" id="jnote-${i}" style="font-size:11px;padding:3px 6px;min-width:140px;width:100%;max-width:280px">
+            ${janzourNoteSelectHtml(crData.note||'')}
+          </select>
         </td>
         <td onclick="event.stopPropagation()">
-          <button class="btn btn-pur btn-sm" onclick="saveJanzourCR('${sid}',${i})" style="font-size:10px;padding:4px 8px;white-space:nowrap">💾 حفظ</button>
+          <button type="button" class="btn btn-pur btn-sm" id="jsave-${i}" onclick="saveJanzourCR('${sid}',${i})" style="font-size:10px;padding:4px 8px;white-space:nowrap">💾 حفظ</button>
         </td>
         <td onclick="event.stopPropagation()">${waBtn}</td>
       </tr>`;
@@ -4853,11 +4833,15 @@ async function saveJanzourCR(sid,rowIdx){
   const noteEl=document.getElementById('jnote-'+rowIdx);
   const result=sel?sel.value:'';
   const note=noteEl?noteEl.value.trim():'';
-  const btn=document.querySelector(`button[onclick="saveJanzourCR('${sid}',${rowIdx})"]`);
+  const btn=document.getElementById('jsave-'+rowIdx);
+  if(!note){
+    toast('اختر «ماذا حدث في الطلب» من القائمة قبل الحفظ','w');
+    if(noteEl){noteEl.style.borderColor='var(--red)';noteEl.focus();setTimeout(()=>{noteEl.style.borderColor='';},2000);}
+    return;
+  }
   if(btn){btn.textContent='⏳';btn.disabled=true;}
   await saveCR(sid,result,note);
   if(btn){btn.textContent='✅';setTimeout(()=>{btn.textContent='💾 حفظ';btn.disabled=false;},1200);}
-  // Update dropdown color
   if(sel){
     const c=result==='solved'?'var(--grn)':result==='contacted'?'var(--blu)':result==='no_answer'?'var(--red)':result==='pending'?'var(--gold)':'';
     sel.style.color=c;sel.style.borderColor=c||'var(--rim)';
