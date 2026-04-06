@@ -560,10 +560,26 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
 </head>
 <body>
 
-<!-- STAGING INDICATOR -->
+<!-- STAGING INDICATOR (يُزال تلقائياً على نطاق الإنتاج — انظر السكربت التالي) -->
 <div id="staging-banner">
   <span class="sb-inner"><span class="sb-dot"></span> ⬡ بيئة تجريبية — nawris7-dev &nbsp;·&nbsp; التغييرات هنا لم تُطبَّق على الإنتاج بعد <span class="sb-dot"></span></span>
 </div>
+<script>
+(function(){
+  function nawrisIsStagingHost(){
+    var h=(location.hostname||'').toLowerCase();
+    if(h==='localhost'||h==='127.0.0.1'||h==='[::1]')return true;
+    if(h.indexOf('nawris7-dev')!==-1)return true;
+    if(h.indexOf('staging')!==-1)return true;
+    return false;
+  }
+  window.__NAWRIS_STAGING__=nawrisIsStagingHost();
+  if(!window.__NAWRIS_STAGING__){
+    var b=document.getElementById('staging-banner');
+    if(b&&b.parentNode)b.parentNode.removeChild(b);
+  }
+})();
+</script>
 
 <!-- LOADING -->
 <div id="loading">
@@ -1995,7 +2011,15 @@ async function startApp(){
   try{document.getElementById('hero-date').textContent=new Intl.DateTimeFormat('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date());}catch(e){document.getElementById('hero-date').textContent=new Date().toLocaleDateString('ar-LY',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
   // Show environment tag in hero
   const envTag=document.getElementById('hero-env-tag');
-  if(envTag){envTag.textContent='⬡ Staging / Dev';envTag.style.color='rgba(155,109,255,.75)';}
+  if(envTag){
+    if(window.__NAWRIS_STAGING__){
+      envTag.textContent='⬡ Staging / Dev';
+      envTag.style.color='rgba(155,109,255,.75)';
+    }else{
+      envTag.textContent='🛡 إنتاج';
+      envTag.style.color='rgba(120,200,150,.9)';
+    }
+  }
   await loadAll();
   gTab('home');
   loadStatusCfg();
@@ -2202,7 +2226,32 @@ async function saveCR(sid,result,note){
     // Update local cache
     if(existing){existing.result=result;existing.note=note;existing.updated_by=userName;}
     else contact_results_db.push(payload);
+    if(s)writeCrSnap(sid,s);
   }catch(e){console.error('saveCR exception:',e);toast('خطأ في الحفظ','e');}
+}
+/** Snapshot shipment labels to localStorage so staff rows still show names after the parcel drops off the API list */
+function writeCrSnap(sid,s){
+  if(!s)return;
+  const snap={
+    client_name:String(s.client_name||s.customer_name||'').trim(),
+    captain_name:String(s.captain||s.driver_name||'').trim(),
+    branch_name:String(s.current_branch||s.branch_name||'').trim()
+  };
+  if(!snap.client_name&&!snap.captain_name&&!snap.branch_name)return;
+  const json=JSON.stringify(snap);
+  const keys=new Set([String(sid)]);
+  if(s.id!=null&&s.id!=='')keys.add(String(s.id));
+  const tc=String(s.tracking_code||'').trim();
+  if(tc)keys.add(tc);
+  for(const k of keys){try{localStorage.setItem('cr_snap_v1_'+k,json);}catch(e){}}
+}
+function readCrSnapMulti(...ids){
+  for(const id of ids){
+    if(id==null||id===''||id==='—')continue;
+    const raw=localStorage.getItem('cr_snap_v1_'+String(id));
+    if(raw){try{const o=JSON.parse(raw);if(o&&typeof o==='object')return o;}catch{}}
+  }
+  return null;
 }
 function gf(...keys){return r=>{for(const k of keys){const v=r[k];if(v!==undefined&&String(v).trim()!=='')return String(v).trim();}return'';};}
 
@@ -4140,11 +4189,19 @@ function renderStaffShipments(){
             crResult:cr2.result||'',crNote:cr2.note||'',crBy:cr2.by||want,src:'DB'
           });
         } else {
+          const codeShow=(cr.tracking_code||'').trim()||sid.replace(/^api_/i,'')||'—';
+          const lsSnap=readCrSnapMulti(sid,canon,codeShow);
+          const snapStore=(String(cr.client_name||'').trim()||String(cr.store_name||'').trim()||(lsSnap&&lsSnap.client_name)||'').trim();
+          const snapCap=(String(cr.captain_name||'').trim()||(lsSnap&&lsSnap.captain_name)||'').trim();
+          const snapBr=(String(cr.branch_name||'').trim()||(lsSnap&&lsSnap.branch_name)||'').trim();
           list.push({
             _sid:canon,
-            code:(cr.tracking_code||'').trim()||sid.replace(/^api_/i,'')||'—',
-            store:'—',captain:'—',branch:'—',status:'—',delay:0,
-            crResult:cr.result||'',crNote:cr.note||'',crBy:cr.updated_by||want,src:'سجل'
+            code:codeShow,
+            store:snapStore||'تعذّر عرض اسم المتجر — الطرد لم يُعد ضمن آخر جلب من API',
+            captain:snapCap||'—',
+            branch:snapBr||'—',
+            status:'—',delay:0,
+            crResult:cr.result||'',crNote:cr.note||'',crBy:cr.updated_by||want,src:'أرشيف'
           });
         }
       }
@@ -4200,8 +4257,8 @@ function renderStaffShipments(){
     const stBadge=s.status==='with_driver'?'b-gold':s.status==='in_company'?'b-pur':s.status==='delivered'?'b-grn':s.status==='returned'?'b-red':'b-orn';
     const srcBadge=s.src==='API'
       ?`<span style="font-size:9px;background:var(--prd);color:var(--pur);border:1px solid var(--prb);border-radius:4px;padding:1px 5px">API</span>`
-      :s.src==='سجل'
-      ?`<span style="font-size:9px;background:var(--gd);color:var(--gold);border:1px solid var(--gb);border-radius:4px;padding:1px 5px">سجل</span>`
+      :s.src==='أرشيف'||s.src==='سجل'
+      ?`<span title="متابعة محفوظة لطرد لم يُعد يظهر في قائمة API الحالية — لذلك قد لا يظهر اسم المتجر" style="font-size:9px;background:var(--gd);color:var(--gold);border:1px solid var(--gb);border-radius:4px;padding:1px 5px;cursor:help">أرشيف</span>`
       :`<span style="font-size:9px;background:var(--bld);color:var(--blu);border:1px solid var(--blb);border-radius:4px;padding:1px 5px">DB</span>`;
     const rowBg=s.crResult?'':`style="opacity:.85"`;
     return`<tr ${rowBg}>
