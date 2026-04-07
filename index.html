@@ -5784,11 +5784,67 @@ function commissionClassifyDR(shipmentOrStatus){
   return 'o';
 }
 function commissionRound2(x){return Math.round(Number(x)*100)/100;}
+function isJanzourClientName(name){
+  const n=String(name||'').trim().toLowerCase();
+  if(!n)return false;
+  if(janzourStoreSet.has(n))return true;
+  for(const sn of janzourStoreSet){if(n.includes(sn)||sn.includes(n))return true;}
+  return false;
+}
+function resolveOutcomeFromCR(cr){
+  if(!cr)return '';
+  const byNote=janzourOutcomeFromNote(cr.note||'');
+  if(byNote)return byNote;
+  // "تم الحل" alone is not counted as delivered/returned in rates
+  return '';
+}
+function getJanzourAnalyticsPool(){
+  buildJanzourSet();
+  const byKey=new Map();
+  const keyOf=s=>String(s.tracking_code||s.id||'').trim();
+
+  // 1) Current Janzour API shipments
+  for(const s of janzourShipments){
+    const k=keyOf(s); if(!k)continue;
+    byKey.set(k,{
+      ...s,
+      _metricStatus: resolveJanzourOutcome(s)
+    });
+  }
+
+  // 2) Historical contact results (even if shipment dropped from API)
+  for(const cr of contact_results_db||[]){
+    const sid=String(cr.shipment_id||'').trim();
+    const tc=String(cr.tracking_code||'').trim();
+    const key=tc||sid;
+    if(!key)continue;
+    const api=apiShipments.find(x=>String(x.id)===sid || (tc && String(x.tracking_code)===tc));
+    const snap=readCrSnapMulti(sid,tc);
+    const clientName=String(api?.client_name||api?.customer_name||snap?.client_name||'').trim();
+    if(!isJanzourClientName(clientName))continue;
+    const metricStatus=resolveOutcomeFromCR(cr) || resolveJanzourOutcome(api||'');
+    const existing=byKey.get(key);
+    if(existing){
+      if(metricStatus) existing._metricStatus=metricStatus;
+      continue;
+    }
+    byKey.set(key,{
+      id: sid||key,
+      tracking_code: tc||key,
+      client_name: clientName||'—',
+      captain: String(api?.captain||api?.driver_name||snap?.captain_name||'').trim(),
+      current_branch: String(api?.current_branch||snap?.branch_name||'').trim(),
+      _metricStatus: metricStatus || ''
+    });
+  }
+  return Array.from(byKey.values());
+}
 /** تحديث لوحة «نسب ومعدلات جنزور» (يُستدعى عند فتح التبويب أو بعد تغيير بيانات API) */
 function refreshJanzourRatesPanels(){
   buildJanzourSet();
+  const pool=getJanzourAnalyticsPool();
   const el=document.getElementById('jr-cnt');
-  if(el)el.textContent=janzourShipments.length.toLocaleString('ar-LY')+' طرد في نطاق جنزور';
+  if(el)el.textContent=pool.length.toLocaleString('ar-LY')+' طرد في نطاق جنزور';
   renderJanzourMetricsTable();
   renderJanzourPerformanceOverview();
 }
@@ -5798,16 +5854,16 @@ function renderJanzourRatesPage(){
 function renderJanzourMetricsTable(){
   const tb=document.getElementById('j-metrics-tbody');
   if(!tb)return;
-  rebuildJanzourShipments();
-  if(!janzourShipments.length){
+  const pool=getJanzourAnalyticsPool();
+  if(!pool.length){
     tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--mute)">لا طرود في نطاق جنزور — جرّب الجلب أو تعريف المتاجر</td></tr>';
     return;
   }
   const buckets={};
-  for(const s of janzourShipments){
+  for(const s of pool){
     const key=(s.client_name||'—').trim()||'—';
     if(!buckets[key])buckets[key]={d:0,r:0};
-    const t=commissionClassifyDR(s);
+    const t=commissionClassifyDR(s._metricStatus||s);
     if(t==='d')buckets[key].d++;
     else if(t==='r')buckets[key].r++;
   }
@@ -5825,7 +5881,7 @@ function renderJanzourMetricsTable(){
 
 // ── لوحة أداء الفروع والمناديب (متاجر جنزور) ─────────────────
 function jperfClassifyShipment(s){
-  const st=resolveJanzourOutcome(s);
+  const st=resolveJanzourOutcome(s._metricStatus||s);
   if(st==='delivered')return 'd';
   if(st==='returned')return 'r';
   return 'p';
@@ -5877,8 +5933,7 @@ function drawJperfDonut(canvasId,d,r,p){
   ctx.fillText(inner,cx,cy+8);
 }
 function renderJanzourPerformanceOverview(){
-  rebuildJanzourShipments();
-  const list=janzourShipments;
+  const list=getJanzourAnalyticsPool();
   const tBr=document.getElementById('jperf-br-tbody');
   const tCap=document.getElementById('jperf-cap-tbody');
   if(!tBr||!tCap)return;
@@ -5923,8 +5978,7 @@ function renderJanzourPerformanceOverview(){
   renderJanzourPerfProfiles();
 }
 function renderJanzourPerfProfiles(){
-  rebuildJanzourShipments();
-  const list=janzourShipments;
+  const list=getJanzourAnalyticsPool();
   const brMap=jperfAggregateByKey(list,s=>s.current_branch||'');
   const capMap=jperfAggregateByKey(list,s=>s.captain||'');
   const sb=document.getElementById('jperf-br-sel');
