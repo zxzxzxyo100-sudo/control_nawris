@@ -443,6 +443,9 @@ tbody tr:last-child td{border-bottom:none}
 tbody tr.pr:hover td{background:rgba(124,77,255,.07)}
 tbody tr:hover td{background:rgba(124,77,255,.04)}
 .code-cell{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--blu);letter-spacing:.3px}
+a.bo-order-link{color:#2563eb;text-decoration:underline;cursor:pointer;font-family:var(--mono);font-weight:600}
+a.bo-order-link:hover{color:#1d4ed8}
+html.light a.bo-order-link{color:#1d4ed8}
 
 /* ── BADGES ── */
 .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap}
@@ -2732,9 +2735,9 @@ function renderShipments(){
     return`<tr class="pr" data-sid="${sid}" style="${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
       <td onclick="event.stopPropagation()"><input type="checkbox" data-sid="${sid}" ${checked.has(String(s.id))?'checked':''} onchange="this.checked?checked.add(this.dataset.sid):checked.delete(this.dataset.sid)"></td>
       <td style="color:var(--dim);font-size:10px;text-align:center">${(sPage-1)*PER+idx+1}</td>
-      <td class="code-cell">${s.tracking_code}</td>
+      <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
       <td style="color:var(--white);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis" title="${s.customer_name||''}">${s.customer_name||'—'}</td>
-      <td style="font-family:var(--mono);font-size:11px">${s.customer_phone&&s.customer_phone!=='—'?`<a href="tel:${s.customer_phone}" style="color:var(--blu)">${s.customer_phone}</a>`:'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${s.customer_phone&&s.customer_phone!=='—'?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
       <td style="color:var(--white)">${s.driver_name||'—'}${drvPhone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${drvPhone}</div>`:''}</td>
       <td style="font-size:11px;color:var(--mute)">${brn.name||s.branch_name||'—'}</td>
       <td style="font-size:11px;color:var(--pale)">${respBranch||'—'}</td>
@@ -2808,6 +2811,17 @@ function buildPgn(total,totalP){
 }
 function changePerPage(val){PER=parseInt(val)||25;sPage=1;renderShipments();}
 
+const BO_ORDER_BASE='https://backoffice.nawris.algoriza.com/orders/';
+function boEscHtml(t){return String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function boEscAttr(t){return String(t??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+/** رابط صفحة الطلب في باك أوفيس النوّرس؛ نص — أو فارغ بدون رابط */
+function backofficeOrderLinkHtml(code){
+  const c=String(code??'').trim();
+  if(!c||c==='—')return boEscHtml(c||'—');
+  const href=BO_ORDER_BASE+encodeURIComponent(c);
+  return'<a class="bo-order-link" href="'+boEscAttr(href)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">'+boEscHtml(c)+'</a>';
+}
+
 // ══════════════════════════════════════════
 // SHIPMENT DETAIL
 // ══════════════════════════════════════════
@@ -2830,21 +2844,21 @@ function openDetail(sid){
   let contactPhone=custPhone;
   if(!contactPhone||contactPhone==='—'){contactName=driverName;contactPhone=driverPhone;}
   if(!contactPhone||contactPhone==='—'){contactName=branchManager;contactPhone=branchManagerPhone;}
-  document.getElementById('sd-title').textContent=s.tracking_code;
+  document.getElementById('sd-title').innerHTML=backofficeOrderLinkHtml(s.tracking_code);
   document.getElementById('sd-body').innerHTML=`
     <div class="g2" style="margin-bottom:14px">
       <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--gold)">
         <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:9px">📦 بيانات الطرد</div>
-        ${rrow('الكود',`<span class="code-cell">${s.tracking_code}</span>`)}
+        ${rrow('الكود',backofficeOrderLinkHtml(s.tracking_code))}
         ${rrow('العميل',`<strong>${s.customer_name||'—'}</strong>`)}
-        ${rrow('هاتف العميل',custPhone?`<a href="tel:${custPhone}" style="color:var(--blu);font-family:var(--mono)">${custPhone}</a>`:'—')}
+        ${rrow('هاتف العميل',custPhone?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${custPhone}</span>`:'—')}
         ${rrow('الحالة',stBadge(s.status))}
         ${rrow('التأخير',dBadge(s.delay_days))}
       </div>
       <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--pur)">
         <div style="font-size:10px;font-weight:700;color:var(--pur);margin-bottom:9px">👤 المندوب والموقع</div>
         ${rrow('المندوب',`<strong>${driverName||'—'}</strong>`)}
-        ${rrow('هاتف المندوب',driverPhone?`<a href="tel:${driverPhone}" style="color:var(--blu);font-family:var(--mono)">${driverPhone}</a>`:'—')}
+        ${rrow('هاتف المندوب',driverPhone?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${driverPhone}</span>`:'—')}
         ${rrow('المنطقة',regionName||'—')}
         ${rrow('الفرع',branchName||'—')}
         ${rrow('مدير الفرع',branchManager||'—')}
@@ -2853,7 +2867,7 @@ function openDetail(sid){
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--grn);margin-bottom:14px">
       <div style="font-size:10px;font-weight:700;color:var(--grn);margin-bottom:9px">🔗 منطق التواصل الذكي</div>
       ${rrow('اسم المتواصَل معه',`<strong style="color:var(--grn)">${contactName||'—'}</strong>`)}
-      ${rrow('رقم التواصل',contactPhone&&contactPhone!=='—'?`<a href="tel:${contactPhone}" style="font-family:var(--mono);color:var(--grn)">${contactPhone}</a>`:'—')}
+      ${rrow('رقم التواصل',contactPhone&&contactPhone!=='—'?`<span style="font-family:var(--mono);color:var(--grn)" dir="ltr">${contactPhone}</span>`:'—')}
       ${rrow('التواصل',ctBadge(s.id))}
     </div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;margin-bottom:14px;border-right:3px solid var(--wa)">
@@ -2973,7 +2987,7 @@ function renderReturns(){
   const tbody=document.getElementById('r-tbody');
   if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mute)">لا مرتجعات</td></tr>';return;}
   tbody.innerHTML=list.map(r=>`<tr>
-    <td class="code-cell">${r.shipments?.tracking_code||'—'}</td>
+    <td class="code-cell">${backofficeOrderLinkHtml(r.shipments?.tracking_code||'—')}</td>
     <td>${r.shipments?.customer_name||'—'}</td>
     <td>${r.drivers?.name||'—'}</td>
     <td><span class="badge b-orn">${rsnMap[r.reason]||r.reason||'—'}</span></td>
@@ -3018,7 +3032,7 @@ function renderTransfers(){
   const tbody=document.getElementById('t-tbody');
   if(!list.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mute)">لا تحويلات</td></tr>';return;}
   tbody.innerHTML=list.map(t=>`<tr>
-    <td class="code-cell">${t.shipments?.tracking_code||'—'}</td>
+    <td class="code-cell">${backofficeOrderLinkHtml(t.shipments?.tracking_code||'—')}</td>
     <td>${t.from_branch?.name||'—'}</td>
     <td>${t.to_branch?.name||'—'}</td>
     <td><span class="badge ${t.status==='accepted'?'b-grn':t.status==='rejected'?'b-red':'b-gold'}">${stMap[t.status]||t.status}</span></td>
@@ -4138,7 +4152,7 @@ async function renderStaff(){
       const codesHtml=r.items.slice(0,50).map(it=>{
         const rc=it.result==='solved'?'var(--grn)':it.result==='contacted'?'var(--blu)':it.result==='no_answer'?'var(--red)':it.result==='pending'?'var(--gold)':'var(--mute)';
         const noteStr=it.note?` — <span style="color:var(--pale)">${it.note}</span>`:'';
-        return`<div style="font-size:10px;padding:2px 0;border-bottom:1px solid var(--rim)"><span class="code-cell" style="font-size:10px">${it.code}</span> <span style="color:${rc}">${crLabels[it.result]||'—'}</span>${noteStr}</div>`;
+        return`<div style="font-size:10px;padding:2px 0;border-bottom:1px solid var(--rim)"><span style="font-size:10px">${backofficeOrderLinkHtml(it.code)}</span> <span style="color:${rc}">${crLabels[it.result]||'—'}</span>${noteStr}</div>`;
       }).join('');
       return`<tr>
         <td><strong>${r.name}</strong><div style="font-size:10px;color:var(--dim)">${r.role==='manager'?'مدير':'موظف'}</div></td>
@@ -4468,7 +4482,7 @@ function renderStaffShipments(){
     return`<tr ${rowBg}>
       <td style="color:var(--dim);font-size:11px">${start+i+1}</td>
       <td style="max-width:170px"><div style="font-weight:700;font-size:12px;line-height:1.3">${s.store}</div><div style="margin-top:2px">${srcBadge}</div></td>
-      <td><span class="code-cell" style="font-size:11px">${s.code}</span></td>
+      <td class="code-cell" style="font-size:11px">${backofficeOrderLinkHtml(s.code)}</td>
       <td style="font-size:12px;font-weight:600">${s.captain}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--dim)">${s.branch||'—'}</td>
       <td><span class="badge ${stBadge}" style="font-size:10px">${statusLabel}</span></td>
@@ -5032,11 +5046,11 @@ function renderAPIShipments(){
     return`<tr class="pr" data-asid="${sid}" onclick="openAPIDetail('${sid}')" style="cursor:pointer;${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}${assignedTo===myName?';border-right:2px solid var(--pur)':''}">
       <td onclick="event.stopPropagation()"><input type="checkbox" data-asid="${sid}" ${apiChecked.has(sid)?'checked':''} onchange="this.checked?apiChecked.add(this.dataset.asid):apiChecked.delete(this.dataset.asid)" style="width:16px;height:16px"></td>
       <td class="mob-hide" style="color:var(--dim);font-size:10px;text-align:center">${(aPage-1)*aPER+idx+1}</td>
-      <td class="code-cell">${s.tracking_code}</td>
+      <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
       <td class="mob-hide" onclick="event.stopPropagation()">${assignCell}</td>
       <td style="color:var(--white);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.client_name||''}">${s.client_name||'—'}</td>
       <td class="mob-hide" style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.receiver_name||''}">${s.receiver_name||'—'}</td>
-      <td class="mob-hide" style="font-family:var(--mono);font-size:11px">${ph?`<a href="tel:${s.customer_phone}" style="color:var(--blu)">${s.customer_phone}</a>`:'—'}</td>
+      <td class="mob-hide" style="font-family:var(--mono);font-size:11px">${ph?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
       <td class="mob-hide" style="color:var(--white);font-size:11px">${s.captain||'—'}${s.captain_phone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${s.captain_phone}</div>`:''}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
@@ -5206,7 +5220,7 @@ function renderJanzour(){
       return`<tr class="pr" style="${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
         <td style="color:var(--dim);font-size:10px" onclick="openAPIDetail('${sid}')">${(jPage-1)*per+i+1}</td>
         <td style="font-weight:700;color:var(--white);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" title="${s.client_name}" onclick="openAPIDetail('${sid}')">${s.client_name||'—'}</td>
-        <td class="code-cell" style="cursor:pointer" onclick="openAPIDetail('${sid}')">${s.tracking_code}</td>
+        <td class="code-cell" style="cursor:pointer" onclick="openAPIDetail('${sid}')">${backofficeOrderLinkHtml(s.tracking_code)}</td>
         <td style="font-size:11px;cursor:pointer" onclick="openAPIDetail('${sid}')">${s.captain||'—'}</td>
         <td class="mob-hide" style="font-size:11px;color:var(--mute);cursor:pointer" onclick="openAPIDetail('${sid}')">${s.current_branch||'—'}</td>
         <td class="mob-hide" style="font-size:11px;color:var(--pale);cursor:pointer" onclick="openAPIDetail('${sid}')">${s.government||'—'}</td>
@@ -5310,7 +5324,7 @@ function changeAPIPerPage(val){aPER=parseInt(val)||25;aPage=1;renderAPIShipments
 
 // Global onclick handlers for API shipment buttons
 function openAPIDetail(sid){
-  const s=apiShipments.find(x=>x.id===sid);if(!s)return;
+  const s=apiShipments.find(x=>String(x.id)===String(sid));if(!s)return;
   const custPhone=s.customer_phone||'';
   const capPhone=s.captain_phone||'';
   const ph=custPhone&&custPhone!=='—'&&custPhone!=='undefined';
@@ -5328,15 +5342,15 @@ function openAPIDetail(sid){
   }
   const mgrPh=normPhone(branchManagerPhone);
 
-  document.getElementById('sd-title').textContent=s.tracking_code;
+  document.getElementById('sd-title').innerHTML=backofficeOrderLinkHtml(s.tracking_code);
   document.getElementById('sd-body').innerHTML=`
     <div class="g2" style="margin-bottom:14px">
       <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--gold)">
         <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:9px">📦 بيانات الطرد</div>
-        ${rrow('الكود',`<span class="code-cell">${s.tracking_code}</span>`)}
+        ${rrow('الكود',backofficeOrderLinkHtml(s.tracking_code))}
         ${rrow('المتجر / العميل',`<strong>${s.client_name||'—'}</strong>`)}
         ${rrow('المستلم',`<strong>${s.receiver_name||'—'}</strong>`)}
-        ${rrow('هاتف المستلم',ph?`<a href="tel:${custPhone}" style="color:var(--blu);font-family:var(--mono)">${custPhone}</a>`:'—')}
+        ${rrow('هاتف المستلم',ph?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${custPhone}</span>`:'—')}
         ${rrow('الحالة',stBadge(s.status))}
         ${rrow('الحالة الأصلية',`<span style="color:var(--pale)">${stLabel}</span>`)}
         ${rrow('التأخير',dBadge(s.delay_days))}
@@ -5344,18 +5358,18 @@ function openAPIDetail(sid){
       <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--pur)">
         <div style="font-size:10px;font-weight:700;color:var(--pur);margin-bottom:9px">👤 المندوب والموقع</div>
         ${rrow('المندوب',`<strong>${s.captain||'—'}</strong>`)}
-        ${rrow('هاتف المندوب',capPhone?`<a href="tel:${capPhone}" style="color:var(--blu);font-family:var(--mono)">${capPhone}</a>`:'—')}
+        ${rrow('هاتف المندوب',capPhone?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${capPhone}</span>`:'—')}
         ${rrow('المنطقة',s.area||'—')}
         ${rrow('المحافظة',s.government||'—')}
         ${rrow('الفرع',branchName||'—')}
         ${rrow('مدير الفرع',branchManager?`<strong>${branchManager}</strong>`:'—')}
-        ${rrow('هاتف المدير',mgrPh?`<a href="tel:${mgrPh}" style="color:var(--blu);font-family:var(--mono)">${mgrPh}</a>`:'—')}
+        ${rrow('هاتف المدير',mgrPh?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${mgrPh}</span>`:'—')}
       </div>
     </div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--grn);margin-bottom:14px">
       <div style="font-size:10px;font-weight:700;color:var(--grn);margin-bottom:9px">🔗 منطق التواصل الذكي</div>
       ${rrow('اسم المتواصَل معه',`<strong style="color:var(--grn)">${s.receiver_name||s.client_name||'—'}</strong>`)}
-      ${rrow('رقم التواصل',ph?`<a href="tel:${custPhone}" style="font-family:var(--mono);color:var(--grn)">${custPhone}</a>`:'—')}
+      ${rrow('رقم التواصل',ph?`<span style="font-family:var(--mono);color:var(--grn)" dir="ltr">${custPhone}</span>`:'—')}
     </div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;margin-bottom:14px;border-right:3px solid var(--wa)">
       <div style="font-size:10px;font-weight:700;color:var(--wa);margin-bottom:10px">💬 نظام التواصل الثلاثي</div>
