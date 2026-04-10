@@ -65,6 +65,10 @@ html.light .alert-banner{background:linear-gradient(90deg,rgba(224,45,74,.08),tr
 html.light thead th{background:var(--bg4);color:var(--dim);border-bottom-color:var(--rim2)}
 html.light .tw{border-color:var(--rim2)}
 html.light tbody td{border-bottom-color:var(--rim)}
+html.light .sd-panel{border-color:var(--rim2)}
+html.light .sd-triple-card{border-color:var(--rim2)}
+html.light .sd-phone{color:var(--dim)}
+html.light .sd-phone--smart{color:var(--grn)}
 html.light tbody tr.pr:hover td{background:rgba(124,77,219,.04)}
 html.light ::-webkit-scrollbar-thumb{background:var(--rim2)}
 html.light .seg{background:var(--bg4);border-color:var(--rim);color:var(--mute)}
@@ -234,9 +238,9 @@ tbody tr:nth-child(5){animation-delay:.1s}
   /* --- Base layout --- */
   .page{padding:10px}
   .lb-grid{grid-template-columns:1fr}
-  .hero{padding:18px 16px;margin-bottom:14px}
-  .hero-greeting{font-size:clamp(20px,5.5vw,26px)}
-  .kval{font-size:clamp(30px,9vw,40px)}
+  .hero{padding:16px 14px;margin-bottom:12px}
+  .hero-greeting{font-size:clamp(18px,4.8vw,22px)}
+  .kval{font-size:clamp(26px,8vw,34px)}
   .kgrid{gap:10px;margin-bottom:14px}
   .api-kgrid{grid-template-columns:repeat(2,1fr);gap:8px}
   .g2{grid-template-columns:1fr}
@@ -250,18 +254,18 @@ tbody tr:nth-child(5){animation-delay:.1s}
 
   /* --- Sidebar --- */
   .sidebar{width:100% !important}
-  .sb-item{padding:13px 16px;font-size:14px}
-  .sb-brand{padding:22px 18px 18px}
-  .sb-brand-text{font-size:16px}
+  .sb-item{padding:10px 14px;font-size:13px}
+  .sb-brand{padding:18px 16px 14px}
+  .sb-brand-text{font-size:15px}
 
-  /* --- Buttons — bigger touch targets --- */
-  .btn{min-height:42px;padding:9px 16px;font-size:13px}
-  .btn-sm{min-height:38px;padding:7px 13px;font-size:12px}
-  .btn-icon{width:38px;height:38px}
+  /* --- Buttons — مضغوط على الجوال --- */
+  .btn{min-height:36px;padding:7px 12px;font-size:12px}
+  .btn-sm{min-height:32px;padding:5px 10px;font-size:11px}
+  .btn-icon{width:34px;height:34px}
 
   /* --- Inputs & selects --- */
-  .fi,.fi-grow{min-height:42px;font-size:14px;padding:10px 13px}
-  select.fi{min-height:42px}
+  .fi,.fi-grow{min-height:38px;font-size:13px;padding:8px 11px}
+  select.fi{min-height:38px}
 
   /* --- Filters bar — stack vertically --- */
   .fbar{flex-direction:column;gap:8px}
@@ -271,17 +275,17 @@ tbody tr:nth-child(5){animation-delay:.1s}
   /* --- Segments — horizontal scroll --- */
   .segs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .segs::-webkit-scrollbar{display:none}
-  .seg{flex-shrink:0;min-height:38px;display:flex;align-items:center}
+  .seg{flex-shrink:0;min-height:34px;display:flex;align-items:center;padding:5px 12px;font-size:12px}
 
   /* --- Cards --- */
-  .card{padding:16px 14px;border-radius:16px}
-  .ctitle{font-size:14px}
+  .card{padding:14px 12px;border-radius:14px}
+  .ctitle{font-size:13px}
 
   /* --- Tables — horizontal scroll with sticky first col --- */
   .tw{border-radius:12px}
-  table{font-size:var(--fs-sm)}
-  thead th{padding:10px 11px;font-size:var(--fs-2xs)}
-  tbody td{padding:11px 12px}
+  table{font-size:13px}
+  thead th{padding:8px 9px;font-size:11px}
+  tbody td{padding:9px 10px}
 
   /* --- Alert banner --- */
   .alert-banner{padding:12px 14px;border-radius:14px;margin-bottom:14px}
@@ -291,6 +295,27 @@ tbody tr:nth-child(5){animation-delay:.1s}
   .modal{max-width:100%;max-height:92vh;border-radius:20px 20px 0 0;border-bottom:none}
   .mh{padding:16px 18px;position:sticky;top:0;background:var(--bg3);z-index:1}
   .mb{padding:16px 14px}
+  /* تفاصيل الطرد — عمود واحد، تنسيق مضغوط على الجوال */
+  .sd-detail-modal.modal{border-top:2px solid var(--pur)}
+  .sd-detail-modal .mh{padding:12px 14px;border-bottom:1px solid var(--rim)}
+  .sd-detail-modal .mt{font-size:clamp(15px,4vw,17px);word-break:break-word}
+  .sd-detail-modal .mclose{font-size:20px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center}
+  .sd-detail-modal .mb{padding:12px 12px 16px}
+  .sd-detail-modal .g2.sd-pair{grid-template-columns:1fr!important;gap:10px;margin-bottom:0}
+  .sd-panel{padding:12px 12px 10px}
+  .sd-panel-h{font-size:12px;margin-bottom:8px}
+  .sd-row{font-size:13px;padding:7px 0;gap:10px}
+  .sd-row-l{max-width:48%;font-size:12px}
+  .sd-triple{grid-template-columns:1fr!important;gap:10px}
+  .sd-triple-card{padding:12px 11px}
+  .sd-triple-ico{font-size:20px;margin-bottom:4px}
+  .sd-triple-title{font-size:13px;margin-bottom:4px}
+  .sd-triple-name{font-size:12px;color:var(--pale);margin-bottom:4px}
+  .sd-triple-phone{font-size:12px;margin-bottom:8px}
+  .sd-triple-card .btn{width:100%;justify-content:center;min-height:36px;font-size:12px!important;padding:6px 10px!important}
+  .sd-detail-modal .mf{padding:12px 14px;border-top:1px solid var(--rim)}
+  .sd-detail-modal .mf .btn{min-height:38px;font-size:12px}
+  .sd-panel .btn.btn-ghost.btn-sm,.sd-panel .btn.btn-red.btn-sm,.sd-panel .btn.btn-pur.btn-sm{flex:1;min-width:0!important;min-height:36px;font-size:12px!important}
 
   /* --- Assign panel — bottom sheet on mobile --- */
   #assign-panel{
@@ -320,18 +345,17 @@ tbody tr:nth-child(5){animation-delay:.1s}
   .mob-hide{display:none !important}
   /* Make visible columns wider and readable */
   #api-tw table{min-width:auto}
-  #api-tw .code-cell{font-size:var(--fs-sm);letter-spacing:0}
-  #api-tw tbody td{padding:12px 10px;font-size:var(--fs-sm)}
-  #api-tw thead th{padding:10px 9px}
-  /* Tap-friendly row height */
-  #api-tw tbody tr{min-height:52px}
+  #api-tw .code-cell{font-size:12px;letter-spacing:0}
+  #api-tw tbody td{padding:9px 8px;font-size:12px}
+  #api-tw thead th{padding:8px 7px;font-size:10px}
+  #api-tw tbody tr{min-height:44px}
   /* Hint that row is tappable */
   #api-tw tbody tr.pr::after{content:'›';position:absolute;left:10px;color:var(--dim);font-size:18px}
   #api-tw tbody tr.pr{position:relative}
 
   /* --- Page headers --- */
   .page-hdr{flex-direction:column;align-items:flex-start;gap:8px}
-  .page-title{font-size:clamp(18px,4.5vw,22px)}
+  .page-title{font-size:clamp(16px,4vw,19px)}
 
   /* --- Leaderboard --- */
   .lbsvg{width:60px}
@@ -347,8 +371,8 @@ tbody tr:nth-child(5){animation-delay:.1s}
 @media(max-width:400px){
   .kgrid{grid-template-columns:1fr}
   .api-kgrid{grid-template-columns:1fr}
-  .btn{font-size:var(--fs-sm)}
-  .kval{font-size:clamp(28px,10vw,36px)}
+  .btn{font-size:12px}
+  .kval{font-size:clamp(24px,9vw,30px)}
 }
 
 /* ── HERO ── */
@@ -527,6 +551,26 @@ html.light a.bo-order-link{color:#1d4ed8}
 .mh{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--rim)}
 .mt{font-size:18px;font-weight:800;line-height:1.35}
 .mt a.bo-order-link{font-size:1em}
+/* نافذة تفاصيل الطرد — أوضح على الجوال */
+.sd-detail-modal .mb{font-size:var(--fs-sm)}
+.sd-detail-modal .g2.sd-pair{gap:14px;margin-bottom:14px}
+.sd-panel{background:var(--bg4);border-radius:var(--r2);padding:16px 16px 14px;border:1px solid var(--rim2);border-right:3px solid var(--gold)}
+.sd-panel.pur-edge{border-right-color:var(--pur)}
+.sd-panel.grn-edge{border-right-color:var(--grn)}
+.sd-panel.wa-edge{border-right-color:var(--wa)}
+.sd-panel-h{font-size:var(--fs-xs);font-weight:800;margin-bottom:10px;font-family:var(--ar-font);letter-spacing:.02em}
+.sd-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--rim);font-size:var(--fs-sm);line-height:1.45}
+.sd-row:last-child{border-bottom:none}
+.sd-row-l{color:var(--mute);flex-shrink:0;max-width:44%;font-weight:600}
+.sd-row-v{text-align:left;color:var(--white);word-break:break-word;min-width:0}
+.sd-phone{display:block;font-family:var(--mono);color:var(--pale);font-weight:700;letter-spacing:.02em}
+.sd-phone--smart{color:var(--grn)}
+.sd-triple{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.sd-triple-card{background:var(--bg3);border:1px solid var(--rim2);border-radius:var(--r2);padding:14px 12px;text-align:center}
+.sd-triple-ico{font-size:22px;margin-bottom:6px;line-height:1}
+.sd-triple-title{font-size:var(--fs-sm);font-weight:800;color:var(--white);margin-bottom:6px}
+.sd-triple-name{font-size:var(--fs-sm);color:var(--mute);margin-bottom:6px;line-height:1.4;word-break:break-word}
+.sd-triple-phone{font-size:var(--fs-sm);margin-bottom:10px}
 .mclose{background:none;border:none;color:var(--mute);font-size:20px;cursor:pointer;line-height:1}
 .mclose:hover{color:var(--red)}
 .mb{padding:20px}
@@ -1855,7 +1899,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
 </div>
 
 <div class="overlay" id="sd-modal">
-  <div class="modal">
+  <div class="modal sd-detail-modal">
     <div class="mh"><div class="mt" id="sd-title">تفاصيل الطرد</div><button class="mclose" onclick="closeM('sd-modal')">✕</button></div>
     <div class="mb" id="sd-body"></div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeM('sd-modal')">إغلاق</button></div>
@@ -2862,63 +2906,63 @@ function openDetail(sid){
   if(!contactPhone||contactPhone==='—'){contactName=branchManager;contactPhone=branchManagerPhone;}
   document.getElementById('sd-title').innerHTML=backofficeOrderLinkHtml(s.tracking_code);
   document.getElementById('sd-body').innerHTML=`
-    <div class="g2" style="margin-bottom:14px">
-      <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--gold)">
-        <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:9px">📦 بيانات الطرد</div>
+    <div class="g2 sd-pair">
+      <div class="sd-panel">
+        <div class="sd-panel-h" style="color:var(--gold)">📦 بيانات الطرد</div>
         ${rrow('الكود',backofficeOrderLinkHtml(s.tracking_code))}
         ${rrow('العميل',`<strong>${s.customer_name||'—'}</strong>`)}
-        ${rrow('هاتف العميل',custPhone?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${custPhone}</span>`:'—')}
+        ${rrow('هاتف العميل',custPhone?`<span class="sd-phone" dir="ltr">${custPhone}</span>`:'—')}
         ${rrow('الحالة',stBadge(s.status))}
         ${rrow('التأخير',dBadge(s.delay_days))}
       </div>
-      <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--pur)">
-        <div style="font-size:10px;font-weight:700;color:var(--pur);margin-bottom:9px">👤 المندوب والموقع</div>
+      <div class="sd-panel pur-edge">
+        <div class="sd-panel-h" style="color:var(--pur)">👤 المندوب والموقع</div>
         ${rrow('المندوب',`<strong>${driverName||'—'}</strong>`)}
-        ${rrow('هاتف المندوب',driverPhone?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${driverPhone}</span>`:'—')}
+        ${rrow('هاتف المندوب',driverPhone?`<span class="sd-phone" dir="ltr">${driverPhone}</span>`:'—')}
         ${rrow('المنطقة',regionName||'—')}
         ${rrow('الفرع',branchName||'—')}
         ${rrow('مدير الفرع',branchManager||'—')}
       </div>
     </div>
-    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--grn);margin-bottom:14px">
-      <div style="font-size:10px;font-weight:700;color:var(--grn);margin-bottom:9px">🔗 منطق التواصل الذكي</div>
+    <div class="sd-panel grn-edge" style="margin-bottom:14px">
+      <div class="sd-panel-h" style="color:var(--grn)">🔗 منطق التواصل الذكي</div>
       ${rrow('اسم المتواصَل معه',`<strong style="color:var(--grn)">${contactName||'—'}</strong>`)}
-      ${rrow('رقم التواصل',contactPhone&&contactPhone!=='—'?`<span style="font-family:var(--mono);color:var(--grn)" dir="ltr">${contactPhone}</span>`:'—')}
+      ${rrow('رقم التواصل',contactPhone&&contactPhone!=='—'?`<span class="sd-phone sd-phone--smart" dir="ltr">${contactPhone}</span>`:'—')}
       ${rrow('التواصل',ctBadge(s.id))}
     </div>
-    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;margin-bottom:14px;border-right:3px solid var(--wa)">
-      <div style="font-size:10px;font-weight:700;color:var(--wa);margin-bottom:10px">💬 نظام التواصل الثلاثي</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">🏪</div>
-          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">الزبون / المتجر</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:8px">${s.customer_name||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${custPhone||'—'}</div>
-          <button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="sendToCustomer('${s.id}');closeM('sd-modal')">📱 تأكيد الوصول</button>
+    <div class="sd-panel wa-edge" style="margin-bottom:0">
+      <div class="sd-panel-h" style="color:var(--wa)">💬 نظام التواصل الثلاثي</div>
+      <div class="sd-triple">
+        <div class="sd-triple-card">
+          <div class="sd-triple-ico">🏪</div>
+          <div class="sd-triple-title">الزبون / المتجر</div>
+          <div class="sd-triple-name">${s.customer_name||'—'}</div>
+          <div class="sd-triple-phone"><span class="sd-phone" dir="ltr">${custPhone||'—'}</span></div>
+          <button class="btn btn-wa btn-sm" onclick="sendToCustomer('${s.id}');closeM('sd-modal')">📱 تأكيد الوصول</button>
         </div>
-        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">🚗</div>
-          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">المندوب</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${driverName||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${driverPhone||'—'}</div>
-          <button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="sendToDriver2('${s.id}');closeM('sd-modal')">📱 تأكيد التوجه</button>
+        <div class="sd-triple-card">
+          <div class="sd-triple-ico">🚗</div>
+          <div class="sd-triple-title">المندوب</div>
+          <div class="sd-triple-name">${driverName||'—'}</div>
+          <div class="sd-triple-phone"><span class="sd-phone" dir="ltr">${driverPhone||'—'}</span></div>
+          <button class="btn btn-wa btn-sm" onclick="sendToDriver2('${s.id}');closeM('sd-modal')">📱 تأكيد التوجه</button>
         </div>
-        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">🏢</div>
-          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">مدير الفرع</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${branchManager||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${branchManagerPhone||'—'}</div>
-          <button class="btn btn-red btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="sendToBranchManager('${s.id}');closeM('sd-modal')">🚨 تبليغ عن خطأ</button>
+        <div class="sd-triple-card">
+          <div class="sd-triple-ico">🏢</div>
+          <div class="sd-triple-title">مدير الفرع</div>
+          <div class="sd-triple-name">${branchManager||'—'}</div>
+          <div class="sd-triple-phone"><span class="sd-phone" dir="ltr">${branchManagerPhone||'—'}</span></div>
+          <button class="btn btn-red btn-sm" onclick="sendToBranchManager('${s.id}');closeM('sd-modal')">🚨 تبليغ عن خطأ</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="markCt('${s.id}');closeM('sd-modal')">✅ تم التواصل</button>
-        <button class="btn btn-red btn-sm" style="flex:1" onclick="openRetModal('${s.id}');closeM('sd-modal')">↩️ تسجيل مرتجع</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" style="flex:1;min-width:140px" onclick="markCt('${s.id}');closeM('sd-modal')">✅ تم التواصل</button>
+        <button class="btn btn-red btn-sm" style="flex:1;min-width:140px" onclick="openRetModal('${s.id}');closeM('sd-modal')">↩️ تسجيل مرتجع</button>
       </div>
     </div>`;
   document.getElementById('sd-modal').classList.add('on');
 }
-function rrow(l,v){return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--rim);font-size:12px"><span style="color:var(--mute)">${l}</span><span>${v}</span></div>`;}
+function rrow(l,v){return`<div class="sd-row"><span class="sd-row-l">${l}</span><span class="sd-row-v">${v}</span></div>`;}
 
 // ══════════════════════════════════════════
 // DRIVERS
@@ -5360,61 +5404,61 @@ function openAPIDetail(sid){
 
   document.getElementById('sd-title').innerHTML=backofficeOrderLinkHtml(s.tracking_code);
   document.getElementById('sd-body').innerHTML=`
-    <div class="g2" style="margin-bottom:14px">
-      <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--gold)">
-        <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:9px">📦 بيانات الطرد</div>
+    <div class="g2 sd-pair">
+      <div class="sd-panel">
+        <div class="sd-panel-h" style="color:var(--gold)">📦 بيانات الطرد</div>
         ${rrow('الكود',backofficeOrderLinkHtml(s.tracking_code))}
         ${rrow('المتجر / العميل',`<strong>${s.client_name||'—'}</strong>`)}
         ${rrow('المستلم',`<strong>${s.receiver_name||'—'}</strong>`)}
-        ${rrow('هاتف المستلم',ph?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${custPhone}</span>`:'—')}
+        ${rrow('هاتف المستلم',ph?`<span class="sd-phone" dir="ltr">${custPhone}</span>`:'—')}
         ${rrow('الحالة',stBadge(s.status))}
         ${rrow('الحالة الأصلية',`<span style="color:var(--pale)">${stLabel}</span>`)}
         ${rrow('التأخير',dBadge(s.delay_days))}
       </div>
-      <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--pur)">
-        <div style="font-size:10px;font-weight:700;color:var(--pur);margin-bottom:9px">👤 المندوب والموقع</div>
+      <div class="sd-panel pur-edge">
+        <div class="sd-panel-h" style="color:var(--pur)">👤 المندوب والموقع</div>
         ${rrow('المندوب',`<strong>${s.captain||'—'}</strong>`)}
-        ${rrow('هاتف المندوب',capPhone?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${capPhone}</span>`:'—')}
+        ${rrow('هاتف المندوب',capPhone?`<span class="sd-phone" dir="ltr">${capPhone}</span>`:'—')}
         ${rrow('المنطقة',s.area||'—')}
         ${rrow('المحافظة',s.government||'—')}
         ${rrow('الفرع',branchName||'—')}
         ${rrow('مدير الفرع',branchManager?`<strong>${branchManager}</strong>`:'—')}
-        ${rrow('هاتف المدير',mgrPh?`<span style="color:var(--blu);font-family:var(--mono)" dir="ltr">${mgrPh}</span>`:'—')}
+        ${rrow('هاتف المدير',mgrPh?`<span class="sd-phone" dir="ltr">${mgrPh}</span>`:'—')}
       </div>
     </div>
-    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;border-right:3px solid var(--grn);margin-bottom:14px">
-      <div style="font-size:10px;font-weight:700;color:var(--grn);margin-bottom:9px">🔗 منطق التواصل الذكي</div>
+    <div class="sd-panel grn-edge" style="margin-bottom:14px">
+      <div class="sd-panel-h" style="color:var(--grn)">🔗 منطق التواصل الذكي</div>
       ${rrow('اسم المتواصَل معه',`<strong style="color:var(--grn)">${s.receiver_name||s.client_name||'—'}</strong>`)}
-      ${rrow('رقم التواصل',ph?`<span style="font-family:var(--mono);color:var(--grn)" dir="ltr">${custPhone}</span>`:'—')}
+      ${rrow('رقم التواصل',ph?`<span class="sd-phone sd-phone--smart" dir="ltr">${custPhone}</span>`:'—')}
     </div>
-    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;margin-bottom:14px;border-right:3px solid var(--wa)">
-      <div style="font-size:10px;font-weight:700;color:var(--wa);margin-bottom:10px">💬 نظام التواصل الثلاثي</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">🏪</div>
-          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">الزبون / المتجر</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${s.receiver_name||s.client_name||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${custPhone||'—'}</div>
-          ${ph?`<button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="apiWA('${sid}','receiver');closeM('sd-modal')">📱 تأكيد الوصول</button>`:`<div style="font-size:10px;color:var(--mute)">لا رقم</div>`}
+    <div class="sd-panel wa-edge" style="margin-bottom:0">
+      <div class="sd-panel-h" style="color:var(--wa)">💬 نظام التواصل الثلاثي</div>
+      <div class="sd-triple">
+        <div class="sd-triple-card">
+          <div class="sd-triple-ico">🏪</div>
+          <div class="sd-triple-title">الزبون / المتجر</div>
+          <div class="sd-triple-name">${s.receiver_name||s.client_name||'—'}</div>
+          <div class="sd-triple-phone"><span class="sd-phone" dir="ltr">${custPhone||'—'}</span></div>
+          ${ph?`<button class="btn btn-wa btn-sm" onclick="apiWA('${sid}','receiver');closeM('sd-modal')">📱 تأكيد الوصول</button>`:`<div class="sd-triple-name" style="margin-bottom:0">لا رقم</div>`}
         </div>
-        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">🚗</div>
-          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">المندوب</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${s.captain||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${capPhone||'—'}</div>
-          ${capPhone?`<button class="btn btn-wa btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="apiWA('${sid}','captain');closeM('sd-modal')">📱 تأكيد التوجه</button>`:`<div style="font-size:10px;color:var(--mute)">لا رقم</div>`}
+        <div class="sd-triple-card">
+          <div class="sd-triple-ico">🚗</div>
+          <div class="sd-triple-title">المندوب</div>
+          <div class="sd-triple-name">${s.captain||'—'}</div>
+          <div class="sd-triple-phone"><span class="sd-phone" dir="ltr">${capPhone||'—'}</span></div>
+          ${capPhone?`<button class="btn btn-wa btn-sm" onclick="apiWA('${sid}','captain');closeM('sd-modal')">📱 تأكيد التوجه</button>`:`<div class="sd-triple-name" style="margin-bottom:0">لا رقم</div>`}
         </div>
-        <div style="background:var(--bg3);border-radius:var(--r2);padding:10px;text-align:center">
-          <div style="font-size:18px;margin-bottom:4px">🏢</div>
-          <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px">مدير الفرع</div>
-          <div style="font-size:10px;color:var(--mute);margin-bottom:2px">${branchManager||'—'}</div>
-          <div style="font-size:10px;color:var(--blu);font-family:var(--mono);margin-bottom:8px">${mgrPh||'—'}</div>
-          ${mgrPh?`<button class="btn btn-red btn-sm" style="width:100%;justify-content:center;font-size:11px" onclick="apiWAManager('${sid}','${mgrPh.replace(/'/g,"\\'")}','${branchManager.replace(/'/g,"\\'")}');closeM('sd-modal')">🚨 تبليغ عن خطأ</button>`:`<div style="font-size:10px;color:var(--mute)">لا رقم</div>`}
+        <div class="sd-triple-card">
+          <div class="sd-triple-ico">🏢</div>
+          <div class="sd-triple-title">مدير الفرع</div>
+          <div class="sd-triple-name">${branchManager||'—'}</div>
+          <div class="sd-triple-phone"><span class="sd-phone" dir="ltr">${mgrPh||'—'}</span></div>
+          ${mgrPh?`<button class="btn btn-red btn-sm" onclick="apiWAManager('${sid}','${mgrPh.replace(/'/g,"\\'")}','${branchManager.replace(/'/g,"\\'")}');closeM('sd-modal')">🚨 تبليغ عن خطأ</button>`:`<div class="sd-triple-name" style="margin-bottom:0">لا رقم</div>`}
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeM('sd-modal')">✅ تم التواصل</button>
-        <button class="btn btn-pur btn-sm" style="flex:1" onclick="apiMove('${sid}');closeM('sd-modal')">📦 نقل للطرود الرئيسية</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" style="flex:1;min-width:140px" onclick="closeM('sd-modal')">✅ تم التواصل</button>
+        <button class="btn btn-pur btn-sm" style="flex:1;min-width:140px" onclick="apiMove('${sid}');closeM('sd-modal')">📦 نقل للطرود الرئيسية</button>
       </div>
     </div>`;
   document.getElementById('sd-modal').classList.add('on');
