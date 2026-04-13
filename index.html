@@ -4792,12 +4792,11 @@ function janzourNoteSelectHtml(selectedNote){
 }
 
 function buildJanzourSet(){
-  /* ادمج القائمة الافتراضية مع جدول المتاجر: إن حجب RLS جدول stores عن موظف لا يفقد نطاق جنزور بالكامل، والمدير يحصل على الاتحاد كاملاً */
-  const seed=JANZOUR_STORES_SEED.map(n=>n.trim().toLowerCase()).filter(Boolean);
+  /* اعتماد نطاق جنزور على جدول المتاجر في البيانات الثابتة فقط (بدون seed افتراضي) */
   const fromDb=(typeof stores!=='undefined'&&stores.length)
     ? stores.map(s=>(s.name||'').trim().toLowerCase()).filter(Boolean)
     : [];
-  janzourStoreSet=new Set([...seed,...fromDb]);
+  janzourStoreSet=new Set(fromDb);
   rebuildJanzourShipments();
 }
 function rebuildJanzourShipments(){
