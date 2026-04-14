@@ -4002,6 +4002,17 @@ async function uploadShipments(rows,forceStatus){
   const normalized=data.map(r=>{const n={};allKeys.forEach(k=>n[k]=r[k]!==undefined?r[k]:null);return n;});
 
   try{
+    // Manual Excel upload works in "replace mode":
+    // remove historical accumulation, keep only current uploaded file parcels.
+    const clearRes=await fetch(`${SB}/rest/v1/shipments?id=not.is.null`,{
+      method:'DELETE',
+      headers:{...H,'Prefer':'return=minimal'}
+    });
+    if(!clearRes.ok){
+      const ce=await clearRes.text();
+      throw new Error('فشل مسح الطرود القديمة قبل الرفع: '+ce.substring(0,120));
+    }
+
     let uploaded=0;
     for(let i=0;i<normalized.length;i+=100){
       const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
@@ -4010,7 +4021,7 @@ async function uploadShipments(rows,forceStatus){
         body:JSON.stringify(normalized.slice(i,i+100))
       });
       if(!res.ok){const e=await res.text();throw new Error('فشل رفع shipments: '+e.substring(0,120));}
-      uploaded+=200;
+      uploaded+=normalized.slice(i,i+100).length;
     }
     // Count linked
     const linkedD=data.filter(d=>d.driver_id).length;
@@ -4019,7 +4030,7 @@ async function uploadShipments(rows,forceStatus){
     const storeMsg=registeredStoreCount>0?`<br>🟢 متجر مسجل: ${registeredStoreCount} | ⚪ غير مسجل: ${data.length-registeredStoreCount}`:'';
     el.innerHTML=`<span style="color:var(--grn)">✅ تم رفع ${data.length} طرد (${statusLabel})<br>
       🚗 مرتبط بمندوب: ${linkedD} | 🏪 مرتبط بمتجر: ${linkedS} | 🗺️ مرتبط بمنطقة: ${linkedR}${storeMsg}</span>`;
-    toast(`✅ ${data.length} طرد — متجر: ${linkedS} | مندوب: ${linkedD}`,'s');
+    toast(`✅ تم استبدال البيانات بـ ${data.length} طرد (بدون تراكم تاريخي)`,'s');
     await loadShipments();loadDbStats();
     setSyncState('ok','متصل');
   }catch(e){
