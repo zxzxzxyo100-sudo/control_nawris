@@ -2514,79 +2514,29 @@ async function saveCR(sid,result,note){
   const userName=CU?.name||'—';
   const payload={shipment_id:sidStr,tracking_code:trackingCode,result:result||'',note:note||'',updated_by:userName};
   try{
-    // Prefer upsert on tracking_code; fallback for DBs without unique constraint on tracking_code (42P10)
-    let row=null;
-    const applyLocal=(r0)=>{
-      const existing=contact_results_db.find(x=>
-        (r0.id&&String(x.id||'')===String(r0.id))
-        || (trackingCode&&normalizeTrackingKey(x.tracking_code)===trackingCode)
-        || (sidKey&&normalizeTrackingKey(x.shipment_id)===sidKey)
-      );
-      if(existing)Object.assign(existing,r0);
-      else contact_results_db.push(r0);
-    };
-
+    // Upsert by tracking_code (الأكثر ثباتاً بين API/Supabase) لتفادي ضياع السجل عند اختلاف shipment_id
     const conflictKey=trackingCode?'tracking_code':'shipment_id';
-    const upsertUrl=`${SB}/rest/v1/contact_results?on_conflict=${encodeURIComponent(conflictKey)}`;
-    let r=await fetch(upsertUrl,{
+    const url=`${SB}/rest/v1/contact_results?on_conflict=${encodeURIComponent(conflictKey)}`;
+    const r=await fetch(url,{
       method:'POST',
       headers:{...H,'Prefer':'resolution=merge-duplicates,return=representation'},
       body:JSON.stringify([payload])
     });
-    if(r.ok){
-      try{
-        const arr=await r.json();
-        if(Array.isArray(arr)&&arr[0])row=arr[0];
-      }catch(_){}
-    }else{
-      const errTxt=await r.text();
-      // 42P10 => no unique constraint for on_conflict, so do manual update/insert
-      if(errTxt.includes('42P10')||errTxt.toLowerCase().includes('no unique or exclusion constraint')){
-        let found=null;
-        if(trackingCode){
-          const byTc=await fetch(`${SB}/rest/v1/contact_results?select=*&tracking_code=eq.${encodeURIComponent(trackingCode)}&limit=1`,{headers:H});
-          if(byTc.ok){
-            const arr=await byTc.json();
-            if(Array.isArray(arr)&&arr[0])found=arr[0];
-          }
-        }
-        if(!found&&sidStr){
-          const bySid=await fetch(`${SB}/rest/v1/contact_results?select=*&shipment_id=eq.${encodeURIComponent(sidStr)}&limit=1`,{headers:H});
-          if(bySid.ok){
-            const arr=await bySid.json();
-            if(Array.isArray(arr)&&arr[0])found=arr[0];
-          }
-        }
-        if(found){
-          const pr=await fetch(`${SB}/rest/v1/contact_results?id=eq.${encodeURIComponent(String(found.id))}`,{
-            method:'PATCH',
-            headers:{...H,'Prefer':'return=representation'},
-            body:JSON.stringify(payload)
-          });
-          if(!pr.ok){const e=await pr.text();toast('خطأ في حفظ النتيجة: '+e.substring(0,80),'e');return false;}
-          try{
-            const arr=await pr.json();
-            if(Array.isArray(arr)&&arr[0])row=arr[0];
-          }catch(_){}
-        }else{
-          const ir=await fetch(`${SB}/rest/v1/contact_results`,{
-            method:'POST',
-            headers:{...H,'Prefer':'return=representation'},
-            body:JSON.stringify([payload])
-          });
-          if(!ir.ok){const e=await ir.text();toast('خطأ في حفظ النتيجة: '+e.substring(0,80),'e');return false;}
-          try{
-            const arr=await ir.json();
-            if(Array.isArray(arr)&&arr[0])row=arr[0];
-          }catch(_){}
-        }
-      }else{
-        toast('خطأ في حفظ النتيجة: '+errTxt.substring(0,80),'e');return false;
-      }
-    }
-
+    if(!r.ok){const e=await r.text();toast('خطأ في حفظ النتيجة: '+e.substring(0,80),'e');return false;}
+    let row=null;
+    try{
+      const arr=await r.json();
+      if(Array.isArray(arr)&&arr[0])row=arr[0];
+    }catch(_){}
     if(!row)row=payload;
-    applyLocal(row);
+    // Update local cache by id OR normalized tracking/shipment keys
+    const existing=contact_results_db.find(x=>
+      (row.id&&String(x.id||'')===String(row.id))
+      || (trackingCode&&normalizeTrackingKey(x.tracking_code)===trackingCode)
+      || (sidKey&&normalizeTrackingKey(x.shipment_id)===sidKey)
+    );
+    if(existing)Object.assign(existing,row);
+    else contact_results_db.push(row);
     invalidateCrLookup();
     if(s)writeCrSnap(sid,s);
     return true;
