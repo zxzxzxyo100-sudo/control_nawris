@@ -1506,7 +1506,9 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span class="badge b-grn" id="sf-cnt">0 طرد</span>
           <select class="fi" id="sf-fsrc" onchange="renderStaffShipments()" style="font-size:11px;min-width:110px">
-            <option value="API">📡 طرود API فقط</option>
+            <option value="">كل المصادر</option>
+            <option value="API">📡 طرود API</option>
+            <option value="DB">🗄️ طرود Supabase</option>
           </select>
           <select class="fi" id="sf-femp" onchange="renderStaffShipments()" style="font-size:11px;min-width:130px"><option value="">كل الموظفين</option></select>
           <select class="fi" id="sf-fres" onchange="renderStaffShipments()" style="font-size:11px;min-width:130px">
@@ -4363,13 +4365,13 @@ async function renderStaff(){
     else if(cr.result==='no_answer')totalNoAnswer++;
     else if(cr.result==='pending')totalPending++;
   });
-  const combinedTotal=apiShipments.length;
+  const combinedTotal=shipments.length+apiShipments.length;
   totalNone=Math.max(0,combinedTotal-totalFollowed);
 
   // KPIs
   document.getElementById('staff-kpis').innerHTML=`
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--gold);font-family:var(--mono)">${shipments.length}</div><div style="font-size:11px;color:var(--mute)">طرود Supabase</div></div>
     <div style="background:var(--prd);border:1px solid var(--prb);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--pur);font-family:var(--mono)">${apiShipments.length}</div><div style="font-size:11px;color:var(--mute)">طرود API</div></div>
-    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--white);font-family:var(--mono)">${totalFollowed}</div><div style="font-size:11px;color:var(--mute)">تمت متابعتها</div></div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--white);font-family:var(--mono)">${combinedTotal}</div><div style="font-size:11px;color:var(--mute)">الإجمالي الكلي</div></div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--grn);font-family:var(--mono)">${totalFollowed}</div><div style="font-size:11px;color:var(--mute)">تمت متابعتها</div></div>
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--red);font-family:var(--mono)">${totalNone}</div><div style="font-size:11px;color:var(--mute)">بدون متابعة</div></div>
@@ -4399,7 +4401,7 @@ async function renderStaff(){
     tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا توجد بيانات متابعة بعد — اضغط 💾 لحفظ نتائج التواصل</td></tr>';
   } else {
     tbody.innerHTML=rows.filter(r=>r.followed>0).map(r=>{
-      const pct=apiShipments.length?Math.round(r.followed/apiShipments.length*100):0;
+      const pct=shipments.length?Math.round(r.followed/shipments.length*100):0;
       const pctColor=pct>70?'var(--grn)':pct>30?'var(--gold)':'var(--red)';
       const codesHtml=r.items.slice(0,50).map(it=>{
         const rc=it.result==='solved'?'var(--grn)':it.result==='contacted'?'var(--blu)':it.result==='no_answer'?'var(--red)':it.result==='pending'?'var(--gold)':'var(--mute)';
@@ -4530,7 +4532,7 @@ function renderStaffShipments(){
   const q=(document.getElementById('sf-q')?.value||'').trim().toLowerCase();
   const fRes=document.getElementById('sf-fres')?.value||'';
   const fEmp=document.getElementById('sf-femp')?.value||'';
-  const fSrc='API';
+  const fSrc=document.getElementById('sf-fsrc')?.value||'';
   const perSel=parseInt(document.getElementById('sf-per')?.value||'50',10);
   const assignments=getAPIAssignments();
 
@@ -4541,7 +4543,7 @@ function renderStaffShipments(){
     apiById.set(String(s.id),s);
     if(s.tracking_code!=null&&s.tracking_code!=='')apiByCode.set(String(s.tracking_code),s);
   }
-  const shipById=new Map();
+  const shipById=new Map(shipments.map(s=>[String(s.id),s]));
   function findApiFast(sid){
     const s=String(sid);
     let x=apiById.get(s);
@@ -4559,6 +4561,8 @@ function renderStaffShipments(){
   function canonSid(sid){
     const apiS=findApiFast(sid);
     if(apiS)return String(apiS.id);
+    const sb=shipById.get(String(sid));
+    if(sb)return String(sb.id);
     return String(sid);
   }
 
@@ -4607,11 +4611,29 @@ function renderStaffShipments(){
     };
   });
 
-  // API only
-  let list=[...apiList];
+  // ── Source 2: Supabase shipments ──
+  const sbList=shipments.map(s=>{
+    const cr=getCR(s.id,s.tracking_code); // s.id = integer
+    return{
+      _sid:String(s.id),
+      code:s.tracking_code||'—',
+      store:s.customer_name||s.client_name||'—',
+      captain:s.driver_name||'—',
+      branch:s.branch_name||'—',
+      status:s.status||'—',
+      delay:s.delay_days??0,
+      crResult:cr.result||'',
+      crNote:cr.note||'',
+      crBy:cr.by||'—',
+      src:'DB'
+    };
+  });
+
+  // Merge both sources — API first, then Supabase
+  let list=[...apiList,...sbList];
   const sidSeen=new Set(list.map(r=>canonSid(r._sid)));
 
-  // ── Add contact_results rows for this employee not in current API list
+  // ── Add contact_results rows for this employee not in current API/DB lists
   if(fEmp){
     const want=normEmpName(fEmp);
     contact_results_db.forEach(cr=>{
@@ -4629,6 +4651,31 @@ function renderStaffShipments(){
           branch:apiS.current_branch||'—',status:apiS.status||'—',delay:apiS.delay_days??0,
           crResult:cr2.result||'',crNote:cr2.note||'',crBy:emp||want,src:'API'
         });
+      } else {
+        const sbS=shipById.get(sid)||shipById.get(canon);
+        if(sbS){
+          const cr2=getCR(sid)||getCR(sbS.id);
+          list.push({
+            _sid:String(sbS.id),code:sbS.tracking_code||'—',store:sbS.customer_name||sbS.client_name||'—',captain:sbS.driver_name||'—',
+            branch:sbS.branch_name||'—',status:sbS.status||'—',delay:sbS.delay_days??0,
+            crResult:cr2.result||'',crNote:cr2.note||'',crBy:cr2.by||want,src:'DB'
+          });
+        } else {
+          const codeShow=(cr.tracking_code||'').trim()||sid.replace(/^api_/i,'')||'—';
+          const lsSnap=readCrSnapMulti(sid,canon,codeShow);
+          const snapStore=(String(cr.client_name||'').trim()||String(cr.store_name||'').trim()||(lsSnap&&lsSnap.client_name)||'').trim();
+          const snapCap=(String(cr.captain_name||'').trim()||(lsSnap&&lsSnap.captain_name)||'').trim();
+          const snapBr=(String(cr.branch_name||'').trim()||(lsSnap&&lsSnap.branch_name)||'').trim();
+          list.push({
+            _sid:canon,
+            code:codeShow,
+            store:snapStore||'تعذّر عرض اسم المتجر — الطرد لم يُعد ضمن آخر جلب من API',
+            captain:snapCap||'—',
+            branch:snapBr||'—',
+            status:'—',delay:0,
+            crResult:cr.result||'',crNote:cr.note||'',crBy:cr.updated_by||want,src:'أرشيف'
+          });
+        }
       }
     });
   }
