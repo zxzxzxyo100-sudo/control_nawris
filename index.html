@@ -2575,19 +2575,23 @@ async function fetchPackageLogs(packageId,dateStr){
   u.searchParams.set('date',dateStr||getTodayISO());
   try{
     const r=await fetch(u.toString(),{method:'GET'});
+    const raw=await r.text();
+    let data=null;
+    try{
+      data=raw?JSON.parse(raw):{};
+    }catch(_){
+      const snippet=String(raw||'').replace(/\s+/g,' ').trim().slice(0,120);
+      throw new Error(`استجابة غير صالحة من الخادم (${r.status})${snippet?`: ${snippet}`:''}`);
+    }
     if(r.status===400){
-      const t=await r.text();
-      throw new Error('400: '+t);
+      throw new Error(`400: ${data?.message||'طلب غير صالح'}`);
     }
     if(r.status===500){
-      const t=await r.text();
-      throw new Error('500: '+t);
+      throw new Error(`500: ${data?.message||'خطأ داخلي في الخادم'}`);
     }
     if(r.status!==200){
-      const t=await r.text();
-      throw new Error(`${r.status}: ${t}`);
+      throw new Error(`${r.status}: ${data?.message||'خطأ غير متوقع'}`);
     }
-    const data=await r.json();
     return Array.isArray(data.logs)?data.logs:[];
   }catch(e){
     toast('خطأ في جلب سجل المتابعة: '+String(e.message||e).slice(0,120),'e');
