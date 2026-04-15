@@ -2006,6 +2006,7 @@ const SB = 'https://kdlcoqcwqlxawejxfjss.supabase.co';
 const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbGNvcWN3cWx4YXdlanhmanNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MzU0NzIsImV4cCI6MjA5MDIxMTQ3Mn0.rlxHDrJagHk8EiPsdVPy62bDicPXhwjZn0g6cdVQkv0';
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 const LOG_API_BASE = 'api';
+const MANUAL_EXCEL_SHIPMENTS_ONLY = true; // keep main shipments table sourced only from manual Excel upload
 
 /** إعدادات عمولات جنزور (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
 let CommissionCfg = { unitBase: 100, repPercent: 5, branchPercent: 2, ratioMin: 0.25, ratioMax: 1 };
@@ -4108,15 +4109,17 @@ async function fetchFromAPI(){
       if(seen.has(code))continue;seen.add(code);
       mapped.push({tracking_code:code,customer_name:String(r.client_name||r.customer_name||r.name||'—').trim(),customer_phone:String(r.receiver_phone||r.customer_phone||r.phone||'—').trim(),status:stMap[r.status]||r.status||'with_driver',delay_days:parseInt(r[delayField]||r.delay_days||0)||0,upload_date:new Date().toISOString().split('T')[0]});
     }
-    for(let i=0;i<mapped.length;i+=100){
-      const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
-        method:'POST',
-        headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
-        body:JSON.stringify(mapped.slice(i,i+100))
-      });
-      if(!res.ok){const err=await res.text();throw new Error('فشل مزامنة الطرود: '+err.substring(0,120));}
+    if(!MANUAL_EXCEL_SHIPMENTS_ONLY){
+      for(let i=0;i<mapped.length;i+=100){
+        const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
+          method:'POST',
+          headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
+          body:JSON.stringify(mapped.slice(i,i+100))
+        });
+        if(!res.ok){const err=await res.text();throw new Error('فشل مزامنة الطرود: '+err.substring(0,120));}
+      }
     }
-    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب وتحديث ${mapped.length} طرد من API (${pg} صفحة)</span>`;
+    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} طرد من API (${pg} صفحة)${MANUAL_EXCEL_SHIPMENTS_ONLY?' — بدون إدخال لجدول الطرود الرئيسي':''}</span>`;
     toast(`✅ ${mapped.length} طرد من API`,'s');
     await loadShipments();loadDbStats();
   }catch(e){el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;toast('خطأ في API: '+e.message,'e');}
@@ -4421,7 +4424,24 @@ async function renderStaff(){
       src:'DB'
     };
   });
-  const packageRows=[...apiRows,...dbRows];
+  let packageRows=[...apiRows,...dbRows];
+  // Ensure manager sees today's employee work even if API parcel list
+  // is not yet refreshed on this device.
+  const todayIso=getTodayISO();
+  const presentCodes=new Set(packageRows.map(r=>String(r.code||'').trim()).filter(Boolean));
+  const todayCR=(Array.isArray(contact_results_db)?contact_results_db:[]).filter(r=>{
+    const code=String(r.tracking_code||'').trim();
+    if(!code||presentCodes.has(code))return false;
+    const ts=String(r.updated_at||r.created_at||'').trim();
+    return ts&&ts.slice(0,10)===todayIso;
+  }).map(r=>({
+    code:String(r.tracking_code||'').trim()||'—',
+    crResult:r.result||'',
+    crNote:r.note||'',
+    crBy:r.updated_by||'—',
+    src:'API'
+  }));
+  if(todayCR.length)packageRows=packageRows.concat(todayCR);
 
   // Count only from current package table rows
   let totalFollowed=0,totalSolved=0,totalContacted=0,totalNoAnswer=0,totalPending=0,totalNone=0;
@@ -5115,29 +5135,31 @@ async function fetchAPIShipments(){
     document.getElementById('api-last-fetch').textContent='آخر جلب: '+new Date().toLocaleTimeString('ar-LY');
     document.getElementById('tb-api').textContent=apiShipments.length;
 
-    // Also push to Supabase (merge-duplicates) with driver linking
-    try{
-      const mapped=apiShipments.map(s=>{
-        const rec={
-          tracking_code:s.tracking_code,
-          customer_name:s.client_name||s.receiver_name||'—',
-          customer_phone:s.customer_phone,
-          status:s.status,
-          delay_days:s.delay_days,
-          upload_date:new Date().toISOString().split('T')[0]
-        };
-        if(s.driver_id) rec.driver_id=s.driver_id;
-        return rec;
-      });
-      for(let i=0;i<mapped.length;i+=100){
-        const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
-          method:'POST',
-          headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
-          body:JSON.stringify(mapped.slice(i,i+100))
+    // In manual Excel only mode, API fetch does not write into main shipments table.
+    if(!MANUAL_EXCEL_SHIPMENTS_ONLY){
+      try{
+        const mapped=apiShipments.map(s=>{
+          const rec={
+            tracking_code:s.tracking_code,
+            customer_name:s.client_name||s.receiver_name||'—',
+            customer_phone:s.customer_phone,
+            status:s.status,
+            delay_days:s.delay_days,
+            upload_date:new Date().toISOString().split('T')[0]
+          };
+          if(s.driver_id) rec.driver_id=s.driver_id;
+          return rec;
         });
-        if(!res.ok){const err=await res.text();throw new Error('فشل تحديث shipments: '+err.substring(0,120));}
-      }
-    }catch(e){console.warn('API->Supabase sync',e);}
+        for(let i=0;i<mapped.length;i+=100){
+          const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
+            method:'POST',
+            headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
+            body:JSON.stringify(mapped.slice(i,i+100))
+          });
+          if(!res.ok){const err=await res.text();throw new Error('فشل تحديث shipments: '+err.substring(0,120));}
+        }
+      }catch(e){console.warn('API->Supabase sync',e);}
+    }
 
     renderAPIShipments();
     updateAPIKPIs();
@@ -6071,13 +6093,6 @@ function resolveJanzourOutcome(sh){
   if(!sh) return '';
   const st=(typeof sh==='string')?sh:String(sh.status||'').trim();
   if(st==='delivered'||st==='returned') return st;
-  // Fallback to follow-up note if API status wasn't updated yet.
-  if(typeof sh==='object'){
-    const sid=sh.id!=null?sh.id:sh.tracking_code;
-    const cr=getCR(sid);
-    const byNote=janzourOutcomeFromNote(cr?.note||'');
-    if(byNote) return byNote;
-  }
   return st;
 }
 function commissionClassifyDR(shipmentOrStatus){
@@ -6096,9 +6111,8 @@ function isJanzourClientName(name){
 }
 function resolveOutcomeFromCR(cr){
   if(!cr)return '';
-  const byNote=janzourOutcomeFromNote(cr.note||'');
-  if(byNote)return byNote;
-  // "تم الحل" alone is not counted as delivered/returned in rates
+  // Strict rule: CR data alone must not affect Janzour delivery rates.
+  // Only explicit shipment status (delivered/returned) is counted.
   return '';
 }
 function getJanzourAnalyticsPool(){
