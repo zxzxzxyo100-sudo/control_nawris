@@ -1301,6 +1301,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <option value="">اختر موظف...</option>
         </select>
         <button class="btn btn-pur btn-sm" onclick="bulkAssignFilteredJanzourBranch()">🏢 تعيين كل طرد الفرع</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkUnassignFilteredJanzourBranch()">✕ إلغاء تعيين كل طرد الفرع</button>
       </div>
     </div>
 
@@ -5773,6 +5774,22 @@ function bulkAssignFilteredJanzourBranch(){
   saveAPIAssignments(a);
   renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();
   toast(`✅ تم تعيين ${targets.length} طرد من ${branch||'كل الفروع'} إلى ${emp}`,'s');
+}
+function bulkUnassignFilteredJanzourBranch(){
+  const branch=document.getElementById('j-assign-branch')?.value||'';
+  const targets=jFilteredData.filter(s=>!branch||String(s.current_branch||'').trim()===branch);
+  if(!targets.length){toast('لا توجد طرود مطابقة','w');return;}
+  const a=getAPIAssignments(); let count=0;
+  targets.forEach(s=>{
+    if(a[s.tracking_code]){
+      delete a[s.tracking_code];
+      count++;
+    }
+  });
+  if(!count){toast('لا توجد تعيينات لإلغائها','w');return;}
+  saveAPIAssignments(a);
+  renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();
+  toast(`✕ تم إلغاء تعيين ${count} طرد من ${branch||'كل الفروع'}`,'s');
 }
 
 function updateJanzourKPIs(list){
