@@ -1220,7 +1220,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="page-title"><span class="page-title-accent"></span>متابعة متاجر جنزور</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <span class="badge b-grn" id="j-cnt">0 طرد</span>
-        <button class="btn btn-pur btn-sm" onclick="buildJanzourSet();renderJanzour()">🔄 تحديث</button>
+        <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
         <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')">← طرود API الكاملة</button>
       </div>
     </div>
@@ -1302,7 +1302,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="page-title"><span class="page-title-accent"></span>نسب ومعدلات جنزور</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <span class="badge b-grn" id="jr-cnt">0 طرد في نطاق جنزور</span>
-        <button class="btn btn-pur btn-sm" onclick="renderJanzourRatesPage()">🔄 تحديث</button>
+        <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
         <button class="btn btn-ghost btn-sm" onclick="gTab('janzour')">← متابعة جنزور</button>
         <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')">طرود API</button>
       </div>
@@ -1384,7 +1384,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
   <div class="page" id="tab-service-kpi">
     <div class="page-hdr">
       <div class="page-title"><span class="page-title-accent"></span>أداء الخدمة</div>
-      <button class="btn btn-pur btn-sm" onclick="renderServiceKpiPage()">🔄 تحديث</button>
+      <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
     </div>
     <p style="font-size:12px;color:var(--mute);margin-bottom:14px">مؤشرات طرود <strong>متابعة جنزور</strong> المسندة للموظف — عمولة المندوب المحفوظة على الطرد.</p>
     <div id="skpi-manager-picker" class="manager-only card" style="padding:12px;margin-bottom:14px;display:none">
@@ -4378,6 +4378,15 @@ document.addEventListener('click',e=>{
 // ══════════════════════════════════════════
 function closeM(id){document.getElementById(id)?.classList.remove('on');}
 document.addEventListener('click',e=>{if(e.target.classList.contains('overlay'))e.target.classList.remove('on');});
+function refreshAppVersion(){
+  try{
+    const u=new URL(window.location.href);
+    u.searchParams.set('v',String(Date.now()));
+    window.location.href=u.toString();
+  }catch(_){
+    window.location.href=window.location.pathname+'?v='+Date.now();
+  }
+}
 
 function toast(msg,type='i'){
   const ico={s:'✅',e:'🚨',w:'⚠️',i:'ℹ️'};
