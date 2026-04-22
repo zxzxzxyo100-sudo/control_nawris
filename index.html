@@ -1871,7 +1871,8 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       </div>
       <div class="fg">
         <label class="fl">صلاحيات الفروع (received-branch) — اختياري</label>
-        <input class="fi" style="width:100%" id="um-branches" placeholder="مثال: الفرع المعري, بنغازي المركز" dir="rtl">
+        <select class="fi" style="width:100%;min-height:140px" id="um-branches" multiple></select>
+        <div style="font-size:11px;color:var(--mute);margin-top:4px">اضغط Ctrl (او Cmd) لاختيار أكثر من فرع.</div>
         <div style="font-size:11px;color:var(--mute);margin-top:4px">عند تعبئة هذا الحقل، لن يرى الموظف إلا الطرود التابعة لهذه الفروع ولن يمكن إسناد طرود خارجها إليه.</div>
       </div>
       <div class="fg" id="um-perms-section">
@@ -6610,6 +6611,21 @@ function renderUsersPage(){
   }).join('');
 }
 
+function fillUserBranchesSelect(selectedBranches=[]){
+  const select=document.getElementById('um-branches');
+  if(!select)return;
+  const selected=new Set((Array.isArray(selectedBranches)?selectedBranches:[]).map(v=>String(v||'').trim()).filter(Boolean));
+  const names=[...new Set((branches||[]).map(b=>String(b?.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  if(!names.length){
+    select.innerHTML='<option value="" disabled>لا توجد فروع متاحة حالياً</option>';
+    return;
+  }
+  select.innerHTML=names.map(name=>{
+    const esc=String(name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    return `<option value="${esc}" ${selected.has(name)?'selected':''}>${esc}</option>`;
+  }).join('');
+}
+
 function openUserModal(editKey){
   document.getElementById('um-edit-key').value=editKey||'';
   if(editKey&&USERS[editKey]){
@@ -6623,7 +6639,7 @@ function openUserModal(editKey){
     document.getElementById('um-phone').value=u.phone||'';
     document.getElementById('um-email').value=u.email||'';
     document.getElementById('um-status').value=u.status||'active';
-    document.getElementById('um-branches').value=Array.isArray(u.allowed_branches)?u.allowed_branches.join(', '):'';
+    fillUserBranchesSelect(Array.isArray(u.allowed_branches)?u.allowed_branches:[]);
     // Set permission checkboxes
     const perms=u.perms||[];
     document.querySelectorAll('.um-perm').forEach(cb=>{
@@ -6640,7 +6656,7 @@ function openUserModal(editKey){
     document.getElementById('um-phone').value='';
     document.getElementById('um-email').value='';
     document.getElementById('um-status').value='active';
-    document.getElementById('um-branches').value='';
+    fillUserBranchesSelect([]);
     // Default perms for employee
     document.querySelectorAll('.um-perm').forEach(cb=>{
       cb.checked=(cb.value==='home'||cb.value==='shipments'||cb.value==='service-kpi');
@@ -6688,7 +6704,7 @@ function saveUser(){
   const phone=document.getElementById('um-phone').value.trim();
   const email=document.getElementById('um-email').value.trim();
   const status=document.getElementById('um-status').value;
-  const branchesRaw=document.getElementById('um-branches').value||'';
+  const selectedBranchOptions=[...(document.getElementById('um-branches')?.selectedOptions||[])];
 
   if(!username){toast('أدخل اسم المستخدم','w');return;}
   if(!pass){toast('أدخل كلمة المرور','w');return;}
@@ -6715,7 +6731,7 @@ function saveUser(){
     }
   }
 
-  const allowed_branches=[...new Set(branchesRaw.split(',').map(x=>String(x||'').trim()).filter(Boolean))];
+  const allowed_branches=[...new Set(selectedBranchOptions.map(opt=>String(opt.value||'').trim()).filter(Boolean))];
   USERS[username]={pass,role,name,phone,email,status,perms,allowed_branches};
   saveUsers(USERS);
 
