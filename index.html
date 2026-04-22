@@ -4455,6 +4455,38 @@ function mapCouriersFromApiPayload(payload){
     }
     return '';
   };
+  const asPhoneText=(v)=>{
+    if(v===undefined||v===null)return '';
+    if(typeof v==='string'||typeof v==='number'){
+      return String(v).trim();
+    }
+    if(Array.isArray(v)){
+      for(const item of v){
+        const t=asPhoneText(item);
+        if(t)return t;
+      }
+      return '';
+    }
+    if(typeof v==='object'){
+      const direct=String(
+        v.phone||v.mobile||v.number||v.value||v.msisdn||v.phone_number||v.whatsapp||''
+      ).trim();
+      if(direct)return direct;
+      for(const key of Object.keys(v)){
+        const t=asPhoneText(v[key]);
+        if(t)return t;
+      }
+    }
+    return '';
+  };
+  const pickPhone=(row,paths)=>{
+    for(const p of paths){
+      const raw=getByPath(row,p);
+      const text=asPhoneText(raw);
+      if(text)return text;
+    }
+    return '';
+  };
   for(const row of candidates){
     const idRaw=pick(row,['id','driver_id','courier_id','employee_id','captain_id','user_id','uuid','code','courier_code']);
     const idText=String(idRaw||'').trim();
@@ -4465,16 +4497,16 @@ function mapCouriersFromApiPayload(payload){
         'profile.name','courier.name','captain.name','اسم المندوب'
       ])||''
     ).trim();
-    const phoneRaw=String(
-      pick(row,[
-        'phone','mobile','phone_number','driver_phone','courier_phone','primary_phone','whatsapp','msisdn',
-        'contact.phone','driver.phone','driver.mobile','captain_info.phone','employee.phone',
-        'profile.phone','courier.phone','captain.phone','هاتف المندوب'
-      ])||''
-    ).trim();
-    const phone2Raw=String(
-      pick(row,['phone2','secondary_phone','alt_phone','backup_phone','contact.phone2','driver.phone2'])||''
-    ).trim();
+    const phoneRaw=pickPhone(row,[
+      'phone','mobile','phone_number','driver_phone','courier_phone','primary_phone','whatsapp','msisdn',
+      'contact.phone','contact.mobile','contact.whatsapp','driver.phone','driver.mobile','captain_info.phone',
+      'employee.phone','profile.phone','courier.phone','captain.phone','phones','phone_numbers','mobiles','telephones',
+      'contact_numbers','contacts','details.phone','details.mobile','user.phone','user.mobile','هاتف المندوب'
+    ]);
+    const phone2Raw=pickPhone(row,[
+      'phone2','secondary_phone','alt_phone','backup_phone','contact.phone2','driver.phone2','secondary.mobile',
+      'secondary.whatsapp','phones.1','phone_numbers.1'
+    ]);
     const normMainPhone=normPhone(phoneRaw)||phoneRaw;
     const key=idText
       ? `id::${idText}`
