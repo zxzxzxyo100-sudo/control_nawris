@@ -1694,10 +1694,11 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         </div>
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--pale);margin-bottom:6px">👤 المناديب</div>
-          <div class="upz" style="cursor:default;opacity:.8">
-            <div style="font-size:12px;font-weight:700">📡 المصدر الحالي: API المناديب</div>
-            <div style="font-size:10px;color:var(--mute);margin-top:3px">تم تعطيل الرفع اليدوي للمناديب</div>
-            <div style="margin-top:8px"><button type="button" class="btn btn-grn btn-sm" onclick="fetchCouriersFromAPI()">⬇️ جلب المناديب من API</button></div>
+          <div class="upz" onclick="document.getElementById('fi-drivers').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropSt(event,'drivers')">
+            <input type="file" id="fi-drivers" accept=".xlsx,.xls,.csv" onchange="handleSt(event,'drivers')">
+            <div style="font-size:12px;font-weight:700">📂 رفع مناديب.xlsx</div>
+            <div style="font-size:10px;color:var(--mute);margin-top:3px">أعمدة: اسم المندوب، الهاتف، هاتف2، وسيلة النقل، الفرع</div>
+            <div style="margin-top:8px"><button type="button" class="btn btn-grn btn-sm" onclick="fetchCouriersFromAPI()">⬇️ أو جلب من API المناديب</button></div>
           </div>
           <div id="sts-drivers" style="font-size:11px;color:var(--mute);margin-top:4px"></div>
         </div>
@@ -2057,6 +2058,7 @@ function saveUsers(users){
 let USERS = loadUsers();
 
 let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[], contact_results_db=[];
+let driversDataSource='api'; // 'api' | 'excel'
 let returns_data=[], transfers_data=[], contacted=new Set(), checked=new Set();
 let couriersApiCache=[];
 let seg='all', sPage=1, masterSeg='regions', meTable='', meRecord=null, alphaFilter='';
@@ -2385,6 +2387,7 @@ async function loadAll(){
       if(r.key==='branch_followup_api_token'&&document.getElementById('bf-api-token'))document.getElementById('bf-api-token').value=r.value;
       if(r.key==='couriers_api_url'&&document.getElementById('couriers-api-url'))document.getElementById('couriers-api-url').value=r.value;
       if(r.key==='couriers_api_token'&&document.getElementById('couriers-api-token'))document.getElementById('couriers-api-token').value=r.value;
+      if(r.key==='drivers_source')driversDataSource=(String(r.value||'').toLowerCase()==='excel'?'excel':'api');
       if(r.key==='nawris_users'){
         try{
           const fresh=JSON.parse(r.value);
@@ -2400,13 +2403,14 @@ async function loadAll(){
         }catch(e){console.warn('users sync parse error',e);}
       }
     });
-    loadCachedCouriersApiData();
+    if(driversDataSource==='api')loadCachedCouriersApiData();
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
     loadReturns();loadTransfers();loadDbStats();
     buildJanzourSet(); // Sync Janzour store set from Supabase stores table
   }catch(e){setSyncState('err','خطأ');toast('خطأ في التحميل: '+e.message,'e');}
 }
+function isDriversApiSource(){return driversDataSource==='api';}
 
 async function loadShipments(){
   setSyncState('busy','تحديث...');
@@ -3960,11 +3964,13 @@ const MTITLES={regions:'🗺️ المناطق',branches:'🏢 الفروع',dri
 
 async function renderMasterContent(){
   const mc=document.getElementById('master-content');
-  const driversReadonly=masterSeg==='drivers';
+  const driversReadonly=masterSeg==='drivers'&&isDriversApiSource();
   const clearBtn=driversReadonly?'':`<button class="btn btn-red btn-sm" onclick="deleteAllMaster('${masterSeg}')" style="gap:5px">🗑️ مسح الكل</button>`;
   const addBtn=driversReadonly?'':`<button class="btn btn-pur btn-sm" onclick="openMAdd('${masterSeg}')">+ إضافة</button>`;
-  const driversApiBtn=driversReadonly?`<button class="btn btn-grn btn-sm" onclick="fetchCouriersFromAPI()">⬇️ جلب من API المناديب</button>`:'';
-  const driversBadge=driversReadonly?`<span class="badge b-grn">مصدر البيانات: API المناديب</span>`:'';
+  const driversApiBtn=masterSeg==='drivers'?`<button class="btn btn-grn btn-sm" onclick="fetchCouriersFromAPI()">⬇️ جلب من API المناديب</button>`:'';
+  const driversBadge=masterSeg==='drivers'
+    ?`<span class="badge ${driversReadonly?'b-grn':'b-blu'}">مصدر البيانات: ${driversReadonly?'API المناديب':'Excel / إدخال يدوي'}</span>`
+    :'';
   mc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><span style="font-size:15px;font-weight:700">${MTITLES[masterSeg]} ${driversBadge}</span><div style="display:flex;gap:6px">${driversApiBtn}${clearBtn}${addBtn}</div></div><div id="mt-wrap"><div style="text-align:center;padding:24px;color:var(--mute)">⏳ تحميل...</div></div>`;
   try{
     const data=driversReadonly?[...(drivers_db||[])]:await sb(masterSeg,'GET',null,'?select=*&order=created_at.desc&limit=500');
@@ -3974,7 +3980,7 @@ async function renderMasterContent(){
   }catch(e){document.getElementById('mt-wrap').innerHTML=`<div style="color:var(--red);padding:16px">خطأ: ${e.message}</div>`;}
 }
 async function deleteAllMaster(table){
-  if(table==='drivers'){toast('بيانات المناديب تُدار من API المناديب','w');return;}
+  if(table==='drivers'&&isDriversApiSource()){toast('بيانات المناديب تُدار من API المناديب','w');return;}
   const title=MTITLES[table]||table;
   if(!confirm(`⚠️ هل تريد حذف جميع سجلات "${title}"؟\nهذا الإجراء لا يمكن التراجع عنه!`))return;
   try{
@@ -3995,14 +4001,14 @@ async function deleteAllMaster(table){
   }catch(e){toast('خطأ في الحذف: '+e.message,'e');}
 }
 function openMAdd(table){
-  if(table==='drivers'){toast('إضافة المناديب يدويًا متوقفة — استخدم API المناديب','w');return;}
+  if(table==='drivers'&&isDriversApiSource()){toast('إضافة المناديب يدويًا متوقفة — استخدم API المناديب أو ارفع Excel للمناديب','w');return;}
   meTable=table;meRecord=null;
   document.getElementById('me-title').textContent='إضافة — '+MTITLES[table];
   document.getElementById('me-body').innerHTML=(MF[table]||[]).map(f=>`<div class="fg"><label class="fl">${f.l}${f.req?' *':''}</label><input class="fi" style="width:100%" id="mf-${f.k}" value="" placeholder="${f.l}"></div>`).join('');
   document.getElementById('me-modal').classList.add('on');
 }
 async function openMEdit(table,id){
-  if(table==='drivers'){toast('تعديل المناديب يدويًا متوقف — المصدر API','w');return;}
+  if(table==='drivers'&&isDriversApiSource()){toast('تعديل المناديب يدويًا متوقف — المصدر API','w');return;}
   meTable=table;
   try{
     const data=await sb(table,'GET',null,`?id=eq.${id}&select=*`);
@@ -4025,7 +4031,7 @@ async function saveMasterRecord(){
   }catch(e){toast('خطأ: '+e.message,'e');}
 }
 async function deleteMaster(table,id){
-  if(table==='drivers'){toast('حذف المناديب يدويًا متوقف — المصدر API','w');return;}
+  if(table==='drivers'&&isDriversApiSource()){toast('حذف المناديب يدويًا متوقف — المصدر API','w');return;}
   if(!confirm('حذف هذا السجل؟'))return;
   try{
     const r=await fetch(`${SB}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:H});
@@ -4113,6 +4119,12 @@ async function uploadStatic(rows,table){
         if(err.includes('duplicate')||err.includes('unique')||err.includes('PGRST')) success+=batch.length;
         else throw new Error(err);
       }
+    }
+    if(table==='drivers'){
+      driversDataSource='excel';
+      await sbUp('settings',[{key:'drivers_source',value:'excel'}]);
+      localStorage.removeItem('couriers_api_drivers_cache');
+      couriersApiCache=[];
     }
     if(el)el.innerHTML=`<span style="color:var(--grn)">✅ ${success} سجل</span>`;
     toast(`✅ ${success} ${MTITLES[table]||table}`,'s');
@@ -4665,7 +4677,12 @@ async function fetchCouriersFromAPI(){
     if(!mapped.length)throw new Error('لا توجد بيانات مناديب صالحة في الرد');
     const withPhoneCount=mapped.filter(m=>String(m.phone||'').trim()!=='').length;
     applyCouriersApiData(mapped,{persist:true});
-    await sbUp('settings',[{key:'couriers_api_url',value:url},{key:'couriers_api_token',value:token||''}]);
+    driversDataSource='api';
+    await sbUp('settings',[
+      {key:'couriers_api_url',value:url},
+      {key:'couriers_api_token',value:token||''},
+      {key:'drivers_source',value:'api'}
+    ]);
     if(document.getElementById('sts-drivers'))document.getElementById('sts-drivers').innerHTML=`<span style="color:var(--grn)">✅ تم تحديث ${mapped.length} مندوب من API</span>`;
     el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} مندوب من ${page} صفحة — بأرقام هاتف: ${withPhoneCount}</span>`;
     if(masterSeg==='drivers'&&document.getElementById('tab-master')?.classList.contains('on'))renderMasterContent();
