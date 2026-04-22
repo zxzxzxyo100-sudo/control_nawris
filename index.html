@@ -4762,26 +4762,59 @@ async function fetchFromAPI(){
   if(!url){toast('أدخل رابط API أولاً','e');return;}
   el.textContent='⏳ جارٍ جلب البيانات...';
   try{
-    // Single bulk request: try to fetch all shipments at once.
-    const BULK_SIZE=100000;
-    const bulkUrl=withQueryParams(url,{
-      per_page:BULK_SIZE,
-      limit:BULK_SIZE,
-      page:1
-    });
-    el.textContent='⏳ جارٍ جلب كل الطرود دفعة واحدة...';
-    const res=await apiFetch(bulkUrl,token);
-    if(!res.ok){
-      const errText=await res.text().catch(()=>'');
-      throw new Error(`HTTP ${res.status}${errText?` — ${errText.substring(0,120)}`:''}`);
-    }
-    const json=await res.json();
-    const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+    // Fast full-sync by direct pagination only (no delay_days scanning).
+    const PAGE_SIZE=500;
+    const MAX_PAGES=500;
     const rawData=[];
     const seen=new Set();
-    for(const item of pageData){
-      const code=String(item.tracking_code||item.code||item.order_id||item.ParcelCode||item.id||'').trim();
-      if(code&&!seen.has(code)){seen.add(code);rawData.push(item);}
+    let page=1;
+    let cursor='';
+    let totalPages=1;
+
+    while(page<=MAX_PAGES){
+      const pageUrl=withQueryParams(url,{
+        per_page:PAGE_SIZE,
+        limit:PAGE_SIZE,
+        page
+      });
+      el.textContent=`⏳ جارٍ جلب الطرود... صفحة ${page}${totalPages>1?` من ${totalPages}`:''}`;
+      const res=await apiFetch(pageUrl,token,cursor||'');
+      if(!res.ok){
+        const errText=await res.text().catch(()=>'');
+        throw new Error(`HTTP ${res.status}${errText?` — ${errText.substring(0,120)}`:''}`);
+      }
+      const json=await res.json();
+      const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+      for(const item of pageData){
+        const code=String(item.tracking_code||item.code||item.order_id||item.ParcelCode||item.id||'').trim();
+        if(code&&!seen.has(code)){seen.add(code);rawData.push(item);}
+      }
+
+      const nextCursor=json?.meta?.next_cursor||json?.next_cursor||json?.pagination?.next_cursor||'';
+      const currentPage=Number(json?.meta?.current_page||json?.current_page||json?.pagination?.current_page||page||1);
+      const lastPage=Number(
+        json?.meta?.last_page
+        ||json?.last_page
+        ||json?.pagination?.last_page
+        ||json?.meta?.total_pages
+        ||json?.total_pages
+        ||json?.pagination?.total_pages
+        ||0
+      );
+      if(lastPage>0)totalPages=lastPage;
+
+      if(nextCursor){
+        cursor=nextCursor;
+        page++;
+        if(!pageData.length)break;
+        continue;
+      }
+      if(lastPage>0){
+        if(currentPage>=lastPage||!pageData.length)break;
+        page=currentPage+1;
+        continue;
+      }
+      break;
     }
 
     if(!rawData.length){el.textContent='⚠️ لا بيانات في الرد';return;}
@@ -4802,7 +4835,7 @@ async function fetchFromAPI(){
         if(!res.ok){const err=await res.text();throw new Error('فشل مزامنة الطرود: '+err.substring(0,120));}
       }
     }
-    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} طرد من API دفعة واحدة${MANUAL_EXCEL_SHIPMENTS_ONLY?' — بدون إدخال لجدول الطرود الرئيسي':''}</span>`;
+    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} طرد من API (${Math.min(page,totalPages)} صفحة)${MANUAL_EXCEL_SHIPMENTS_ONLY?' — بدون إدخال لجدول الطرود الرئيسي':''}</span>`;
     toast(`✅ ${mapped.length} طرد من API`,'s');
     await loadShipments();loadDbStats();
   }catch(e){el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;toast('خطأ في API: '+e.message,'e');}
