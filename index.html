@@ -3384,7 +3384,14 @@ function renderReturns(){
   // Branch follow-up / "in company": API rows delayed > 1 day.
   const list=(apiShipments||[]).filter(s=>{
     const raw=String(s.raw_status||'').trim();
-    const inCompany=s.status==='in_company'||raw.includes('في الشركة');
+    const rawNorm=raw.replace(/\s+/g,' ');
+    const st=String(s.status||'').trim().toLowerCase();
+    const inCompany=
+      st==='in_company'||
+      rawNorm.includes('في الشركة')||
+      rawNorm.includes('الشركة')||
+      rawNorm.includes('بالمخزن')||
+      rawNorm.includes('داخل الفرع');
     if(!inCompany)return false;
     if(Number(s.delay_days||0)<2)return false;
     const scopeBranch=String(s.received_branch||s.current_branch||'').trim();
@@ -3435,7 +3442,13 @@ function renderTransfers(){
   // Branch follow-up / "in transfer": API rows delayed > 2 days.
   const list=(apiShipments||[]).filter(s=>{
     const raw=String(s.raw_status||'').trim();
-    const inTransfer=s.status==='transferred'||raw.includes('بالطريق للفرع')||raw.includes('تحويل');
+    const rawNorm=raw.replace(/\s+/g,' ');
+    const st=String(s.status||'').trim().toLowerCase();
+    const inTransfer=
+      st==='transferred'||
+      rawNorm.includes('تحويل')||
+      rawNorm.includes('بالطريق')||
+      (rawNorm.includes('فرع')&&rawNorm.includes('طريق'));
     if(!inTransfer)return false;
     if(Number(s.delay_days||0)<3)return false;
     const b1=String(s.previous_branch||'').trim();
@@ -5361,8 +5374,8 @@ async function fetchAPIShipments(){
         driver_name:captain,
         captain_phone:'',
         current_branch:currentBranch,
-        previous_branch:String(r.previous_branch||r['الفرع السابق']||'').trim(),
-        received_branch:String(r.received_branch||r['الفرع المستلم']||'').trim(),
+        previous_branch:String(r.previous_branch||r.previousBranch||r['الفرع السابق']||'').trim(),
+        received_branch:String(r.received_branch||r.receivedBranch||r['الفرع المستلم']||'').trim(),
         government:government,
         area:area,
         raw_status:rawStatus,
