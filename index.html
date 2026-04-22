@@ -4445,7 +4445,7 @@ async function apiFetch(baseUrl,token,cursor){
 function mapCouriersFromApiPayload(payload){
   const candidates=extractCouriersCandidates(payload);
   if(!Array.isArray(candidates))return [];
-  const seen=new Set();
+  const keyToIndex=new Map();
   const mapped=[];
   const getByPath=(obj,path)=>path.split('.').reduce((acc,key)=>acc&&acc[key]!==undefined?acc[key]:undefined,obj);
   const pick=(row,paths)=>{
@@ -4559,10 +4559,8 @@ function mapCouriersFromApiPayload(payload){
     const key=idText
       ? `id::${idText}`
       : `np::${normalizePersonName(name||'')||'noname'}::${normMainPhone||'nophone'}`;
-    if(seen.has(key))continue;
-    seen.add(key);
     const displayName=name||`مندوب ${idText||mapped.length+1}`;
-    mapped.push({
+    const rec={
       id:idText||null,
       name:displayName,
       phone:normMainPhone,
@@ -4570,7 +4568,20 @@ function mapCouriersFromApiPayload(payload){
       vehicle_type:String(pick(row,['vehicle_type','vehicle','transport_type','vehicle.name','car_type','vehicle_type_name'])||'').trim()||null,
       branch:String(pick(row,['branch','branch_name','current_branch','received_branch','location.branch','branch_info.name','branch.title','branch.label','الفرع'])||'').trim()||null,
       source:'couriers_api'
-    });
+    };
+    if(!keyToIndex.has(key)){
+      keyToIndex.set(key,mapped.length);
+      mapped.push(rec);
+      continue;
+    }
+    // Merge duplicates to preserve non-empty fields from later rows.
+    const idx=keyToIndex.get(key);
+    const prev=mapped[idx];
+    if(!prev.phone&&rec.phone)prev.phone=rec.phone;
+    if(!prev.phone2&&rec.phone2&&rec.phone2!==prev.phone)prev.phone2=rec.phone2;
+    if((!prev.vehicle_type||prev.vehicle_type==='—')&&rec.vehicle_type)prev.vehicle_type=rec.vehicle_type;
+    if((!prev.branch||prev.branch==='—')&&rec.branch)prev.branch=rec.branch;
+    if((!prev.name||prev.name.startsWith('مندوب '))&&name)prev.name=name;
   }
   return mapped;
 }
