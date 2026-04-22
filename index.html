@@ -2489,17 +2489,29 @@ function resolveDriverRecordByName(name){
   const pool=(drivers_db||[]).filter(d=>d&&d.name);
   let hit=pool.find(d=>normalizePersonName(d.name)===target);
   if(hit)return hit;
+  // Conservative fallback: first/last token match only to avoid wrong person on similar names.
+  const tParts=target.split(' ').filter(Boolean);
   hit=pool.find(d=>{
     const n=normalizePersonName(d.name);
-    return n.includes(target)||target.includes(n);
+    const nParts=n.split(' ').filter(Boolean);
+    if(!tParts.length||!nParts.length)return false;
+    return tParts[0]===nParts[0] || tParts[tParts.length-1]===nParts[nParts.length-1];
   });
   return hit||null;
 }
 function resolveDriverPhoneForShipment(s){
   if(!s)return '';
+  const algOrderId=String(s.algoriza_order_id||s.order_id||'').trim();
+  if(algOrderId){
+    const apiByOrder=(apiShipments||[]).find(x=>String(x.algoriza_order_id||x.order_id||'').trim()===algOrderId);
+    const apiOrderPhone=apiByOrder?.captain_phone||'';
+    if(apiOrderPhone)return normPhone(apiOrderPhone)||String(apiOrderPhone);
+  }
+  const directApiPhone=s.captain_phone||'';
+  if(directApiPhone)return normPhone(directApiPhone)||String(directApiPhone);
   const byId=(drivers_db||[]).find(d=>String(d.id||'')===String(s.driver_id||''));
   const byName=resolveDriverRecordByName(s.driver_name||s.captain||'');
-  const raw=(byId&&byId.phone)||(byName&&byName.phone)||s.driver_phone||s.captain_phone||'';
+  const raw=(byId&&byId.phone)||(byName&&byName.phone)||s.driver_phone||'';
   return normPhone(raw)||String(raw||'');
 }
 function normalizeBranchKey(v){return String(v||'').trim().toLowerCase();}
@@ -5479,10 +5491,17 @@ async function fetchAPIShipments(){
       const rawStatus=r.status||r['الحالة']||'with_driver';
       const clientId=r.client_id||'';
       const resolvedStatus=resolveStatus(rawStatus);
+      const algOrderId=String(r.order_id||r.id||'').trim();
+      const captainPhoneRaw=String(
+        r.captain_phone||r.driver_phone||r.courier_phone||r.phone_captain||r.delivery_man_phone
+        ||(r.driver&&typeof r.driver==='object'?(r.driver.phone||r.driver.mobile||''):'')
+        ||''
+      ).trim();
 
       const mappedShipment={
         id:'api_'+code,
         tracking_code:code,
+        algoriza_order_id:algOrderId,
         code_pool:codeCandidates.join(' '),
         client_name:clientName,
         client_id:clientId,
@@ -5491,7 +5510,7 @@ async function fetchAPIShipments(){
         customer_phone:receiverPhone,
         captain:captain,
         driver_name:captain,
-        captain_phone:'',
+        captain_phone:normPhone(captainPhoneRaw)||captainPhoneRaw,
         current_branch:currentBranch,
         previous_branch:String(r.previous_branch||r.previousBranch||r['الفرع السابق']||'').trim(),
         received_branch:String(r.received_branch||r.receivedBranch||r['الفرع المستلم']||'').trim(),
