@@ -5212,10 +5212,10 @@ async function fetchAPIShipments(){
 
       do{
         pageNum++;
-        const pageUrl=nextCursor?`${dayBaseUrl}&cursor=${encodeURIComponent(nextCursor)}`:dayBaseUrl;
         if(el)el.textContent=`⏳ جلب اليوم ${delayDay} - صفحة ${pageNum}... [${rawData.length} طرد حتى الآن]`;
 
-        const res=await apiFetch(pageUrl,token);
+        // IMPORTANT: proxy expects cursor in request body (3rd arg), not only in URL.
+        const res=await apiFetch(dayBaseUrl,token,nextCursor||'');
         if(!res.ok){
           console.warn(`Delay day ${delayDay}, page ${pageNum} failed: ${res.status}`);
           break;
