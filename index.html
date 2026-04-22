@@ -3408,26 +3408,14 @@ function renderReturns(){
   const locMap={with_driver:'مع المندوب',in_warehouse:'في المخزن',returned_to_store:'تسليم للمتجر'};
   customRS.forEach(s=>{const key=s.label.replace(/\s+/g,'_').toLowerCase();locMap[key]=s.label;});
   const rsnMap={customer_refused:'رفض العميل',wrong_address:'عنوان خاطئ',no_answer:'لا يرد',damaged:'تالف',other:'أخرى'};
-  const dbRows=returns_data.filter(r=>{
+  let list=returns_data.filter(r=>{
     if(!allowed.includes(r.location))return false;
     if(loc&&r.location!==loc)return false;
     if(rsn&&r.reason!==rsn)return false;
+    const branchName=String(r?.branches?.name||'').trim();
+    if(branchName&&!userCanAccessBranch(CU,branchName))return false;
     return true;
   });
-  const apiRows=(apiReturnsShipments||[]).filter(s=>{
-    if(loc&&loc!=='with_driver')return false;
-    if(!userCanAccessBranch(CU,s.current_branch||''))return false;
-    return true;
-  }).map(s=>({
-    id:'api_ret_'+s.tracking_code,
-    _is_api:true,
-    shipments:{tracking_code:s.tracking_code,customer_name:s.client_name||s.receiver_name||'—'},
-    drivers:{name:s.captain||'—'},
-    reason:'other',
-    location:'with_driver',
-    created_at:s.fetched_at||new Date().toISOString()
-  }));
-  let list=[...dbRows,...apiRows];
   const tbody=document.getElementById('r-tbody');
   if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mute)">لا مرتجعات</td></tr>';return;}
   tbody.innerHTML=list.map(r=>`<tr>
@@ -3437,7 +3425,7 @@ function renderReturns(){
     <td><span class="badge b-orn">${rsnMap[r.reason]||r.reason||'—'}</span></td>
     <td><span class="badge ${r.location==='returned_to_store'?'b-grn':r.location==='in_warehouse'?'b-gold':'b-red'}">${locMap[r.location]||r.location||'—'}</span></td>
     <td style="font-size:11px;color:var(--mute)">${r.created_at?r.created_at.slice(0,10):'—'}</td>
-    <td>${r._is_api?'<span style="font-size:11px;color:var(--dim)">API</span>':`<button class="btn btn-ghost btn-sm" onclick="updateRetLoc('${r.id}','${r.location}')">تحديث الموقع</button>`}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="updateRetLoc('${r.id}','${r.location}')">تحديث الموقع</button></td>
   </tr>`).join('');
 }
 function openRetModal(sid){
@@ -4294,7 +4282,6 @@ async function fetchFromAPI(){
     for(const [i,r] of rawData.entries()){
       const code=String(r.tracking_code||r.code||r.order_id||r.ParcelCode||r.id||('API-'+Date.now()+'-'+i)).trim();
       if(seenMapped.has(code))continue;seenMapped.add(code);
-      if(isReturnTrackingCode(code))continue;
       mapped.push({tracking_code:code,customer_name:String(r.client_name||r.customer_name||r.name||'—').trim(),customer_phone:String(r.receiver_phone||r.customer_phone||r.phone||'—').trim(),status:stMap[r.status]||r.status||'with_driver',delay_days:parseInt(r[delayField]||r.delay_days||0)||0,upload_date:new Date().toISOString().split('T')[0]});
     }
     if(!MANUAL_EXCEL_SHIPMENTS_ONLY){
@@ -5411,17 +5398,12 @@ async function fetchAPIShipments(){
         rep_commission:null,
         branch_commission:null
       };
-      // Return-code policy: any code containing "R" is considered return-only.
-      if(isReturnTrackingCode(code)){
-        apiReturnsShipments.push(mappedShipment);
-        continue;
-      }
       apiShipments.push(mappedShipment);
     }
 
     // keep API captains cache as source-of-truth for dynamic captains
     apiCaptainsCache=[...new Set(
-      [...apiShipments,...apiReturnsShipments]
+      [...apiShipments]
         .map(s=>({name:String(s.captain||'').trim(),phone:String(s.captain_phone||'').trim(),branch:String(s.current_branch||'').trim()}))
         .filter(c=>c.name)
         .map(c=>JSON.stringify(c))
