@@ -4490,7 +4490,7 @@ function mapCouriersFromApiPayload(payload){
   const findPhonesDeep=(obj)=>{
     const out=[];
     const seenNodes=new Set();
-    const keyHints=['phone','mobile','whatsapp','msisdn','tel','contact','number'];
+    const keyHints=['phone','mobile','whatsapp','msisdn','tel','contact','number','هاتف','جوال','رقم'];
     const walk=(node,keyPath='')=>{
       if(node===undefined||node===null)return;
       if(typeof node==='object'){
@@ -4523,6 +4523,21 @@ function mapCouriersFromApiPayload(payload){
       }
     };
     walk(obj);
+    // Last-resort fallback: scan the whole JSON text for phone-like numbers.
+    if(!out.length){
+      try{
+        const raw=JSON.stringify(obj)||'';
+        const rx=/(\+?\d[\d\s\-()]{7,}\d)/g;
+        const matches=raw.match(rx)||[];
+        for(const m of matches){
+          const t=String(m||'').trim();
+          const digits=t.replace(/[^0-9]/g,'');
+          if(digits.length>=8&&digits.length<=15){
+            out.push(t);
+          }
+        }
+      }catch(e){}
+    }
     const uniq=[];const seen=new Set();
     for(const p of out){
       const k=normPhone(p)||String(p).trim();
@@ -4681,10 +4696,11 @@ async function fetchCouriersFromAPI(){
     }
     const mapped=mapCouriersFromApiPayload(allRows);
     if(!mapped.length)throw new Error('لا توجد بيانات مناديب صالحة في الرد');
+    const withPhoneCount=mapped.filter(m=>String(m.phone||'').trim()!=='').length;
     applyCouriersApiData(mapped,{persist:true});
     await sbUp('settings',[{key:'couriers_api_url',value:url},{key:'couriers_api_token',value:token||''}]);
     if(document.getElementById('sts-drivers'))document.getElementById('sts-drivers').innerHTML=`<span style="color:var(--grn)">✅ تم تحديث ${mapped.length} مندوب من API</span>`;
-    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} مندوب من ${page} صفحة وتفعيلهم كمصدر المناديب</span>`;
+    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} مندوب من ${page} صفحة — بأرقام هاتف: ${withPhoneCount}</span>`;
     if(masterSeg==='drivers'&&document.getElementById('tab-master')?.classList.contains('on'))renderMasterContent();
     renderDrivers();
     renderAPIShipments();
