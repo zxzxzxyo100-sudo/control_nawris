@@ -2502,7 +2502,17 @@ function stBadge(s){
   return`<span class="badge b-dim">${s||'—'}</span>`;
 }
 function ctBadge(id){return contacted.has(String(id))?'<span class="badge b-grn">✅ تم</span>':'<span class="badge b-dim">⏳</span>';}
-function normPhone(p){if(!p)return'';p=String(p).replace(/[^0-9]/g,'');if(p.startsWith('0')&&p.length===10)p='218'+p.slice(1);return p;}
+function toAsciiDigits(v){
+  return String(v||'')
+    .replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+}
+function normPhone(p){
+  if(!p)return'';
+  p=toAsciiDigits(p).replace(/[^0-9]/g,'');
+  if(p.startsWith('0')&&p.length===10)p='218'+p.slice(1);
+  return p;
+}
 function normalizePersonName(v){
   return String(v||'')
     .toLowerCase()
@@ -4458,7 +4468,8 @@ function mapCouriersFromApiPayload(payload){
   const asPhoneText=(v)=>{
     if(v===undefined||v===null)return '';
     if(typeof v==='string'||typeof v==='number'){
-      return String(v).trim();
+      const txt=toAsciiDigits(String(v).trim());
+      return txt;
     }
     if(Array.isArray(v)){
       for(const item of v){
@@ -4498,7 +4509,7 @@ function mapCouriersFromApiPayload(payload){
         seenNodes.add(node);
       }
       if(typeof node==='string'||typeof node==='number'){
-        const text=String(node).trim();
+        const text=toAsciiDigits(String(node).trim());
         const digits=String(text).replace(/[^0-9]/g,'');
         if((digits.length>=8&&digits.length<=15)||/^(\+?\d[\d\s-]{7,})$/.test(text)){
           out.push(text);
@@ -4530,7 +4541,7 @@ function mapCouriersFromApiPayload(payload){
         const rx=/(\+?\d[\d\s\-()]{7,}\d)/g;
         const matches=raw.match(rx)||[];
         for(const m of matches){
-          const t=String(m||'').trim();
+          const t=toAsciiDigits(String(m||'').trim());
           const digits=t.replace(/[^0-9]/g,'');
           if(digits.length>=8&&digits.length<=15){
             out.push(t);
@@ -4579,7 +4590,7 @@ function mapCouriersFromApiPayload(payload){
       id:idText||null,
       name:displayName,
       phone:normMainPhone,
-      phone2:normPhone(secondaryPhone)||secondaryPhone||null,
+      phone2:normPhone(secondaryPhone)||toAsciiDigits(secondaryPhone)||null,
       vehicle_type:String(pick(row,['vehicle_type','vehicle','transport_type','vehicle.name','car_type','vehicle_type_name'])||'').trim()||null,
       branch:String(pick(row,['branch','branch_name','current_branch','received_branch','location.branch','branch_info.name','branch.title','branch.label','الفرع'])||'').trim()||null,
       source:'couriers_api'
