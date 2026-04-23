@@ -6170,11 +6170,11 @@ function updateAPIKPIs(){
     setDisp('ak-card-comp','');
   }
 
-  // Segments counts
-  document.getElementById('asn-all').textContent=apiShipments.length;
-  document.getElementById('asn-driver').textContent=drv;
-  document.getElementById('asn-comp').textContent=comp;
-  document.getElementById('asn-late').textContent=apiShipments.filter(s=>cls(s.delay_days)!=='ok').length;
+  // Segments counts (guarded; API panel might be unmounted temporarily)
+  setTxt('asn-all',apiShipments.length);
+  setTxt('asn-driver',drv);
+  setTxt('asn-comp',comp);
+  setTxt('asn-late',apiShipments.filter(s=>cls(s.delay_days)!=='ok').length);
 
   // Summary card
   const statusGroups={};
@@ -6184,7 +6184,8 @@ function updateAPIKPIs(){
   });
   const stLabels={'with_driver':'مع المندوب','in_company':'في الشركة','delayed':'متأخر','delivered':'مُسلَّم','returned':'مرتجع'};
   const stColors={'with_driver':'blu','in_company':'orn','delayed':'red','delivered':'grn','returned':'red'};
-  document.getElementById('api-summary').innerHTML=Object.entries(statusGroups).map(([st,count])=>`
+  const apiSummaryEl=document.getElementById('api-summary');
+  if(apiSummaryEl)apiSummaryEl.innerHTML=Object.entries(statusGroups).map(([st,count])=>`
     <div style="background:var(--bg4);border-radius:var(--r2);padding:10px;text-align:center;border-top:3px solid var(--${stColors[st]||'mute'})">
       <div style="font-size:18px;font-weight:900;color:var(--${stColors[st]||'mute'});font-family:var(--mono)">${count}</div>
       <div style="font-size:10px;color:var(--mute)">${stLabels[st]||st}</div>
@@ -6194,6 +6195,7 @@ function updateAPIKPIs(){
 
 function renderAPIFetchLog(){
   const el=document.getElementById('api-fetch-log');
+  if(!el)return;
   if(!apiFetchLog.length){el.innerHTML='لا يوجد سجل بعد';return;}
   el.innerHTML=apiFetchLog.map(l=>`
     <div style="padding:4px 0;border-bottom:1px solid var(--rim);display:flex;justify-content:space-between">
