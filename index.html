@@ -5885,9 +5885,34 @@ function buildJanzourSet(){
   janzourStoreSet=new Set(sourceNames);
   rebuildJanzourShipments();
 }
+function normalizeIdentityText(v){
+  return String(v||'')
+    .trim()
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/g,'')
+    .replace(/[أإآٱ]/g,'ا')
+    .replace(/ى/g,'ي')
+    .replace(/ؤ/g,'و')
+    .replace(/ئ/g,'ي')
+    .replace(/\s+/g,' ');
+}
+function getCurrentUserIdentityKeys(user=CU){
+  if(!user)return [];
+  const keys=new Set();
+  const push=v=>{const n=normalizeIdentityText(v);if(n)keys.add(n);};
+  push(user.name);
+  push(user.username);
+  if(user.username&&USERS[user.username])push(USERS[user.username].name);
+  return [...keys];
+}
+function isShipmentAssignedToCurrentUser(assignedValue,user=CU){
+  const assigned=normalizeIdentityText(assignedValue);
+  if(!assigned)return false;
+  const keys=getCurrentUserIdentityKeys(user);
+  return keys.includes(assigned);
+}
 function rebuildJanzourShipments(){
   const assignments=getAPIAssignments();
-  const me=CU?.name||'';
   const branchScoped=getAllowedBranchesForUser(CU);
   janzourShipments=apiShipments.filter(s=>{
     const name=(s.client_name||'').trim().toLowerCase();
@@ -5898,7 +5923,7 @@ function rebuildJanzourShipments(){
     }
     if(!ok)return false;
     if(branchScoped.length&&!userCanAccessBranch(CU,s.current_branch||''))return false;
-    if(CU?.role==='employee'&&String(assignments[s.tracking_code]||'').trim()!==me)return false;
+    if(CU?.role==='employee'&&!isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU))return false;
     return true;
   });
 }
@@ -6328,7 +6353,7 @@ function renderAPIShipments(){
   }
   // Assignment isolation: employee sees only own assigned parcels
   if(isEmployeeScoped){
-    list=list.filter(s=>String(assignments[s.tracking_code]||'').trim()===myName);
+    list=list.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU));
   }
 
   // Segment filter
@@ -6336,13 +6361,13 @@ function renderAPIShipments(){
   else if(apiSeg==='returned') list=list.filter(s=>s.status==='returned');
   else if(apiSeg==='company') list=list.filter(s=>s.status==='in_company');
   else if(apiSeg==='late') list=list.filter(s=>cls(s.delay_days,s.status)!=='ok');
-  else if(apiSeg==='mine') list=list.filter(s=>assignments[s.tracking_code]===myName);
+  else if(apiSeg==='mine') list=list.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU));
   else if(apiSeg==='unassigned') list=list.filter(s=>!assignments[s.tracking_code]);
 
   // Update segment counts
   const el=id=>document.getElementById(id);
   if(el('asn-all'))el('asn-all').textContent=apiShipments.length;
-  if(el('asn-mine'))el('asn-mine').textContent=apiShipments.filter(s=>assignments[s.tracking_code]===myName).length;
+  if(el('asn-mine'))el('asn-mine').textContent=apiShipments.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU)).length;
   if(el('asn-driver'))el('asn-driver').textContent=apiShipments.filter(s=>s.status==='with_driver').length;
   if(el('asn-returned'))el('asn-returned').textContent=apiShipments.filter(s=>s.status==='returned').length;
   if(el('asn-comp'))el('asn-comp').textContent=apiShipments.filter(s=>s.status==='in_company').length;
@@ -6428,7 +6453,7 @@ function renderAPIShipments(){
     const assignCell=assignedTo
       ?`<span class="badge b-grn" style="font-size:10px">${assignedTo}</span><button class="btn btn-ghost btn-sm" data-a="undo-assign" data-code="${tc}" style="font-size:10px;padding:2px 6px;margin-inline-start:4px">↩</button>`
       :`<span class="badge b-dim" style="font-size:10px">⏳ غير مسند</span>`;
-    return`<tr class="pr" data-asid="${sid}" style="cursor:pointer;${assignedTo?'background:rgba(58,201,120,.08);':''}${cls(s.delay_days,s.status)==='critical'?'background:rgba(255,58,92,.04)':''}${assignedTo===myName?';border-right:2px solid var(--pur)':''}">
+    return`<tr class="pr" data-asid="${sid}" style="cursor:pointer;${assignedTo?'background:rgba(58,201,120,.08);':''}${cls(s.delay_days,s.status)==='critical'?'background:rgba(255,58,92,.04)':''}${isShipmentAssignedToCurrentUser(assignedTo,CU)?';border-right:2px solid var(--pur)':''}">
       <td><input type="checkbox" data-asid="${sid}" ${apiChecked.has(sid)?'checked':''} style="width:16px;height:16px"></td>
       <td class="mob-hide" style="color:var(--dim);font-size:10px;text-align:center">${(aPage-1)*aPER+idx+1}</td>
       <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
