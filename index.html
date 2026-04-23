@@ -1058,6 +1058,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div style="font-size:18px;font-weight:800">📦 الطرود <span class="badge b-pur" style="font-size:11px">جلب تلقائي من النظام</span></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="renderAPIShipments()">↻ تحديث العرض</button>
+        <button class="btn btn-blu btn-sm" onclick="syncAssignmentsNow()">🔄 مزامنة التعيينات</button>
         <button class="btn btn-wa btn-sm" onclick="bulkWA_API()">💬 واتساب للمحددين</button>
         <button class="btn btn-gold btn-sm manager-only" onclick="openAssignPanel()">👥 توزيع الطرود</button>
       </div>
@@ -7884,6 +7885,27 @@ async function loadAPIAssignmentsFromCloud(){
   }catch(e){
     console.warn('⚠️ loadAPIAssignmentsFromCloud failed:',e);
     return getAPIAssignments();
+  }
+}
+let assignmentsSyncInFlight=false;
+async function syncAssignmentsNow(){
+  if(assignmentsSyncInFlight)return;
+  assignmentsSyncInFlight=true;
+  try{
+    toast('⏳ جاري مزامنة التعيينات...','i');
+    await loadAPIAssignmentsFromCloud();
+    rebuildJanzourShipments();
+    renderAPIShipments();
+    renderJanzour();
+    renderAssignStats();
+    refreshAssignPanelEmps();
+    updateAssignLiveCounter();
+    updateJAssignLiveCounter();
+    toast('✅ تم تحديث التعيينات الآن','s');
+  }catch(e){
+    toast('❌ تعذّر مزامنة التعيينات','e');
+  }finally{
+    assignmentsSyncInFlight=false;
   }
 }
 
