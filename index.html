@@ -616,6 +616,26 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;width:100%}
 .lbfill{height:100%;border-radius:99px}
 .lbv{font-family:var(--mono);font-size:var(--fs-sm);font-weight:900;min-width:32px;text-align:left;color:var(--pale)}
 
+/* ── TRANSFERS TRIP TABLE ── */
+.tr-wrap{border:1px solid var(--rim2);border-radius:var(--r);overflow:hidden;background:var(--bg2)}
+.tr-head{display:grid;grid-template-columns:minmax(150px,1.2fr) 90px 120px 140px;gap:8px;padding:10px 14px;background:var(--bg4);border-bottom:1px solid var(--rim2);font-size:var(--fs-xs);color:var(--dim);font-weight:800}
+.trip-row{display:grid;grid-template-columns:minmax(150px,1.2fr) 90px 120px 140px;gap:8px;padding:11px 14px;border-bottom:1px solid var(--rim);align-items:center;cursor:pointer;transition:background .15s ease}
+.trip-row:hover{background:rgba(2,132,199,.06)}
+.trip-id-cell{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--pale)}
+.trip-toggle{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--bg5);color:var(--mute);font-size:11px;transition:transform .2s ease}
+.trip-row.open .trip-toggle{transform:rotate(90deg)}
+.trip-children{display:none;background:var(--bg3)}
+.trip-children.open{display:block}
+.shipment-row{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) 100px 110px 140px;gap:8px;padding:9px 14px 9px 38px;border-bottom:1px dashed var(--rim);font-size:var(--fs-xs)}
+.shipment-row:last-child{border-bottom:1px solid var(--rim)}
+.status-dot{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.status-dot::before{content:'';width:8px;height:8px;border-radius:50%}
+.status-delivered::before{background:var(--grn)}
+.status-delayed::before{background:var(--red)}
+.status-pending::before{background:var(--gold)}
+.status-default::before{background:var(--dim)}
+.tr-empty,.tr-loading,.tr-error{padding:26px 14px;text-align:center;color:var(--mute);font-weight:700}
+
 /* ── WA TEMPLATE ── */
 .tpl-card{background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r2);padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color .2s}
 .tpl-card:hover{border-color:var(--wa)}
@@ -1057,16 +1077,21 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div class="fbar">
       <select class="fi" id="t-st" onchange="renderTransfers()">
         <option value="">كل الحالات</option>
-        <option value="pending">معلقة</option>
-        <option value="accepted">مقبولة</option>
-        <option value="rejected">مرفوضة</option>
+        <option value="delivered">تم التسليم</option>
+        <option value="delayed">متأخر</option>
+        <option value="pending">معلق</option>
       </select>
     </div>
-    <div class="tw">
-      <table>
-        <thead><tr><th>كود الطرد</th><th>من فرع</th><th>إلى فرع</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead>
-        <tbody id="t-tbody"><tr><td colspan="6" style="text-align:center;padding:36px;color:var(--mute)">لا تحويلات</td></tr></tbody>
-      </table>
+    <div class="tr-wrap">
+      <div class="tr-head">
+        <div>الرحلة</div>
+        <div>العدد</div>
+        <div>الحالة</div>
+        <div>آخر تحديث</div>
+      </div>
+      <div id="transfers-table" aria-live="polite">
+        <div class="tr-empty">لا تحويلات</div>
+      </div>
     </div>
   </div>
 
@@ -2143,6 +2168,7 @@ let USERS = loadUsers();
 
 let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[], contact_results_db=[];
 let returns_data=[], transfers_data=[], contacted=new Set(), checked=new Set();
+let transferTripGroups={}, transferTripOrder=[], transferExpandedTrips=new Set();
 let seg='all', sPage=1, masterSeg='regions', meTable='', meRecord=null, alphaFilter='';
 let shipmentsMenuOpen=false;
 let branchesMenuOpen=false;
@@ -2547,10 +2573,56 @@ async function loadReturns(){
   }catch(e){console.warn('returns',e);}
 }
 async function loadTransfers(){
+  const table=document.getElementById('transfers-table');
+  if(table)table.innerHTML='<div class="tr-loading">⏳ جارٍ تحميل التحويلات...</div>';
   try{
-    transfers_data=await sb('transfers','GET',null,'?select=*,shipments(tracking_code),from_branch:branches!from_branch_id(name),to_branch:branches!to_branch_id(name)&order=created_at.desc&limit=500');
+    const res=await fetch('/api/transfers',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json'}});
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const payload=await res.json();
+    const apiRows=Array.isArray(payload)?payload:(Array.isArray(payload?.data)?payload.data:[]);
+    transfers_data=apiRows.map(r=>({
+      id:r.id||`api-${r.shipment_code||Math.random().toString(16).slice(2)}`,
+      trip_id:r.trip_id||'بدون رحلة',
+      shipment_code:r.shipment_code||r.tracking_code||'—',
+      customer_name:r.customer_name||'—',
+      city:r.city||'—',
+      branch:r.branch||'—',
+      status:(r.status||'pending').toString().toLowerCase(),
+      created_at:r.created_at||new Date().toISOString(),
+      source:'api'
+    }));
+    transfers_data.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+    transferTripGroups=groupByTrip(transfers_data);
+    transferTripOrder=Object.keys(transferTripGroups).sort((a,b)=>String(b).localeCompare(String(a),'ar'));
+    transferExpandedTrips=new Set();
     renderTransfers();
-  }catch(e){console.warn('transfers',e);}
+  }catch(e){
+    console.warn('transfers api',e);
+    try{
+      // Fallback keeps tab usable if Laravel endpoint is unavailable.
+      const legacy=await sb('transfers','GET',null,'?select=*,shipments(tracking_code,customer_name),from_branch:branches!from_branch_id(name),to_branch:branches!to_branch_id(name)&order=created_at.desc&limit=500');
+      transfers_data=legacy.map(t=>({
+        id:t.id,
+        trip_id:t.trip_id||t.batch_id||'legacy',
+        shipment_code:t.shipments?.tracking_code||'—',
+        customer_name:t.shipments?.customer_name||'—',
+        city:t.to_branch?.name||'—',
+        branch:t.from_branch?.name||'—',
+        status:(t.status||'pending').toString().toLowerCase(),
+        created_at:t.created_at||new Date().toISOString(),
+        source:'legacy'
+      }));
+      transfers_data.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+      transferTripGroups=groupByTrip(transfers_data);
+      transferTripOrder=Object.keys(transferTripGroups).sort((a,b)=>String(b).localeCompare(String(a),'ar'));
+      transferExpandedTrips=new Set();
+      renderTransfers();
+    }catch(err){
+      console.warn('transfers fallback',err);
+      if(table)table.innerHTML='<div class="tr-error">❌ تعذر تحميل التحويلات</div>';
+      toast('خطأ في تحميل التحويلات: '+(err.message||e.message),'e');
+    }
+  }
 }
 
 // ══════════════════════════════════════════
@@ -3530,22 +3602,136 @@ async function updateRetLoc(id,current){
 // ══════════════════════════════════════════
 // TRANSFERS
 // ══════════════════════════════════════════
-function getTransferSts(){return getAllTransferStatuses().map(s=>s.key);}
+function groupByTrip(transferShipments){
+  const grouped={};
+  transferShipments.forEach(s=>{
+    const tripId=String(s?.trip_id||'بدون رحلة');
+    if(!grouped[tripId])grouped[tripId]=[];
+    grouped[tripId].push(s);
+  });
+  return grouped;
+}
+
+function getTransferStatusMeta(status){
+  const s=String(status||'').toLowerCase();
+  if(s.includes('deliver'))return {label:'تم التسليم',tone:'status-delivered'};
+  if(s.includes('delay')||s.includes('late'))return {label:'متأخر',tone:'status-delayed'};
+  if(s.includes('pending')||s.includes('accept')||s.includes('reject'))return {label:'معلق',tone:'status-pending'};
+  return {label:s||'غير محدد',tone:'status-default'};
+}
+
+function toggleTrip(tripId){
+  const id=String(tripId);
+  const row=[...document.querySelectorAll('.trip-row')].find(el=>el.dataset.tripId===id);
+  const children=document.getElementById(`trip-${id}`);
+  if(!row||!children)return;
+  const isOpen=children.classList.toggle('open');
+  row.classList.toggle('open',isOpen);
+  if(isOpen)transferExpandedTrips.add(id);else transferExpandedTrips.delete(id);
+}
+
+function createTripChildren(tripId,tripShipments){
+  const children=document.createElement('div');
+  children.id=`trip-${tripId}`;
+  children.className='trip-children';
+  const frag=document.createDocumentFragment();
+
+  tripShipments.forEach(s=>{
+    const shipmentRow=document.createElement('div');
+    shipmentRow.className='shipment-row';
+
+    const code=document.createElement('div');
+    code.textContent=s.shipment_code||'—';
+
+    const customer=document.createElement('div');
+    customer.textContent=s.customer_name||'—';
+
+    const city=document.createElement('div');
+    city.textContent=s.city||'—';
+
+    const branch=document.createElement('div');
+    branch.textContent=s.branch||'—';
+
+    const createdAt=document.createElement('div');
+    createdAt.textContent=s.created_at?new Date(s.created_at).toLocaleDateString('ar-LY'):'—';
+
+    shipmentRow.append(code,customer,city,branch,createdAt);
+    frag.appendChild(shipmentRow);
+  });
+
+  children.appendChild(frag);
+  return children;
+}
+
 function renderTransfers(){
-  const st=document.getElementById('t-st')?.value||'';
-  const allowed=getTransferSts();
-  const stMap={pending:'معلقة',accepted:'مقبولة',rejected:'مرفوضة'};
-  let list=transfers_data.filter(t=>allowed.includes(t.status)&&(!st||t.status===st));
-  const tbody=document.getElementById('t-tbody');
-  if(!list.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mute)">لا تحويلات</td></tr>';return;}
-  tbody.innerHTML=list.map(t=>`<tr>
-    <td class="code-cell">${backofficeOrderLinkHtml(t.shipments?.tracking_code||'—')}</td>
-    <td>${t.from_branch?.name||'—'}</td>
-    <td>${t.to_branch?.name||'—'}</td>
-    <td><span class="badge ${t.status==='accepted'?'b-grn':t.status==='rejected'?'b-red':'b-gold'}">${stMap[t.status]||t.status}</span></td>
-    <td style="font-size:11px;color:var(--mute)">${t.created_at?t.created_at.slice(0,10):'—'}</td>
-    <td>${t.status==='pending'?`<div style="display:flex;gap:4px"><button class="btn btn-grn btn-sm" onclick="updateTransfer('${t.id}','accepted')">قبول</button><button class="btn btn-red btn-sm" onclick="updateTransfer('${t.id}','rejected')">رفض</button></div>`:'—'}</td>
-  </tr>`).join('');
+  const container=document.getElementById('transfers-table');
+  if(!container)return;
+  const statusFilter=(document.getElementById('t-st')?.value||'').toLowerCase();
+  const frag=document.createDocumentFragment();
+  let renderedTrips=0;
+
+  transferTripOrder.forEach(tripId=>{
+    const original=transferTripGroups[tripId]||[];
+    const filtered=original.filter(s=>{
+      if(!statusFilter)return true;
+      const meta=getTransferStatusMeta(s.status);
+      if(statusFilter==='pending')return meta.label==='معلق';
+      return meta.label===(
+        statusFilter==='delivered'?'تم التسليم':
+        statusFilter==='delayed'?'متأخر':''
+      );
+    });
+    if(!filtered.length)return;
+    renderedTrips++;
+
+    const latest=filtered[0]?.created_at||'';
+    const primary=getTransferStatusMeta(filtered[0]?.status);
+
+    const tripRow=document.createElement('div');
+    tripRow.className='trip-row';
+    tripRow.dataset.tripId=tripId;
+
+    const tripCell=document.createElement('div');
+    tripCell.className='trip-id-cell';
+    const arrow=document.createElement('span');
+    arrow.className='trip-toggle';
+    arrow.textContent='▸';
+    const tripLabel=document.createElement('span');
+    tripLabel.textContent=`رحلة #${tripId}`;
+    tripCell.append(arrow,tripLabel);
+
+    const countCell=document.createElement('div');
+    countCell.textContent=String(filtered.length);
+
+    const statusCell=document.createElement('div');
+    statusCell.className=`status-dot ${primary.tone}`;
+    statusCell.textContent=primary.label;
+
+    const dateCell=document.createElement('div');
+    dateCell.textContent=latest?new Date(latest).toLocaleDateString('ar-LY'):'—';
+
+    tripRow.append(tripCell,countCell,statusCell,dateCell);
+    tripRow.addEventListener('click',()=>toggleTrip(tripId));
+
+    const children=createTripChildren(tripId,filtered);
+    if(transferExpandedTrips.has(String(tripId))){
+      tripRow.classList.add('open');
+      children.classList.add('open');
+    }
+
+    frag.appendChild(tripRow);
+    frag.appendChild(children);
+  });
+
+  container.innerHTML='';
+  if(!renderedTrips){
+    const empty=document.createElement('div');
+    empty.className='tr-empty';
+    empty.textContent='لا توجد تحويلات مطابقة';
+    container.appendChild(empty);
+    return;
+  }
+  container.appendChild(frag);
 }
 async function updateTransfer(id,status){
   try{
