@@ -1133,12 +1133,12 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
 
     <!-- KPI Cards -->
     <div class="kgrid" style="margin-bottom:16px">
-      <div class="kcard pur"><div class="klbl">إجمالي الطرود</div><div class="kval" id="ak-total">0</div></div>
-      <div class="kcard red"><div class="klbl">حرج +15 يوم</div><div class="kval" id="ak-crit">0</div></div>
-      <div class="kcard gold"><div class="klbl">تحذير 7-15 يوم</div><div class="kval" id="ak-warn">0</div></div>
-      <div class="kcard grn"><div class="klbl">في الموعد</div><div class="kval" id="ak-ok">0</div></div>
-      <div class="kcard blu"><div class="klbl">مع المندوب</div><div class="kval" id="ak-driver">0</div></div>
-      <div class="kcard orn"><div class="klbl">في الشركة</div><div class="kval" id="ak-comp">0</div></div>
+      <div class="kcard pur" id="ak-card-total"><div class="klbl" id="ak-lbl-total">إجمالي الطرود</div><div class="kval" id="ak-total">0</div></div>
+      <div class="kcard red" id="ak-card-crit"><div class="klbl" id="ak-lbl-crit">حرج +15 يوم</div><div class="kval" id="ak-crit">0</div></div>
+      <div class="kcard gold" id="ak-card-warn"><div class="klbl" id="ak-lbl-warn">تحذير 7-15 يوم</div><div class="kval" id="ak-warn">0</div></div>
+      <div class="kcard grn" id="ak-card-ok"><div class="klbl" id="ak-lbl-ok">في الموعد</div><div class="kval" id="ak-ok">0</div></div>
+      <div class="kcard blu" id="ak-card-driver"><div class="klbl" id="ak-lbl-driver">مع المندوب</div><div class="kval" id="ak-driver">0</div></div>
+      <div class="kcard orn" id="ak-card-comp"><div class="klbl" id="ak-lbl-comp">في الشركة</div><div class="kval" id="ak-comp">0</div></div>
     </div>
 
     <!-- Filters -->
@@ -6264,19 +6264,45 @@ function connectAPI2(){
 }
 
 function updateAPIKPIs(){
+  const isEmployee=CU?.role==='employee';
+  const assignments=getAPIAssignments();
+  const assignedOnly=isEmployee?apiShipments.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU)):apiShipments;
   const crit=apiShipments.filter(s=>cls(s.delay_days,s.status)==='critical').length;
   const warn=apiShipments.filter(s=>cls(s.delay_days,s.status)==='warning').length;
   const ok=apiShipments.filter(s=>cls(s.delay_days,s.status)==='ok').length;
   const drv=apiShipments.filter(s=>s.status==='with_driver').length;
   const comp=apiShipments.filter(s=>s.status==='in_company').length;
+  const myCrit=assignedOnly.filter(s=>cls(s.delay_days,s.status)==='critical').length;
+  const myDrv=assignedOnly.filter(s=>s.status==='with_driver').length;
+  const myReturned=assignedOnly.filter(s=>s.status==='returned').length;
 
-  document.getElementById('ak-total').textContent=apiShipments.length;
-  document.getElementById('ak-crit').textContent=crit;
+  document.getElementById('ak-total').textContent=isEmployee?assignedOnly.length:apiShipments.length;
+  document.getElementById('ak-crit').textContent=isEmployee?myCrit:crit;
   document.getElementById('ak-warn').textContent=warn;
-  document.getElementById('ak-ok').textContent=ok;
-  document.getElementById('ak-driver').textContent=drv;
+  document.getElementById('ak-ok').textContent=isEmployee?myReturned:ok;
+  document.getElementById('ak-driver').textContent=isEmployee?myDrv:drv;
   document.getElementById('ak-comp').textContent=comp;
-  document.getElementById('tb-api').textContent=apiShipments.length;
+  document.getElementById('tb-api').textContent=isEmployee?assignedOnly.length:apiShipments.length;
+
+  const setTxt=(id,v)=>{const x=document.getElementById(id);if(x)x.textContent=v;};
+  const setDisp=(id,v)=>{const x=document.getElementById(id);if(x)x.style.display=v;};
+  if(isEmployee){
+    setTxt('ak-lbl-total','الأكواد المسندة لي');
+    setTxt('ak-lbl-crit','حرج +15 يوم');
+    setTxt('ak-lbl-driver','مع المندوب');
+    setTxt('ak-lbl-ok','راجع');
+    setDisp('ak-card-warn','none');
+    setDisp('ak-card-comp','none');
+  }else{
+    setTxt('ak-lbl-total','إجمالي الطرود');
+    setTxt('ak-lbl-crit','حرج +15 يوم');
+    setTxt('ak-lbl-warn','تحذير 7-15 يوم');
+    setTxt('ak-lbl-ok','في الموعد');
+    setTxt('ak-lbl-driver','مع المندوب');
+    setTxt('ak-lbl-comp','في الشركة');
+    setDisp('ak-card-warn','');
+    setDisp('ak-card-comp','');
+  }
 
   // Segments counts
   const asnAll=document.getElementById('asn-all');
