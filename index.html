@@ -1995,7 +1995,9 @@ const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/
 const LOG_API_BASE = 'api';
 const MANUAL_EXCEL_SHIPMENTS_ONLY = true; // keep main shipments table sourced only from manual Excel upload
 const API_ASSIGNMENTS_STORAGE_KEY = 'api_assignments';
+const API_ASSIGNMENTS_STORAGE_LEGACY_KEYS = ['nawris_api_assignments'];
 const API_ASSIGNMENTS_SETTINGS_KEY = 'api_assignments';
+const API_ASSIGNMENTS_SETTINGS_LEGACY_KEYS = ['nawris_api_assignments'];
 
 // All available tabs for permission system
 const ALL_TABS = [
@@ -2405,11 +2407,11 @@ async function loadAll(){
           }
         }catch(e){console.warn('users sync parse error',e);}
       }
-      if(r.key===API_ASSIGNMENTS_SETTINGS_KEY){
+      if([API_ASSIGNMENTS_SETTINGS_KEY,...API_ASSIGNMENTS_SETTINGS_LEGACY_KEYS].includes(String(r.key||''))){
         try{
           const raw=typeof r.value==='string'?JSON.parse(r.value||'{}'):(r.value||{});
-          const parsed=normalizeAPIAssignments(raw);
-          saveAPIAssignments(parsed,{skipCloudSync:true});
+          const merged={...getAPIAssignments(),...normalizeAPIAssignments(raw)};
+          saveAPIAssignments(merged,{skipCloudSync:true});
         }catch(e){console.warn('api assignments sync parse error',e);}
       }
     });
@@ -7803,7 +7805,16 @@ function normalizeAPIAssignments(raw){
 }
 function getAPIAssignments(){
   try{
-    return normalizeAPIAssignments(JSON.parse(localStorage.getItem(API_ASSIGNMENTS_STORAGE_KEY)||'{}'));
+    const primary=normalizeAPIAssignments(JSON.parse(localStorage.getItem(API_ASSIGNMENTS_STORAGE_KEY)||'{}'));
+    const legacy=API_ASSIGNMENTS_STORAGE_LEGACY_KEYS.reduce((acc,key)=>{
+      try{
+        const raw=localStorage.getItem(key);
+        if(raw)Object.assign(acc,normalizeAPIAssignments(JSON.parse(raw)));
+      }catch{}
+      return acc;
+    },{});
+    const merged={...legacy,...primary};
+    return normalizeAPIAssignments(merged);
   }catch{
     return {};
   }
@@ -7820,16 +7831,25 @@ function scheduleAPIAssignmentsCloudSync(){
 function saveAPIAssignments(obj,{skipCloudSync=false}={}){
   const normalized=normalizeAPIAssignments(obj);
   localStorage.setItem(API_ASSIGNMENTS_STORAGE_KEY,JSON.stringify(normalized));
+  API_ASSIGNMENTS_STORAGE_LEGACY_KEYS.forEach(k=>localStorage.setItem(k,JSON.stringify(normalized)));
   if(!skipCloudSync)scheduleAPIAssignmentsCloudSync();
 }
 async function loadAPIAssignmentsFromCloud(){
   try{
-    const rows=await sb('settings','GET',null,`?key=eq.${API_ASSIGNMENTS_SETTINGS_KEY}&select=value`);
-    if(rows&&rows.length&&rows[0].value){
-      const raw=typeof rows[0].value==='string'?JSON.parse(rows[0].value):(rows[0].value||{});
-      const parsed=normalizeAPIAssignments(raw);
-      saveAPIAssignments(parsed,{skipCloudSync:true});
-      return parsed;
+    const keys=[API_ASSIGNMENTS_SETTINGS_KEY,...API_ASSIGNMENTS_SETTINGS_LEGACY_KEYS];
+    const rows=await sb('settings','GET',null,`?key=in.(${keys.map(k=>`"${k}"`).join(',')})&select=key,value`);
+    const cloud=(rows||[]).reduce((acc,row)=>{
+      try{
+        const raw=typeof row.value==='string'?JSON.parse(row.value||'{}'):(row.value||{});
+        Object.assign(acc,normalizeAPIAssignments(raw));
+      }catch{}
+      return acc;
+    },{});
+    if(Object.keys(cloud).length){
+      saveAPIAssignments(cloud,{skipCloudSync:true});
+      // Normalize cloud to the current primary key for consistent reads.
+      sbUp('settings',[{key:API_ASSIGNMENTS_SETTINGS_KEY,value:JSON.stringify(cloud)}]).catch(()=>{});
+      return cloud;
     }
     const local=getAPIAssignments();
     if(Object.keys(local).length){
