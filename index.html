@@ -5582,19 +5582,49 @@ async function fetchAPIShipments(){
     // API returns 100 items per page with next_cursor for pagination
     let rawData=[];
     const seen=new Set();
-    const startUrl=url.replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
+    const normalizedBaseUrl=url.replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
+    const buildPagedApiUrl=(cursorVal='')=>{
+      const u=new URL(normalizedBaseUrl,window.location.origin);
+      // Required by the remote API: return delayed orders from day 2 and above.
+      u.searchParams.set('delay_days','2');
+      if(cursorVal)u.searchParams.set('cursor',String(cursorVal));
+      else u.searchParams.delete('cursor');
+      return u.toString();
+    };
+    const pickTrackingCode=(item,fallbackIndex=0)=>{
+      const candidates=[
+        item?.code,
+        item?.tracking_code,
+        item?.ParcelCode,
+        item?.order_id,
+        item?.id
+      ];
+      const code=String(candidates.find(v=>String(v||'').trim()!=='')||'').trim();
+      return code||('API-'+Date.now()+'-'+fallbackIndex);
+    };
+    const fetchPageWithRetry=async(pageUrl,retries=2)=>{
+      let lastError=null;
+      for(let attempt=0;attempt<=retries;attempt++){
+        const res=await apiFetch(pageUrl,token);
+        if(res.ok)return res;
+        lastError=new Error(`HTTP ${res.status}`);
+        if(attempt<retries){
+          await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));
+        }
+      }
+      throw lastError||new Error('API request failed');
+    };
 
     let nextCursor=null;
     let pageNum=0;
-    const MAX_PAGES=200; // safety limit ~20,000 shipments
+    const MAX_PAGES=500; // safety limit for very large APIs
 
     do{
       pageNum++;
-      const pageUrl=nextCursor?`${startUrl}&cursor=${encodeURIComponent(nextCursor)}`:startUrl;
+      const pageUrl=buildPagedApiUrl(nextCursor||'');
       if(el)el.textContent=`⏳ جلب الصفحة ${pageNum}... [${rawData.length} طرد حتى الآن]`;
 
-      const res=await apiFetch(pageUrl,token);
-      if(!res.ok){console.warn(`Page ${pageNum} failed: ${res.status}`);break;}
+      const res=await fetchPageWithRetry(pageUrl,2);
       const json=await res.json();
 
       const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
@@ -5602,7 +5632,7 @@ async function fetchAPIShipments(){
 
       let newCount=0;
       for(const item of pageData){
-        const code=String(item.tracking_code||item.ParcelCode||item.code||item.id||'').trim();
+        const code=pickTrackingCode(item,newCount);
         if(code&&!seen.has(code)){seen.add(code);rawData.push(item);newCount++;}
       }
       console.log(`Page ${pageNum}: ${pageData.length} items, ${newCount} new, total: ${rawData.length}, next_cursor: ${nextCursor?'yes':'no'}`);
@@ -5636,7 +5666,7 @@ async function fetchAPIShipments(){
     apiShipments=[];
 
     for(const [i,r] of rawData.entries()){
-      const code=String(r.tracking_code||r.ParcelCode||r.code||r.id||r.order_id||('API-'+Date.now()+'-'+i)).trim();
+      const code=pickTrackingCode(r,i);
       if(seen2.has(code))continue;seen2.add(code);
 
       const days=parseInt(r.delay_days||r[delayField]||r['عدد الايام المتأخرة']||r['التأخير']||0)||0;
@@ -5679,6 +5709,9 @@ async function fetchAPIShipments(){
         branch_commission:null
       });
     }
+
+    // Always show full API data by default after each sync.
+    resetAPIFilters();
 
     // ── MATCH CAPTAIN PHONES FROM drivers_db ──
     enrichAPICaptainPhones();
