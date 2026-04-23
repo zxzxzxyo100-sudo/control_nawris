@@ -2487,6 +2487,29 @@ function stBadge(s){
 }
 function ctBadge(id){return contacted.has(String(id))?'<span class="badge b-grn">✅ تم</span>':'<span class="badge b-dim">⏳</span>';}
 function normPhone(p){if(!p)return'';p=String(p).replace(/[^0-9]/g,'');if(p.startsWith('0')&&p.length===10)p='218'+p.slice(1);return p;}
+function normalizeIdentityText(v){
+  return String(v||'')
+    .trim()
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/g,'')
+    .replace(/[أإآٱ]/g,'ا')
+    .replace(/ى/g,'ي')
+    .replace(/ؤ/g,'و')
+    .replace(/ئ/g,'ي')
+    .replace(/\s+/g,' ');
+}
+function resolveCaptainPhoneStrict(s){
+  if(!s)return '';
+  const captainKey=normalizeIdentityText(s.captain||s.driver_name||'');
+  const direct=normPhone(s.captain_phone||s.driver_phone||'');
+  if(direct)return direct;
+  if(!captainKey)return '';
+  const fromDrivers=(drivers_db||[])
+    .filter(d=>normalizeIdentityText(d?.name||'')===captainKey)
+    .map(d=>normPhone(d?.phone||''))
+    .find(Boolean)||'';
+  return fromDrivers;
+}
 
 // Contact Result helpers — Supabase first, localStorage fallback
 function getCR(sid){
@@ -6199,7 +6222,7 @@ function apiWA(sid,target){
   const stLabel=s.raw_status||s.status||'—';
 
   if(target==='captain'){
-    const ph=normPhone(s.captain_phone||'');
+    const ph=resolveCaptainPhoneStrict(s);
     if(!ph){toast('لا يوجد رقم للمندوب — تحقق من بيانات المناديب','w');return;}
     const msg=`السلام عليكم ${s.captain||''} 👋\n🕊️ ${CFG.company}\n\nتذكير بطرد متأخر:\n📦 كود الطرد: ${s.tracking_code}\n👤 المتجر: ${s.client_name||'—'}\n📱 المستلم: ${s.receiver_name||'—'}\n📞 هاتف المستلم: ${s.customer_phone||'—'}\n📊 الحالة: ${stLabel}\n⏱️ التأخير: ${s.delay_days} يوم\n🏢 الفرع: ${s.current_branch||'—'}\n\n⚠️ يرجى اتخاذ إجراء فوري\n— إدارة ${CFG.company}`;
     openWAUrl(ph,msg);
@@ -6212,7 +6235,8 @@ function apiWA(sid,target){
       if(brn)branchPhone=brn.manager_phone||'';
     }
     const capName=s.captain||'المندوب';
-    const capPh=s.captain_phone?'\nرقم المندوب: '+s.captain_phone:'';
+    const capResolved=resolveCaptainPhoneStrict(s)||'';
+    const capPh=capResolved?'\nرقم المندوب: '+capResolved:'';
     const brPh=branchPhone?'\n\nللاستفسار يمكنكم التواصل مع فرع '+s.current_branch+' على الرقم: '+branchPhone:'';
     const msg=`السلام عليكم ورحمة الله وبركاته\n${s.receiver_name||s.client_name||''} حياكم الله 🕊️\n\nنود إعلامكم من شركة ${CFG.company} أن طردكم رقم: ${s.tracking_code}\nموجود حالياً مع المندوب: ${capName}${capPh}\n\nوسيتم التواصل معكم لتنسيق موعد التسليم في أقرب وقت إن شاء الله.${brPh}\n\nشكراً لثقتكم بنا 🙏\n— ${CFG.company}`;
     openWAUrl(ph,msg);
@@ -6305,11 +6329,7 @@ async function bulkWA_API(){
     .filter(d=>normalizeIdentityText(d?.name||'')===captainKey)
     .map(d=>normPhone(d?.phone||''))
     .find(Boolean)||'';
-  const phoneFromCaptainsCache=(apiCaptainsCache||[])
-    .filter(c=>normalizeIdentityText(c?.name||'')===captainKey)
-    .map(c=>normPhone(c?.phone||''))
-    .find(Boolean)||'';
-  const captainPhone=phoneFromSelected||phoneFromDrivers||phoneFromCaptainsCache||'';
+  const captainPhone=phoneFromSelected||phoneFromDrivers||'';
   if(!captainPhone){
     toast(`لا يوجد رقم واتساب محفوظ للمندوب: ${captainLabel}`,'e');
     return;
