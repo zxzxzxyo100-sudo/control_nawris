@@ -1041,7 +1041,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
   <!-- ══ RETURNS ══ -->
   <div class="page" id="tab-returns">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div style="font-size:18px;font-weight:800">↩️ المرتجعات</div>
+      <div style="font-size:18px;font-weight:800">🏢 في الشركة</div>
       <button class="btn btn-ghost btn-sm" onclick="loadReturns()">↻ تحديث</button>
     </div>
     <div class="fbar">
@@ -1052,7 +1052,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <option value="returned_to_store">تم التسليم للمتجر</option>
       </select>
       <select class="fi" id="r-rsn" onchange="renderReturns()">
-        <option value="">كل الأسباب</option>
+        <option value="">كل الحالات</option>
         <option value="customer_refused">رفض العميل</option>
         <option value="wrong_address">عنوان خاطئ</option>
         <option value="no_answer">لا يرد</option>
@@ -1062,8 +1062,8 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     </div>
     <div class="tw">
       <table>
-        <thead><tr><th>كود الطرد</th><th>العميل</th><th>المندوب</th><th>السبب</th><th>الموقع</th><th>التاريخ</th><th>إجراء</th></tr></thead>
-        <tbody id="r-tbody"><tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا مرتجعات</td></tr></tbody>
+        <thead><tr><th>كود الطرد</th><th>العميل</th><th>المندوب</th><th>التصنيف</th><th>الموقع</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+        <tbody id="r-tbody"><tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا توجد بيانات في الشركة</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -3564,7 +3564,7 @@ function renderReturns(){
     return true;
   });
   const tbody=document.getElementById('r-tbody');
-  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mute)">لا مرتجعات</td></tr>';return;}
+  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mute)">لا توجد بيانات في الشركة</td></tr>';return;}
   tbody.innerHTML=list.map(r=>`<tr>
     <td class="code-cell">${backofficeOrderLinkHtml(r.shipments?.tracking_code||'—')}</td>
     <td>${r.shipments?.customer_name||'—'}</td>
