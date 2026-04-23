@@ -5698,14 +5698,16 @@ async function fetchAPIShipments(){
     };
     const pickTrackingCode=(item,fallbackIndex=0)=>{
       const candidates=[
-        item?.code,
         item?.tracking_code,
         item?.ParcelCode,
+        item?.code,
         item?.order_id,
         item?.id
-      ];
-      const code=String(candidates.find(v=>String(v||'').trim()!=='')||'').trim();
-      return code||('API-'+Date.now()+'-'+fallbackIndex);
+      ].map(v=>String(v||'').trim()).filter(Boolean);
+      if(!candidates.length)return 'API-'+Date.now()+'-'+fallbackIndex;
+      // Prefer alpha-numeric variants (e.g. codes with R suffix) over pure numeric ids.
+      const alphaNumeric=candidates.find(v=>/[a-z]/i.test(v));
+      return alphaNumeric||candidates[0];
     };
     const fetchPageWithRetry=async(pageUrl,retries=2)=>{
       let lastError=null;
