@@ -3777,6 +3777,7 @@ function renderTransfers(){
   if(!container)return;
   const statusFilter=(document.getElementById('t-st')?.value||'').toLowerCase();
   const frag=document.createDocumentFragment();
+  const autoExpandAll=transferExpandedTrips.size===0;
   let renderedTrips=0;
 
   transferTripOrder.forEach(tripId=>{
@@ -3823,9 +3824,10 @@ function renderTransfers(){
     tripRow.addEventListener('click',()=>toggleTrip(tripId));
 
     const children=createTripChildren(tripId,filtered);
-    if(transferExpandedTrips.has(String(tripId))){
+    if(autoExpandAll||transferExpandedTrips.has(String(tripId))){
       tripRow.classList.add('open');
       children.classList.add('open');
+      transferExpandedTrips.add(String(tripId));
     }
 
     frag.appendChild(tripRow);
