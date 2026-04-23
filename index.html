@@ -2567,22 +2567,62 @@ async function loadShipments(){
 }
 
 async function loadReturns(){
+  const EXTERNAL_DELAYED_API='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
+  const MIN_COMPANY_DELAY=2;
   try{
-    returns_data=await sb('returns','GET',null,'?select=*,shipments(tracking_code,customer_name),drivers(name),branches(name)&order=created_at.desc&limit=500');
+    // Branch follow-up "في الشركة": start delay from 2 days.
+    const token=(document.getElementById('api-token2')?.value||document.getElementById('api-token')?.value||'').trim();
+    const res=await apiFetch(`${EXTERNAL_DELAYED_API}?delay_days=${MIN_COMPANY_DELAY}`,token);
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const payload=await res.json();
+    const rows=Array.isArray(payload)?payload:(Array.isArray(payload?.data)?payload.data:[]);
+    const inCompanyRows=rows.filter(r=>{
+      const d=parseInt(r?.delay_days||r?.delay||0)||0;
+      const s=String(r?.status||'').toLowerCase();
+      return d>=MIN_COMPANY_DELAY&&(s.includes('in_company')||s.includes('company')||s.includes('في الشركة'));
+    });
+    returns_data=inCompanyRows.map((r,i)=>({
+      id:r.id||`cmp-${i}`,
+      location:'in_warehouse',
+      reason:'other',
+      created_at:r.created_at||new Date().toISOString(),
+      shipments:{
+        tracking_code:r.shipment_code||r.tracking_code||r.code||'—',
+        customer_name:r.customer_name||r.client_name||'—'
+      },
+      drivers:{name:r.captain||r.driver_name||r.driver||'—'}
+    }));
     renderReturns();
-  }catch(e){console.warn('returns',e);}
+  }catch(e){
+    console.warn('returns api',e);
+    try{
+      returns_data=await sb('returns','GET',null,'?select=*,shipments(tracking_code,customer_name),drivers(name),branches(name)&order=created_at.desc&limit=500');
+      renderReturns();
+    }catch(err){
+      console.warn('returns fallback',err);
+    }
+  }
 }
 async function loadTransfers(){
+  const EXTERNAL_DELAYED_API='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
+  const MIN_TRANSFER_DELAY=3;
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="tr-loading">⏳ جارٍ تحميل التحويلات...</div>';
   try{
-    const res=await fetch('/api/transfers',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json'}});
+    // Transfers follow-up: start delay from 3 days.
+    const token=(document.getElementById('api-token2')?.value||document.getElementById('api-token')?.value||'').trim();
+    const res=await apiFetch(`${EXTERNAL_DELAYED_API}?delay_days=${MIN_TRANSFER_DELAY}`,token);
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const payload=await res.json();
     const apiRows=Array.isArray(payload)?payload:(Array.isArray(payload?.data)?payload.data:[]);
-    transfers_data=apiRows.map(r=>({
+    const transferRows=apiRows.filter(r=>{
+      const d=parseInt(r?.delay_days||r?.delay||0)||0;
+      const s=String(r?.status||'').toLowerCase();
+      return d>=MIN_TRANSFER_DELAY&&(s.includes('transfer')||s.includes('transferred')||s.includes('تحويل')||s.includes('محول'));
+    });
+    transfers_data=transferRows.map((r,i)=>({
       id:r.id||`api-${r.shipment_code||Math.random().toString(16).slice(2)}`,
-      trip_id:r.trip_id||'بدون رحلة',
+      trip_id:r.trip_id||r.tripId||r.batch_id||`no-trip-${i+1}`,
       shipment_code:r.shipment_code||r.tracking_code||'—',
       customer_name:r.customer_name||'—',
       city:r.city||'—',
