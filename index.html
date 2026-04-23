@@ -14,15 +14,15 @@
   --fs-sm:14px;
   --fs-xs:13px;
   --fs-2xs:12px;
-  --crm-sidebar-w:240px;
-  --bg:#08091a;--bg2:#0d1025;--bg3:#121430;--bg4:#181b3a;--bg5:#1e2245;
-  --rim:#252c52;--rim2:#303870;--dim:#445080;--mute:#6878b0;--pale:#a0b0d8;--white:#eef0ff;
-  --gold:#ffb930;--gd:rgba(255,185,48,.14);--gb:rgba(255,185,48,.32);
-  --red:#ff3a5c;--rd:rgba(255,58,92,.14);--rb:rgba(255,58,92,.32);
-  --grn:#00d4a0;--grd:rgba(0,212,160,.12);--grb:rgba(0,212,160,.3);
-  --blu:#4f8aff;--bld:rgba(79,138,255,.14);--blb:rgba(79,138,255,.32);
-  --orn:#ff7c2a;--ord:rgba(255,124,42,.13);--orb:rgba(255,124,42,.3);
-  --pur:#7c4dff;--pur2:#9b6dff;--prd:rgba(124,77,255,.14);--prb:rgba(124,77,255,.32);
+  --crm-sidebar-w:280px;
+  --bg:#f4f7fb;--bg2:#ffffff;--bg3:#ffffff;--bg4:#f8fafc;--bg5:#eef2f7;
+  --rim:#dbe4ee;--rim2:#c8d7e6;--dim:#64748b;--mute:#607086;--pale:#1f2a37;--white:#0f172a;
+  --gold:#d97706;--gd:rgba(217,119,6,.12);--gb:rgba(217,119,6,.26);
+  --red:#dc2626;--rd:rgba(220,38,38,.1);--rb:rgba(220,38,38,.2);
+  --grn:#16a34a;--grd:rgba(22,163,74,.1);--grb:rgba(22,163,74,.2);
+  --blu:#0369a1;--bld:rgba(3,105,161,.1);--blb:rgba(3,105,161,.2);
+  --orn:#ea580c;--ord:rgba(234,88,12,.1);--orb:rgba(234,88,12,.2);
+  --pur:#0284c7;--pur2:#0ea5e9;--prd:rgba(2,132,199,.1);--prb:rgba(2,132,199,.22);
   --wa:#25d366;
   --font:'Inter','Tajawal',sans-serif;--ar-font:'Tajawal',sans-serif;--mono:'IBM Plex Mono',monospace;
   --r:20px;--r2:14px;--r3:9px;
@@ -94,7 +94,7 @@ html.light .theme-pill-thumb{background:#fff;right:auto;left:1px}
 
 *{margin:0;padding:0;box-sizing:border-box}
 html{height:100%;overflow-x:hidden;font-size:var(--fs-base)}
-body{font-family:var(--ar-font);background:var(--bg);color:var(--white);min-height:100vh;height:100%;font-size:1rem;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{font-family:var(--ar-font);background:var(--bg);color:var(--white);min-height:100vh;height:100%;font-size:1rem;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased;background-image:radial-gradient(ellipse 80% 50% at 100% -20%, rgba(14,165,233,.08), transparent),radial-gradient(ellipse 60% 40% at 0% 100%, rgba(12,74,110,.06), transparent)}
 /* Use Inter for numbers and latin text */
 .kval,.kval *,.kval span,
 .mono-num,
@@ -142,7 +142,7 @@ table td:first-child{font-family:var(--mono);font-feature-settings:"tnum"}
 #app.active{display:flex;min-height:100vh;width:100%;overflow-x:hidden}
 
 /* ── SIDEBAR ── */
-.sidebar{width:var(--crm-sidebar-w);background:rgba(8,9,26,.9);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);border-left:2px solid rgba(124,77,255,.28);display:flex;flex-direction:column;position:fixed;top:0;right:0;bottom:0;z-index:300;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:-6px 0 50px rgba(0,0,0,.7)}
+.sidebar{width:var(--crm-sidebar-w);background:linear-gradient(165deg,#082f49 0%,#0c4a6e 45%,#075985 100%);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-left:1px solid rgba(255,255,255,.16);display:flex;flex-direction:column;position:fixed;top:0;right:0;bottom:0;z-index:300;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 36px rgba(2,6,23,.28)}
 .sidebar::-webkit-scrollbar{width:3px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--rim2);border-radius:3px}
 .sb-brand{padding:20px 18px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(155,109,255,.12)}
@@ -150,9 +150,9 @@ table td:first-child{font-family:var(--mono);font-feature-settings:"tnum"}
 .sb-brand-text{font-size:17px;font-weight:900;color:var(--pur);line-height:1.3;letter-spacing:-.2px;font-family:var(--ar-font)}
 .sb-brand-ver{font-size:10px;background:var(--prd);color:var(--pur);padding:2px 7px;border-radius:99px;font-weight:700;margin-right:4px;border:1px solid var(--prb)}
 .sb-nav{flex:1;padding:10px 0 10px 0}
-.sb-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;font-size:15px;font-weight:700;color:var(--mute);transition:all .2s cubic-bezier(.4,0,.2,1);border-right:none;white-space:nowrap;border-radius:14px;margin:3px 10px;font-family:var(--ar-font);border:1px solid transparent}
-.sb-item:hover{color:var(--pale);background:rgba(124,77,255,.1);transform:translateX(-2px)}
-.sb-item.on{color:#fff;background:linear-gradient(135deg,#5c28c0,#7c4dff);border:1px solid rgba(255,255,255,.14);border-right:none;box-shadow:0 4px 18px rgba(124,77,255,.4)}
+.sb-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;font-size:15px;font-weight:700;color:rgba(255,255,255,.76);transition:all .2s cubic-bezier(.4,0,.2,1);border-right:none;white-space:nowrap;border-radius:14px;margin:3px 10px;font-family:var(--ar-font);border:1px solid transparent}
+.sb-item:hover{color:#fff;background:rgba(255,255,255,.1);transform:translateX(-2px)}
+.sb-item.on{color:#fff;background:linear-gradient(90deg, rgba(14,165,233,.35) 0%, rgba(255,255,255,.14) 100%);border:1px solid rgba(255,255,255,.18);border-right:none;box-shadow:0 0 24px rgba(14,165,233,.18), inset 0 1px 0 rgba(255,255,255,.14)}
 .sb-item-icon{min-width:22px;display:flex;align-items:center;justify-content:center;opacity:.7}
 .sb-item.on .sb-item-icon{opacity:1;filter:drop-shadow(0 0 4px rgba(255,255,255,.4))}
 .sb-item .tbadge{background:#ff3a5c;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:9px;margin-right:auto;font-family:var(--mono);box-shadow:0 0 8px rgba(255,58,92,.5)}
@@ -164,7 +164,7 @@ table td:first-child{font-family:var(--mono);font-feature-settings:"tnum"}
 html.light .sidebar{background:rgba(255,255,255,.9);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-left-color:rgba(155,109,255,.2);box-shadow:-4px 0 40px rgba(0,0,0,.1)}
 
 /* ── TOPBAR ── */
-.topbar{height:60px;background:rgba(8,9,26,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:2px solid rgba(124,77,255,.22);display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:200;box-shadow:0 3px 20px rgba(0,0,0,.5);width:100%;box-sizing:border-box}
+.topbar{height:60px;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #dbe4ee;display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(15,23,42,.06);width:100%;box-sizing:border-box}
 html.light .topbar{background:rgba(255,255,255,.9);border-bottom-color:var(--rim)}
 .tlogo{font-size:16px;font-weight:900;color:var(--pur);display:flex;align-items:center;gap:6px;display:none;font-family:var(--ar-font)}
 .tver{font-size:10px;background:var(--prd);color:var(--pur);padding:2px 6px;border-radius:99px;font-weight:700;border:1px solid var(--prb);font-family:var(--mono)}
@@ -376,12 +376,12 @@ tbody tr:nth-child(5){animation-delay:.1s}
 }
 
 /* ── HERO ── */
-.hero{background:linear-gradient(140deg,#1a0848 0%,#120c60 40%,#0a1050 80%,#0d0840 100%);border-radius:var(--r);padding:32px 36px;margin-bottom:26px;border:2px solid rgba(124,77,255,.38);position:relative;overflow:hidden;box-shadow:0 10px 48px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
-.hero::before{content:'';position:absolute;top:-40%;right:0%;width:500px;height:500px;background:radial-gradient(circle,rgba(124,77,255,.18),transparent 60%);pointer-events:none}
-.hero::after{content:'';position:absolute;bottom:-40%;left:8%;width:320px;height:320px;background:radial-gradient(circle,rgba(0,212,160,.08),transparent 60%);pointer-events:none}
-.hero-greeting{font-size:clamp(24px,2.6vw,34px);font-weight:900;margin-bottom:6px;background:linear-gradient(135deg,#fff 25%,#c4a0ff 80%,#7c4dff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:var(--ar-font);line-height:1.25}
-.hero-date{font-size:var(--fs-sm);color:rgba(180,190,220,.9);font-family:var(--ar-font);font-weight:600}
-.hero-meta{font-size:var(--fs-xs);color:rgba(160,170,210,.88);margin-top:10px;font-family:var(--ar-font);font-weight:600}
+.hero{background:linear-gradient(135deg,#f8fcff 0%,#eff7ff 55%,#eaf3fb 100%);border-radius:var(--r);padding:32px 36px;margin-bottom:26px;border:1px solid #cfe1ef;position:relative;overflow:hidden;box-shadow:0 10px 28px rgba(12,74,110,.08),inset 0 1px 0 rgba(255,255,255,.6)}
+.hero::before{content:'';position:absolute;top:-40%;right:0%;width:500px;height:500px;background:radial-gradient(circle,rgba(14,165,233,.18),transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-40%;left:8%;width:320px;height:320px;background:radial-gradient(circle,rgba(12,74,110,.08),transparent 60%);pointer-events:none}
+.hero-greeting{font-size:clamp(24px,2.6vw,34px);font-weight:900;margin-bottom:6px;background:linear-gradient(135deg,#0f172a 25%,#0369a1 80%,#0ea5e9 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:var(--ar-font);line-height:1.25}
+.hero-date{font-size:var(--fs-sm);color:#475569;font-family:var(--ar-font);font-weight:600}
+.hero-meta{font-size:var(--fs-xs);color:#64748b;margin-top:10px;font-family:var(--ar-font);font-weight:600}
 .crm-hero-prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:.92;font-size:var(--fs-sm);color:var(--pale);font-weight:600}
 .crm-hero-prog-foot{font-size:var(--fs-xs);color:var(--mute);margin-top:8px;font-weight:500}
 #hero-env-tag{font-size:var(--fs-xs)!important;font-weight:600;color:rgba(180,160,255,.85)!important}
@@ -389,8 +389,8 @@ tbody tr:nth-child(5){animation-delay:.1s}
 .crm-api-badge{font-size:var(--fs-2xs)!important;font-weight:700;padding:3px 10px!important}
 .crm-alert-title{font-size:17px;font-weight:800;color:var(--red);font-family:var(--ar-font);line-height:1.35}
 .crm-alert-sub{font-size:var(--fs-xs);color:var(--mute);margin-top:4px;font-family:var(--ar-font);line-height:1.45}
-.hprog-track{background:rgba(255,255,255,.08);border-radius:99px;height:7px;overflow:hidden;margin-top:14px;position:relative}
-.hprog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pur),#a855f7,var(--grn));transition:width 1s cubic-bezier(.4,0,.2,1);position:relative}
+.hprog-track{background:rgba(15,23,42,.08);border-radius:99px;height:7px;overflow:hidden;margin-top:14px;position:relative}
+.hprog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pur),#38bdf8,var(--grn));transition:width 1s cubic-bezier(.4,0,.2,1);position:relative}
 .hprog-fill::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 2s ease 1.2s forwards}
 @keyframes shimmer{0%{left:-60%}100%{left:150%}}
 html.light .hero{background:linear-gradient(140deg,#e8e0ff 0%,#dce8ff 55%,#e2eeff 100%);border-color:rgba(124,77,255,.45);box-shadow:0 8px 32px rgba(0,0,0,.08)}
@@ -403,64 +403,64 @@ html.light .hero-greeting{background:linear-gradient(135deg,#1a1d2e 30%,var(--pu
 @media(min-width:1560px){.kgrid{grid-template-columns:repeat(6,1fr)}}
 @media(max-width:480px){.kgrid{grid-template-columns:repeat(1,1fr)}}
 
-/* Solid-colored CRM-style KPI cards */
-.kcard{border:1px solid rgba(255,255,255,.14);border-radius:var(--r);padding:22px 20px 52px;position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;animation:slideUp .35s ease both;min-height:128px;background:var(--bg3)}
-.kcard.gold{background:linear-gradient(140deg,#7a4a00 0%,#b06c00 45%,#d48500 100%)}
-.kcard.red{background:linear-gradient(140deg,#6b0a1e 0%,#a01030 45%,#c8203c 100%)}
-.kcard.grn{background:linear-gradient(140deg,#004d32 0%,#007a52 45%,#009e6a 100%)}
-.kcard.blu{background:linear-gradient(140deg,#102060 0%,#1a3898 45%,#2a54c8 100%)}
-.kcard.orn{background:linear-gradient(140deg,#6b2c00 0%,#a04208 45%,#d05a10 100%)}
-.kcard.pur{background:linear-gradient(140deg,#2e1260 0%,#4c22a0 45%,#6e38d8 100%)}
+/* CRM-style KPI cards (light theme) */
+.kcard{border:1px solid #d9e3ee;border-radius:var(--r);padding:22px 20px 52px;position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;animation:slideUp .35s ease both;min-height:128px;background:#fff;box-shadow:0 4px 20px -4px rgba(12,74,110,.12),0 8px 16px -8px rgba(15,23,42,.08)}
+.kcard.gold{background:linear-gradient(140deg,#fff7ed 0%,#ffedd5 55%,#fed7aa 100%)}
+.kcard.red{background:linear-gradient(140deg,#fef2f2 0%,#fee2e2 55%,#fecaca 100%)}
+.kcard.grn{background:linear-gradient(140deg,#f0fdf4 0%,#dcfce7 55%,#bbf7d0 100%)}
+.kcard.blu{background:linear-gradient(140deg,#eff6ff 0%,#dbeafe 55%,#bfdbfe 100%)}
+.kcard.orn{background:linear-gradient(140deg,#fff7ed 0%,#ffedd5 55%,#fed7aa 100%)}
+.kcard.pur{background:linear-gradient(140deg,#f0f9ff 0%,#e0f2fe 55%,#bae6fd 100%)}
 
 /* Glow decorative ring inside card */
 .kcard::before{content:'';position:absolute;top:-30%;right:-15%;width:160px;height:160px;border-radius:50%;pointer-events:none;opacity:.35}
-.kcard.gold::before{background:radial-gradient(circle,rgba(255,185,48,.6),transparent 70%)}
-.kcard.red::before{background:radial-gradient(circle,rgba(255,58,92,.6),transparent 70%)}
-.kcard.grn::before{background:radial-gradient(circle,rgba(0,212,160,.6),transparent 70%)}
-.kcard.blu::before{background:radial-gradient(circle,rgba(79,138,255,.6),transparent 70%)}
-.kcard.orn::before{background:radial-gradient(circle,rgba(255,124,42,.6),transparent 70%)}
-.kcard.pur::before{background:radial-gradient(circle,rgba(155,109,255,.6),transparent 70%)}
+.kcard.gold::before{background:radial-gradient(circle,rgba(217,119,6,.24),transparent 70%)}
+.kcard.red::before{background:radial-gradient(circle,rgba(220,38,38,.24),transparent 70%)}
+.kcard.grn::before{background:radial-gradient(circle,rgba(22,163,74,.24),transparent 70%)}
+.kcard.blu::before{background:radial-gradient(circle,rgba(3,105,161,.24),transparent 70%)}
+.kcard.orn::before{background:radial-gradient(circle,rgba(234,88,12,.24),transparent 70%)}
+.kcard.pur::before{background:radial-gradient(circle,rgba(2,132,199,.24),transparent 70%)}
 
-.kcard:hover{transform:translateY(-5px);box-shadow:0 14px 36px rgba(0,0,0,.5)}
+.kcard:hover{transform:translateY(-5px);box-shadow:0 14px 28px rgba(2,6,23,.14)}
 .kcard[onclick]{cursor:pointer}
 .kcard[onclick]:active{transform:scale(.96) translateY(-2px)}
 .kcard-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-.kval{font-size:clamp(36px,4vw,46px);font-weight:900;font-family:var(--mono);line-height:1;letter-spacing:-1px;margin:6px 0 4px;color:#fff !important}
-.klbl{font-size:var(--fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.65px;color:rgba(255,255,255,.82);margin-bottom:6px;font-family:var(--mono)}
+.kval{font-size:clamp(36px,4vw,46px);font-weight:900;font-family:var(--mono);line-height:1;letter-spacing:-1px;margin:6px 0 4px;color:#0f172a !important}
+.klbl{font-size:var(--fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.65px;color:#475569;margin-bottom:6px;font-family:var(--mono)}
 
 /* Sparkline — white glow on solid cards */
 .kcard-sparkline{position:absolute;bottom:0;left:0;right:0;height:44px;opacity:.45}
-.kcard-sparkline polyline,.kcard-sparkline path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke:rgba(255,255,255,.9)}
+.kcard-sparkline polyline,.kcard-sparkline path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke:rgba(15,23,42,.35)}
 
 /* Pulse dot for critical card */
-.pulse-dot{width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block;animation:pulseDot 1.5s ease infinite;flex-shrink:0}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block;animation:pulseDot 1.5s ease infinite;flex-shrink:0}
 @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
-.kcard-actions{font-size:var(--fs-2xs);color:rgba(255,255,255,.75);margin-top:8px;display:flex;align-items:center;gap:5px;font-family:var(--ar-font);font-weight:600}
+.kcard-actions{font-size:var(--fs-2xs);color:#64748b;margin-top:8px;display:flex;align-items:center;gap:5px;font-family:var(--ar-font);font-weight:600}
 .kcard-actions svg{width:10px;height:10px;opacity:.7}
 /* ── API KPI mini-cards ── */
 .api-kgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 @media(max-width:1200px){.api-kgrid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:960px){.api-kgrid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:640px){.api-kgrid{grid-template-columns:repeat(2,1fr)}}
-.api-kcard{border:1px solid rgba(255,255,255,.12);border-radius:var(--r2);padding:18px 16px 16px;cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden;background:var(--bg4)}
+.api-kcard{border:1px solid #d9e3ee;border-radius:var(--r2);padding:18px 16px 16px;cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden;background:#fff;box-shadow:0 4px 16px rgba(12,74,110,.1)}
 .api-kcard::before{content:'';position:absolute;top:-30%;right:-15%;width:100px;height:100px;border-radius:50%;pointer-events:none;opacity:.3}
-.api-kcard.pur{background:linear-gradient(140deg,#2e1260,#5c28c0)}
-.api-kcard.pur::before{background:radial-gradient(circle,rgba(155,109,255,.7),transparent 70%)}
-.api-kcard.red{background:linear-gradient(140deg,#5a0a18,#a8183a)}
-.api-kcard.red::before{background:radial-gradient(circle,rgba(255,58,92,.7),transparent 70%)}
-.api-kcard.gold{background:linear-gradient(140deg,#5c3800,#a86800)}
-.api-kcard.gold::before{background:radial-gradient(circle,rgba(255,185,48,.7),transparent 70%)}
-.api-kcard.grn{background:linear-gradient(140deg,#004028,#007050)}
-.api-kcard.grn::before{background:radial-gradient(circle,rgba(0,212,160,.7),transparent 70%)}
-.api-kcard.blu{background:linear-gradient(140deg,#0e1a50,#1e3a90)}
-.api-kcard.blu::before{background:radial-gradient(circle,rgba(79,138,255,.7),transparent 70%)}
-.api-kcard:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.api-kcard .kval{font-size:clamp(26px,3.2vw,34px);color:#fff !important}
-.api-kcard .klbl{color:rgba(255,255,255,.82)}
+.api-kcard.pur{background:linear-gradient(140deg,#f0f9ff,#e0f2fe)}
+.api-kcard.pur::before{background:radial-gradient(circle,rgba(2,132,199,.22),transparent 70%)}
+.api-kcard.red{background:linear-gradient(140deg,#fef2f2,#fee2e2)}
+.api-kcard.red::before{background:radial-gradient(circle,rgba(220,38,38,.22),transparent 70%)}
+.api-kcard.gold{background:linear-gradient(140deg,#fff7ed,#ffedd5)}
+.api-kcard.gold::before{background:radial-gradient(circle,rgba(217,119,6,.22),transparent 70%)}
+.api-kcard.grn{background:linear-gradient(140deg,#f0fdf4,#dcfce7)}
+.api-kcard.grn::before{background:radial-gradient(circle,rgba(22,163,74,.22),transparent 70%)}
+.api-kcard.blu{background:linear-gradient(140deg,#eff6ff,#dbeafe)}
+.api-kcard.blu::before{background:radial-gradient(circle,rgba(3,105,161,.22),transparent 70%)}
+.api-kcard:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(2,6,23,.14)}
+.api-kcard .kval{font-size:clamp(26px,3.2vw,34px);color:#0f172a !important}
+.api-kcard .klbl{color:#475569}
 
 /* ── CARD ── */
-.card{background:var(--bg3);border:1px solid var(--rim2);border-radius:var(--r);padding:22px 24px;margin-bottom:18px;transition:border-color .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(0,0,0,.35)}
-.card:hover{border-color:rgba(124,77,255,.35);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.card{background:#fff;border:1px solid #d9e3ee;border-radius:var(--r);padding:22px 24px;margin-bottom:18px;transition:border-color .2s,box-shadow .2s;box-shadow:0 4px 24px -4px rgba(12,74,110,.1),0 2px 8px -2px rgba(15,23,42,.04)}
+.card:hover{border-color:rgba(2,132,199,.35);box-shadow:0 12px 28px rgba(2,6,23,.12)}
 .ctitle{font-size:16px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;letter-spacing:-.02em;font-family:var(--ar-font);color:var(--white)}
 /* Page section headers */
 .page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
@@ -476,17 +476,8 @@ html.light .hero-greeting{background:linear-gradient(135deg,#1a1d2e 30%,var(--pu
 /* ── TABLE ── */
 .tw{overflow-x:auto;overflow-y:hidden;border-radius:var(--r);border:1px solid var(--rim2);-webkit-overflow-scrolling:touch;background:var(--bg2)}
 table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
-thead th{background:rgba(18,20,48,.95);padding:13px 16px;text-align:right;font-size:var(--fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--pale);border-bottom:2px solid var(--rim2);white-space:nowrap;font-family:var(--mono)}
-tbody td{padding:13px 16px;border-bottom:1px solid rgba(37,44,82,.85);color:var(--pale);white-space:nowrap;vertical-align:middle;transition:background .15s;font-family:var(--ar-font);font-size:var(--fs-sm)}
-/* Keep shipments tables fully visible on typical laptop widths */
-#tab-shipments .tw,
-#tab-shipments-legacy .tw{overflow-x:auto}
-#tab-shipments table,
-#tab-shipments-legacy table{font-size:12px}
-#tab-shipments thead th,
-#tab-shipments-legacy thead th{padding:9px 10px;font-size:10px;letter-spacing:.25px}
-#tab-shipments tbody td,
-#tab-shipments-legacy tbody td{padding:8px 9px;font-size:11px}
+thead th{background:linear-gradient(to left,#f8fafc,#f1f5f9);padding:13px 16px;text-align:right;font-size:var(--fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:#475569;border-bottom:2px solid #e2e8f0;white-space:nowrap;font-family:var(--mono)}
+tbody td{padding:13px 16px;border-bottom:1px solid #e8eef5;color:#334155;white-space:nowrap;vertical-align:middle;transition:background .15s;font-family:var(--ar-font);font-size:var(--fs-sm)}
 tbody tr:last-child td{border-bottom:none}
 tbody tr.pr:hover td{background:rgba(124,77,255,.07)}
 tbody tr:hover td{background:rgba(124,77,255,.04)}
@@ -506,7 +497,7 @@ html.light a.bo-order-link{color:#1d4ed8}
 .dp-o{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--r3);font-family:var(--mono);font-size:var(--fs-2xs);font-weight:800;background:var(--grd);color:var(--grn);border:1px solid var(--grb)}
 
 /* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--r2);border:none;font-family:var(--ar-font);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s cubic-bezier(.4,0,.2,1);letter-spacing:.02em;min-height:40px;box-sizing:border-box}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--r2);border:none;font-family:var(--ar-font);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s cubic-bezier(.4,0,.2,1);letter-spacing:.02em;min-height:40px;box-sizing:border-box;box-shadow:0 4px 12px rgba(2,132,199,.18)}
 .btn:hover{opacity:.88;transform:translateY(-1px)}
 .btn:active{transform:scale(.93) translateY(0);transition:transform .1s cubic-bezier(.34,1.56,.64,1)}
 .btn-gold{background:var(--gold);color:var(--bg)}
@@ -527,7 +518,7 @@ html.light a.bo-order-link{color:#1d4ed8}
 
 /* ── FILTERS ── */
 .fbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.fi{padding:10px 14px;background:var(--bg4);border:1px solid var(--rim2);border-radius:var(--r2);color:var(--white);font-family:var(--font);font-size:var(--fs-sm);transition:border-color .2s;min-height:42px}
+.fi{padding:10px 14px;background:#fff;border:1px solid #d1dbe8;border-radius:var(--r2);color:#0f172a;font-family:var(--font);font-size:var(--fs-sm);transition:border-color .2s, box-shadow .2s;min-height:42px}
 .fi:focus{outline:none;border-color:var(--pur)}
 .fi-grow{flex:1;min-width:200px}
 
@@ -696,17 +687,21 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <nav class="sb-nav" id="nav-tabs">
       <div class="sb-section">القائمة الرئيسية</div>
       <div class="sb-item on" data-tab="home"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> الرئيسية</div>
+      <div class="sb-item" data-tab="shipments"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span> الطرود <span class="tbadge" id="tb-crit">0</span></div>
       <div class="sb-item" data-tab="drivers"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> المناديب</div>
-      <div class="sb-item" data-tab="branch-followup"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span> متابعة الفروع</div>
-      <div class="sb-item" data-tab="shipments"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span> الطرود <span class="tbadge" id="tb-api" style="background:var(--pur)">0</span></div>
+      <div class="sb-item" data-tab="returns"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg></span> المرتجعات</div>
+      <div class="sb-item" data-tab="transfers"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span> التحويلات</div>
+      <div class="sb-item" data-tab="api-shipments"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span> طرود API <span class="tbadge" id="tb-api" style="background:var(--pur)">0</span></div>
       <div class="sb-item" data-tab="janzour"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> متابعة جنزور <span class="tbadge" id="tb-janzour" style="background:var(--grn)">0</span></div>
       <div class="sb-item" data-tab="janzour-rates"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></span> نسب ومعدلات جنزور</div>
+      <div class="sb-item" data-tab="service-kpi"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></span> أداء الخدمة</div>
       <div class="sb-item" data-tab="whatsapp"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> واتساب</div>
       <div class="sb-divider"></div>
       <div class="sb-section manager-only">الإدارة</div>
       <div class="sb-item manager-only" data-tab="users"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> المستخدمون</div>
       <div class="sb-item manager-only" data-tab="reports"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> التقارير</div>
       <div class="sb-item manager-only" data-tab="staff"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> متابعة الموظفين</div>
+      <div class="sb-item manager-only" data-tab="commission-admin"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> عمولات جنزور</div>
       <div class="sb-item manager-only" data-tab="master"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> البيانات الثابتة</div>
       <div class="sb-item manager-only" data-tab="upload"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></span> رفع البيانات</div>
     </nav>
@@ -826,25 +821,25 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       </div>
     </div>
 
-    <!-- Shipments Summary -->
+    <!-- API Shipments Summary -->
     <div style="margin-bottom:24px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="width:5px;height:26px;border-radius:3px;background:linear-gradient(180deg,var(--pur),var(--blu))"></div>
-          <div class="crm-section-head">ملخص الطرود</div>
+          <div class="crm-section-head">ملخص طرود API</div>
           <span class="crm-api-badge" style="background:var(--prd);color:var(--pur);border-radius:99px;border:1px solid var(--prb);font-family:var(--mono)" id="h-ak-badge">0</span>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('shipments')" style="gap:5px">
+        <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')" style="gap:5px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           عرض الكل
         </button>
       </div>
       <div class="api-kgrid" id="h-api-kpis">
-        <div class="api-kcard pur" onclick="goShipments('','')"><div class="klbl">إجمالي الطرود</div><div class="kval" id="h-ak-total">0</div></div>
-        <div class="api-kcard red" onclick="goShipments('delay','critical')"><div class="kcard-header"><div class="klbl">حرج +15 يوم</div><span class="pulse-dot"></span></div><div class="kval" id="h-ak-crit">0</div></div>
-        <div class="api-kcard gold" onclick="goShipments('delay','warning')"><div class="klbl">تحذير 7-15 يوم</div><div class="kval" id="h-ak-warn">0</div></div>
-        <div class="api-kcard grn" onclick="goShipments('status','with_driver')"><div class="klbl">مع المندوب</div><div class="kval" id="h-ak-driver">0</div></div>
-        <div class="api-kcard blu" onclick="goShipments('status','in_company')"><div class="klbl">في الشركة</div><div class="kval" id="h-ak-comp">0</div></div>
+        <div class="api-kcard pur" onclick="goAPIShipments('','')"><div class="klbl">إجمالي API</div><div class="kval" id="h-ak-total">0</div></div>
+        <div class="api-kcard red" onclick="goAPIShipments('delay','critical')"><div class="kcard-header"><div class="klbl">حرج +15 يوم</div><span class="pulse-dot"></span></div><div class="kval" id="h-ak-crit">0</div></div>
+        <div class="api-kcard gold" onclick="goAPIShipments('delay','warning')"><div class="klbl">تحذير 7-15 يوم</div><div class="kval" id="h-ak-warn">0</div></div>
+        <div class="api-kcard grn" onclick="goAPIShipments('status','with_driver')"><div class="klbl">مع المندوب</div><div class="kval" id="h-ak-driver">0</div></div>
+        <div class="api-kcard blu" onclick="goAPIShipments('status','in_company')"><div class="klbl">في الشركة</div><div class="kval" id="h-ak-comp">0</div></div>
       </div>
     </div>
 
@@ -852,14 +847,14 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="card lb-card">
         <div class="ctitle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16" style="color:var(--red)"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          أكثر المناطق تأخيراً
+          أكثر المناطق تأخيراً (API)
         </div>
         <div id="area-lb"></div>
       </div>
       <div class="card lb-card">
         <div class="ctitle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16" style="color:var(--gold)"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          المناديب الأكثر تأخيراً
+          المناديب الأكثر تأخيراً (API)
         </div>
         <div id="drv-lb"></div>
       </div>
@@ -867,7 +862,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
   </div>
 
   <!-- ══ SHIPMENTS ══ -->
-  <div class="page" id="tab-shipments-legacy" style="display:none">
+  <div class="page" id="tab-shipments">
     <div class="page-hdr">
       <div class="page-title"><span class="page-title-accent"></span>متابعة الطرود</div>
       <div style="display:flex;gap:7px">
@@ -991,74 +986,65 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     </div>
   </div>
 
-  <!-- ══ BRANCH FOLLOW-UP (RETURNS + TRANSFERS) ══ -->
-  <div class="page" id="tab-branch-followup">
+  <!-- ══ RETURNS ══ -->
+  <div class="page" id="tab-returns">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div style="font-size:18px;font-weight:800">🧭 متابعة الفروع</div>
-      <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="refreshBranchFollowupAPI(true)">↻ تحديث</button>
-      </div>
+      <div style="font-size:18px;font-weight:800">↩️ المرتجعات</div>
+      <button class="btn btn-ghost btn-sm" onclick="loadReturns()">↻ تحديث</button>
     </div>
-    <div class="card" style="border-right:3px solid var(--pur);margin-bottom:12px">
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <input class="fi" id="bf-api-url" placeholder="رابط API متابعة الفروع..." dir="ltr" style="min-width:260px;font-size:11px">
-        <input class="fi" id="bf-api-token" type="password" placeholder="Token متابعة الفروع..." dir="ltr" style="min-width:170px;font-size:11px">
-        <button class="btn btn-pur btn-sm" onclick="connectBranchFollowupAPI()">🔌 حفظ اتصال متابعة الفروع</button>
-      </div>
-      <div id="bf-api-status" style="font-size:11px;color:var(--mute);margin-top:6px"></div>
-    </div>
-    <div class="fbar" style="margin-bottom:12px">
-      <select class="fi" id="bf-mode" onchange="setBranchFollowupTab(this.value)" style="min-width:200px">
-        <option value="company">🏢 في الشركة</option>
-        <option value="transfers">🔄 التحويلات</option>
+    <div class="fbar">
+      <select class="fi" id="r-loc" onchange="renderReturns()" id="r-loc-sel">
+        <option value="">كل المواقع</option>
+        <option value="with_driver">مع المندوب</option>
+        <option value="in_warehouse">في المخزن</option>
+        <option value="returned_to_store">تم التسليم للمتجر</option>
+      </select>
+      <select class="fi" id="r-rsn" onchange="renderReturns()">
+        <option value="">كل الأسباب</option>
+        <option value="customer_refused">رفض العميل</option>
+        <option value="wrong_address">عنوان خاطئ</option>
+        <option value="no_answer">لا يرد</option>
+        <option value="damaged">تالف</option>
+        <option value="other">أخرى</option>
       </select>
     </div>
-
-    <div id="bf-company-pane">
-      <div class="fbar">
-        <select class="fi" id="bf-company-branch" onchange="renderReturns()" style="min-width:200px">
-          <option value="">كل الفروع</option>
-        </select>
-        <input class="fi" id="bf-company-days-min" type="number" min="0" value="2" onchange="renderReturns()" oninput="renderReturns()" style="max-width:140px" placeholder="أيام التأخير">
-      </div>
-      <div class="tw">
-        <table>
-          <thead><tr><th>كود الطرد</th><th>المتجر / العميل</th><th>المندوب</th><th>الحالة</th><th>الفرع المستلم</th><th>التأخير</th><th>المصدر</th></tr></thead>
-          <tbody id="r-tbody"><tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا مرتجعات</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="bf-transfers-pane" style="display:none">
-      <div class="fbar">
-        <select class="fi" id="bf-transfer-from" onchange="renderTransfers()" style="min-width:180px">
-          <option value="">كل الفروع (المرسل)</option>
-        </select>
-        <select class="fi" id="bf-transfer-to" onchange="renderTransfers()" style="min-width:180px">
-          <option value="">كل الفروع (المستلم)</option>
-        </select>
-        <input class="fi" id="bf-transfer-days-min" type="number" min="0" value="3" onchange="renderTransfers()" oninput="renderTransfers()" style="max-width:140px" placeholder="أيام التأخير">
-        <select class="fi" id="bf-transfer-view" onchange="renderTransfers()" style="min-width:170px">
-          <option value="trips">عرض الرحلات (مجمع)</option>
-          <option value="orders">عرض الطلبات (تفصيلي)</option>
-        </select>
-      </div>
-      <div class="tw">
-        <table>
-          <thead><tr><th>رحلة / كود</th><th>من فرع</th><th>إلى فرع</th><th>اليوم / الحالة</th><th>التأخير</th><th>التفاصيل</th></tr></thead>
-          <tbody id="t-tbody"><tr><td colspan="6" style="text-align:center;padding:36px;color:var(--mute)">لا تحويلات</td></tr></tbody>
-        </table>
-      </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>كود الطرد</th><th>العميل</th><th>المندوب</th><th>السبب</th><th>الموقع</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+        <tbody id="r-tbody"><tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا مرتجعات</td></tr></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ══ SHIPMENTS ══ -->
-  <div class="page" id="tab-shipments">
+  <!-- ══ TRANSFERS ══ -->
+  <div class="page" id="tab-transfers">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div style="font-size:18px;font-weight:800">📦 الطرود <span class="badge b-pur" style="font-size:11px">جلب تلقائي من النظام</span></div>
+      <div style="font-size:18px;font-weight:800">🔄 التحويلات</div>
+      <button class="btn btn-ghost btn-sm" onclick="loadTransfers()">↻ تحديث</button>
+    </div>
+    <div class="fbar">
+      <select class="fi" id="t-st" onchange="renderTransfers()">
+        <option value="">كل الحالات</option>
+        <option value="pending">معلقة</option>
+        <option value="accepted">مقبولة</option>
+        <option value="rejected">مرفوضة</option>
+      </select>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>كود الطرد</th><th>من فرع</th><th>إلى فرع</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+        <tbody id="t-tbody"><tr><td colspan="6" style="text-align:center;padding:36px;color:var(--mute)">لا تحويلات</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ API SHIPMENTS ══ -->
+  <div class="page" id="tab-api-shipments">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:18px;font-weight:800">🔗 طرود API <span class="badge b-pur" style="font-size:11px">جلب تلقائي من النظام</span></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn btn-pur btn-sm" onclick="fetchAPIShipments()">⬇️ جلب الآن</button>
         <button class="btn btn-ghost btn-sm" onclick="renderAPIShipments()">↻ تحديث العرض</button>
-        <button class="btn btn-blu btn-sm" onclick="syncAssignmentsNow()">🔄 مزامنة التعيينات</button>
         <button class="btn btn-wa btn-sm" onclick="bulkWA_API()">💬 واتساب للمحددين</button>
         <button class="btn btn-gold btn-sm manager-only" onclick="openAssignPanel()">👥 توزيع الطرود</button>
       </div>
@@ -1120,7 +1106,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <input class="fi" id="api-url2" placeholder="رابط API..." dir="ltr" style="min-width:200px;font-size:11px">
           <input class="fi" id="api-token2" type="password" placeholder="Token..." dir="ltr" style="min-width:140px;font-size:11px">
           <select class="fi" id="api-interval2" style="font-size:11px;min-width:auto">
-            <option value="0">إيقاف</option>
+            <option value="0">يدوي</option>
             <option value="1">كل ساعة</option>
             <option value="3">كل 3 ساعات</option>
             <option value="6">كل 6 ساعات</option>
@@ -1141,25 +1127,27 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="kcard orn" id="ak-card-comp"><div class="klbl" id="ak-lbl-comp">في الشركة</div><div class="kval" id="ak-comp">0</div></div>
     </div>
 
+    <!-- Segments -->
+    <div class="segs">
+      <div class="seg on" data-aseg="all">الكل <span class="seg-n" id="asn-all">0</span></div>
+      <div class="seg" data-aseg="mine">👤 مسنداتي <span class="seg-n" id="asn-mine">0</span></div>
+      <div class="seg" data-aseg="driver">🚗 مع المندوب <span class="seg-n" id="asn-driver">0</span></div>
+      <div class="seg" data-aseg="company">🏢 في الشركة <span class="seg-n" id="asn-comp">0</span></div>
+      <div class="seg" data-aseg="late">🔴 متأخرة <span class="seg-n" id="asn-late">0</span></div>
+      <div class="seg manager-only" data-aseg="unassigned">⚠️ غير مسندة <span class="seg-n" id="asn-unassigned">0</span></div>
+    </div>
+
     <!-- Filters -->
     <div class="fbar">
       <input class="fi fi-grow" id="a-q" type="text" placeholder="🔍 بحث بالكود، المتجر، المستلم، المندوب، الفرع..." oninput="renderAPIShipments()">
       <button class="btn btn-ghost btn-sm" onclick="resetAPIFilters()" title="مسح الفلاتر">✕ مسح</button>
     </div>
     <div class="fbar" style="flex-wrap:wrap">
-      <select class="fi" id="a-view-mode" onchange="setAPISeg(this.value)" style="min-width:170px">
-        <option value="all">عرض: الكل</option>
-        <option value="mine">عرض: مسنداتي</option>
-        <option value="driver">عرض: مع المندوب</option>
-        <option value="returned">عرض: مرتجع</option>
-        <option value="company">عرض: في الشركة</option>
-        <option value="late">عرض: متأخرة</option>
-        <option value="unassigned">عرض: غير مسندة</option>
-      </select>
-      <select class="fi" id="a-main-type" onchange="renderAPIShipments()" style="min-width:140px">
-        <option value="">نوع القائمة</option>
-        <option value="with_driver">مع المندوب</option>
-        <option value="returned">مرتجع</option>
+      <select class="fi" id="a-fd" onchange="renderAPIShipments()" style="min-width:120px">
+        <option value="">كل التأخير</option>
+        <option value="critical">🔴 +15 يوم</option>
+        <option value="warning">🟡 7-15 يوم</option>
+        <option value="ok">🟢 في الموعد</option>
       </select>
       <select class="fi" id="a-fst" onchange="renderAPIShipments()" style="min-width:120px">
         <option value="">كل الحالات</option>
@@ -1169,13 +1157,25 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <option value="returned">مرتجع</option>
         <option value="delivered">مُسلَّم</option>
       </select>
+      <select class="fi manager-only" id="a-femp" onchange="renderAPIShipments()" style="min-width:140px"><option value="">كل الموظفين</option></select>
+      <select class="fi" id="a-fcap" onchange="renderAPIShipments()" style="min-width:120px"><option value="">كل المناديب</option></select>
       <select class="fi" id="a-fbr" onchange="renderAPIShipments()" style="min-width:120px"><option value="">كل الفروع</option></select>
+      <select class="fi" id="a-fgov" onchange="renderAPIShipments()" style="min-width:120px"><option value="">كل المحافظات</option></select>
+      <select class="fi" id="a-fdays" onchange="renderAPIShipments()" style="min-width:130px">
+        <option value="">أيام التأخير</option>
+        <option value="0-5">0-5 أيام</option>
+        <option value="6-10">6-10 أيام</option>
+        <option value="11-15">11-15 يوم</option>
+        <option value="16-30">16-30 يوم</option>
+        <option value="31-60">31-60 يوم</option>
+        <option value="60+">+60 يوم</option>
+      </select>
     </div>
 
     <!-- Table -->
     <div style="background:var(--bg3);border:1px solid var(--rim);border-radius:var(--r);overflow:hidden">
       <div style="padding:10px 16px;border-bottom:1px solid var(--rim);display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;font-weight:700">📦 الطرود</span>
+        <span style="font-size:13px;font-weight:700">🔗 طرود API</span>
         <span class="badge b-pur" id="a-cnt">0</span>
         <div style="flex:1"></div>
         <span style="font-size:10px;color:var(--mute)" id="api-last-fetch">آخر جلب: —</span>
@@ -1190,7 +1190,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
             <th onclick="setAPISort('status')" style="cursor:pointer;user-select:none">الحالة <span id="a-sort-status">↕</span></th><th onclick="setAPISort('delay_days')" style="cursor:pointer;user-select:none">التأخير <span id="a-sort-delay_days">↓</span></th><th class="mob-hide" onclick="setAPISort('cr_result')" style="cursor:pointer;user-select:none">نتيجة التواصل <span id="a-sort-cr_result">↕</span></th><th class="mob-hide" onclick="setAPISort('cr_note')" style="cursor:pointer;user-select:none">ملاحظة <span id="a-sort-cr_note">↕</span></th>
             <th>واتساب</th><th class="mob-hide">حفظ</th><th class="mob-hide">نقل</th>
           </tr></thead>
-          <tbody id="a-tbody"><tr><td colspan="18" style="text-align:center;padding:36px;color:var(--mute)">🔗 الجلب تلقائي — أعد إعدادات API من تبويب "رفع البيانات" عند الحاجة</td></tr></tbody>
+          <tbody id="a-tbody"><tr><td colspan="18" style="text-align:center;padding:36px;color:var(--mute)">🔗 اضغط "جلب الآن" أو أعد إعدادات API من تبويب "رفع البيانات"</td></tr></tbody>
         </table>
       </div>
       <div style="padding:10px 16px;border-top:1px solid var(--rim);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1211,7 +1211,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <!-- Summary Cards -->
     <div class="g2" style="margin-top:16px">
       <div class="card">
-        <div class="ctitle">📊 ملخص الطرود</div>
+        <div class="ctitle">📊 ملخص طرود API</div>
         <div id="api-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px"></div>
       </div>
       <div class="card">
@@ -1231,7 +1231,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <span class="badge b-grn" id="j-cnt">0 طرد</span>
         <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('shipments')">← كل الطرود</button>
+        <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')">← طرود API الكاملة</button>
       </div>
     </div>
 
@@ -1316,7 +1316,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <th title="تسجيل تسليم + تم الحل + مزامنة المؤشرات">تم التسليم</th><th>حفظ</th>
           <th>واتساب</th>
         </tr></thead>
-        <tbody id="j-tbody"><tr><td colspan="15" style="text-align:center;padding:32px;color:var(--mute)">سيتم تحميل بيانات API تلقائياً بعد الاتصال</td></tr></tbody>
+        <tbody id="j-tbody"><tr><td colspan="15" style="text-align:center;padding:32px;color:var(--mute)">اضغط "جلب الآن" في طرود API لتحميل البيانات</td></tr></tbody>
       </table>
     </div>
     <div style="padding:10px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1334,7 +1334,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <span class="badge b-grn" id="jr-cnt">0 طرد في نطاق جنزور</span>
         <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
         <button class="btn btn-ghost btn-sm" onclick="gTab('janzour')">← متابعة جنزور</button>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('shipments')">الطرود</button>
+        <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')">طرود API</button>
       </div>
     </div>
     <p style="font-size:12px;color:var(--mute);margin-bottom:14px">مؤشرات طرود <strong>متاجر جنزور</strong> — <strong>معدل النجاح</strong> = تسليم ÷ (تسليم + مرتجع). أعمدة «مع المندوب / في الشركة / متأخر / أخرى» تعكس <strong>حقل الحالة</strong> في بيانات API للطرود غير المُسدَّدة بتسليم أو مرتجع.</p>
@@ -1407,6 +1407,58 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ══ SERVICE PERFORMANCE (KPI) ══ -->
+  <div class="page" id="tab-service-kpi">
+    <div class="page-hdr">
+      <div class="page-title"><span class="page-title-accent"></span>أداء الخدمة</div>
+      <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
+    </div>
+    <p style="font-size:12px;color:var(--mute);margin-bottom:14px">مؤشرات طرود <strong>متابعة جنزور</strong> المسندة للموظف — عمولة المندوب المحفوظة على الطرد.</p>
+    <div id="skpi-manager-picker" class="manager-only card" style="padding:12px;margin-bottom:14px;display:none">
+      <label class="fl">عرض بيانات موظف</label>
+      <select class="fi" id="skpi-emp" style="max-width:320px" onchange="renderServiceKpiPage()"><option value="">— أنا —</option></select>
+    </div>
+    <div class="kgrid" style="margin-bottom:16px">
+      <div class="kcard blu"><div class="klbl">إجمالي الطرود المعالجة</div><div class="kval" id="skpi-total">0</div></div>
+      <div class="kcard grn"><div class="klbl">معدل نجاح التسليم %</div><div class="kval" id="skpi-rate">0</div></div>
+      <div class="kcard pur"><div class="klbl">إجمالي العمولات المحسوبة</div><div class="kval" id="skpi-earn">0</div></div>
+    </div>
+    <div class="card" style="padding:14px;margin-bottom:12px">
+      <div class="ctitle" style="margin-bottom:8px">تسليم / مرتجع / أخرى</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;font-size:13px">
+        <div><span style="color:var(--mute)">تسليمات</span> <strong id="skpi-d">0</strong></div>
+        <div><span style="color:var(--mute)">مرتجعات</span> <strong id="skpi-r">0</strong></div>
+        <div><span style="color:var(--mute)">حالات أخرى</span> <strong id="skpi-o">0</strong></div>
+      </div>
+    </div>
+    <div class="card" style="padding:12px">
+      <div class="ctitle" style="margin-bottom:6px;font-size:12px">📡 شكل موارد JSON (للمطورين)</div>
+      <pre id="skpi-json" dir="ltr" style="font-size:10px;overflow:auto;max-height:160px;background:var(--bg4);padding:10px;border-radius:var(--r2);margin:0;color:var(--pale)">{}</pre>
+    </div>
+  </div>
+
+  <div class="page manager-only" id="tab-commission-admin">
+    <div class="page-hdr">
+      <div class="page-title"><span class="page-title-accent"></span>عمولات جنزور — تحكم المدير</div>
+    </div>
+    <p style="font-size:12px;color:var(--mute);margin-bottom:14px">النسبة تُطبَّق على الوحدة الأساسية بعد ضربها في وزن يعتمد على نسبة تسليم/مرتجع لطرود جنزور المسندة لذلك الموظف.</p>
+    <div class="kgrid" style="margin-bottom:16px">
+      <div class="kcard gold"><div class="klbl">الوحدة الأساسية</div><input class="fi" id="ccfg-base" type="number" step="1" style="margin-top:6px;width:100%;font-weight:800"></div>
+      <div class="kcard orn"><div class="klbl">نسبة المندوب الافتراضية %</div><input class="fi" id="ccfg-rep" type="number" step="0.1" style="margin-top:6px;width:100%;font-weight:800"></div>
+      <div class="kcard blu"><div class="klbl">نسبة الفرع %</div><input class="fi" id="ccfg-br" type="number" step="0.1" style="margin-top:6px;width:100%;font-weight:800"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn btn-pur" onclick="saveCommissionAdminCfg()">💾 حفظ الإعدادات</button>
+      <button class="btn btn-grn" onclick="runJanzourCommissionSync()">⚡ إعادة حساب العمولات لطرود جنزور</button>
+    </div>
+    <div class="card" style="padding:14px">
+      <div class="ctitle" style="margin-bottom:10px">نسب عمولة يدوية لكل موظف (جنزور) %</div>
+      <p style="font-size:11px;color:var(--mute);margin-bottom:10px">اترك الحقل فارغاً للعودة للنسبة الافتراضية أعلاه.</p>
+      <div id="commission-emp-rows"></div>
+      <button class="btn btn-pur" style="margin-top:12px" onclick="saveCommissionOverridesFromAdmin()">💾 حفظ نسب الموظفين</button>
     </div>
   </div>
 
@@ -1553,7 +1605,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div class="card" style="margin-top:12px;border-right:3px solid var(--gold)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div class="ctitle" style="margin-bottom:0">👥 توزيع طرود API على الموظفين</div>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('shipments');setTimeout(openAssignPanel,200)">⚙️ إدارة التوزيع</button>
+        <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments');setTimeout(openAssignPanel,200)">⚙️ إدارة التوزيع</button>
       </div>
       <div id="staff-assign-stats"></div>
     </div>
@@ -1638,10 +1690,11 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-ghost" onclick="testAPI()">🔌 اختبار الاتصال</button>
+          <button class="btn btn-pur" onclick="fetchFromAPI()">⬇️ جلب الطرود الآن</button>
           <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
             <label style="font-size:11px;color:var(--pale);white-space:nowrap">جلب كل</label>
             <select class="fi" style="flex:1" id="api-interval">
-              <option value="0">إيقاف</option>
+              <option value="0">يدوي</option>
               <option value="1">ساعة</option>
               <option value="3">3 ساعات</option>
               <option value="6">6 ساعات</option>
@@ -1652,23 +1705,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         </div>
       </div>
       <div id="api-status" style="font-size:12px;color:var(--mute);margin-top:6px"></div>
-    </div>
-
-    <!-- Couriers API -->
-    <div class="card" style="border-right:3px solid var(--grn)">
-      <div class="ctitle">🚚 ربط API المناديب <span style="font-size:10px;background:var(--grd);color:var(--grn);padding:2px 7px;border-radius:99px">مصدر بيانات المناديب</span></div>
-      <div class="g2">
-        <div>
-          <div class="fg"><label class="fl">رابط API المناديب</label><input class="fi" style="width:100%" id="couriers-api-url" placeholder="https://api.example.com/couriers" dir="ltr"></div>
-          <div class="fg"><label class="fl">Token المناديب</label><input class="fi" style="width:100%" id="couriers-api-token" placeholder="Bearer eyJ..." dir="ltr" type="password"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <button class="btn btn-ghost" onclick="testCouriersAPI()">🔌 اختبار API المناديب</button>
-          <button class="btn btn-grn" onclick="fetchCouriersFromAPI()">⬇️ جلب المناديب الآن</button>
-          <div style="font-size:11px;color:var(--mute)">ملاحظة: بيانات المناديب في تبويب البيانات الثابتة ستُعرض من هذا الـ API.</div>
-        </div>
-      </div>
-      <div id="couriers-api-status" style="font-size:12px;color:var(--mute);margin-top:6px"></div>
     </div>
 
     <!-- Static Excel -->
@@ -1698,8 +1734,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <div class="upz" onclick="document.getElementById('fi-drivers').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropSt(event,'drivers')">
             <input type="file" id="fi-drivers" accept=".xlsx,.xls,.csv" onchange="handleSt(event,'drivers')">
             <div style="font-size:12px;font-weight:700">📂 رفع مناديب.xlsx</div>
-            <div style="font-size:10px;color:var(--mute);margin-top:3px">أعمدة: اسم المندوب، الهاتف، هاتف2، وسيلة النقل، الفرع</div>
-            <div style="margin-top:8px"><button type="button" class="btn btn-grn btn-sm" onclick="fetchCouriersFromAPI()">⬇️ أو جلب من API المناديب</button></div>
+            <div style="font-size:10px;color:var(--mute);margin-top:3px">أعمدة: اسم المندوب، الهاتف، الفرع</div>
           </div>
           <div id="sts-drivers" style="font-size:11px;color:var(--mute);margin-top:4px"></div>
         </div>
@@ -1852,10 +1887,8 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         </select>
       </div>
       <div class="fg">
-        <label class="fl">صلاحيات الفروع (received-branch) — اختياري</label>
-        <select class="fi" style="width:100%;min-height:140px" id="um-branches" multiple></select>
-        <div style="font-size:11px;color:var(--mute);margin-top:4px">اضغط Ctrl (او Cmd) لاختيار أكثر من فرع.</div>
-        <div style="font-size:11px;color:var(--mute);margin-top:4px">عند تعبئة هذا الحقل، لن يرى الموظف إلا الطرود التابعة لهذه الفروع ولن يمكن إسناد طرود خارجها إليه.</div>
+        <label class="fl">نسبة عمولة جنزور (%) — اختياري</label>
+        <input type="number" class="fi" style="width:100%" id="um-janzour-pct" min="0" max="100" step="0.01" placeholder="الافتراضي من شاشة عمولات المدير">
       </div>
       <div class="fg" id="um-perms-section">
         <label class="fl">الصلاحيات — الصفحات المسموحة</label>
@@ -1864,17 +1897,26 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
             <input type="checkbox" class="um-perm" value="home" checked disabled> 🏠 الرئيسية
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="shipments" checked> 📦 الطرود
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="drivers"> 👤 المناديب
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
-            <input type="checkbox" class="um-perm" value="branch-followup"> 🧭 متابعة الفروع
+            <input type="checkbox" class="um-perm" value="returns"> ↩️ المرتجعات
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
-            <input type="checkbox" class="um-perm" value="shipments"> 📦 الطرود
+            <input type="checkbox" class="um-perm" value="transfers"> 🔄 التحويلات
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="api-shipments"> 🔗 طرود API
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="janzour"> 🟢 متابعة جنزور
             <input type="checkbox" class="um-perm" value="janzour-rates"> 📊 نسب ومعدلات جنزور
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="service-kpi"> 📈 أداء الخدمة
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="whatsapp"> 💬 واتساب
@@ -1995,19 +2037,32 @@ const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 const LOG_API_BASE = 'api';
 const MANUAL_EXCEL_SHIPMENTS_ONLY = true; // keep main shipments table sourced only from manual Excel upload
-const API_ASSIGNMENTS_STORAGE_KEY = 'api_assignments';
-const API_ASSIGNMENTS_STORAGE_LEGACY_KEYS = ['nawris_api_assignments'];
-const API_ASSIGNMENTS_SETTINGS_KEY = 'api_assignments';
-const API_ASSIGNMENTS_SETTINGS_LEGACY_KEYS = ['nawris_api_assignments'];
+
+/** إعدادات عمولات جنزور (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
+let CommissionCfg = { unitBase: 100, repPercent: 5, branchPercent: 2, ratioMin: 0.25, ratioMax: 1 };
+function loadCommissionCfg(){
+  try{
+    const raw = localStorage.getItem('nawris_commission_cfg');
+    if(raw) Object.assign(CommissionCfg, JSON.parse(raw));
+  }catch(e){ console.warn('loadCommissionCfg', e); }
+}
+function persistCommissionCfg(){
+  localStorage.setItem('nawris_commission_cfg', JSON.stringify(CommissionCfg));
+  sbUp('settings', [{ key: 'nawris_commission_cfg', value: JSON.stringify(CommissionCfg) }]).catch(()=>{});
+}
+loadCommissionCfg();
 
 // All available tabs for permission system
 const ALL_TABS = [
   {id:'home',label:'🏠 الرئيسية',always:true},
-  {id:'drivers',label:'👤 المناديب'},
-  {id:'branch-followup',label:'🧭 متابعة الفروع'},
   {id:'shipments',label:'📦 الطرود'},
+  {id:'drivers',label:'👤 المناديب'},
+  {id:'returns',label:'↩️ المرتجعات'},
+  {id:'transfers',label:'🔄 التحويلات'},
+  {id:'api-shipments',label:'🔗 طرود API'},
   {id:'janzour',label:'🟢 متابعة جنزور'},
   {id:'janzour-rates',label:'📊 نسب ومعدلات جنزور'},
+  {id:'service-kpi',label:'📈 أداء الخدمة'},
   {id:'whatsapp',label:'💬 واتساب'},
   {id:'reports',label:'📊 التقارير'},
   {id:'staff',label:'👥 متابعة الموظفين'},
@@ -2020,9 +2075,9 @@ const MANAGER_TABS = ALL_TAB_IDS; // managers get all
 
 // Default users (seed)
 const DEFAULT_USERS = {
-  'mohamed': {pass:'admin123',role:'manager',name:'محمد سعد',phone:'',email:'',status:'active',perms:ALL_TAB_IDS,allowed_branches:[]},
-  'ahmed':   {pass:'emp123',role:'employee',name:'أحمد علي',phone:'',email:'',status:'active',perms:['home','shipments','janzour','janzour-rates'],allowed_branches:[]},
-  'fatima':  {pass:'emp123',role:'employee',name:'فاطمة محمد',phone:'',email:'',status:'active',perms:['home','shipments','janzour','janzour-rates'],allowed_branches:[]},
+  'mohamed': {pass:'admin123',role:'manager',name:'محمد سعد',phone:'',email:'',status:'active',perms:ALL_TAB_IDS},
+  'ahmed':   {pass:'emp123',role:'employee',name:'أحمد علي',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','janzour','janzour-rates','service-kpi']},
+  'fatima':  {pass:'emp123',role:'employee',name:'فاطمة محمد',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','janzour','janzour-rates','service-kpi']},
 };
 
 // Load users from localStorage, falling back to defaults
@@ -2034,19 +2089,13 @@ function loadUsers(){
       // Ensure all users have perms array
       let migrated=false;
       Object.keys(parsed).forEach(k=>{
-        if(!parsed[k].perms) parsed[k].perms=parsed[k].role==='manager'?ALL_TAB_IDS:['home','shipments'];
+        if(!parsed[k].perms) parsed[k].perms=parsed[k].role==='manager'?ALL_TAB_IDS:['home','shipments','api-shipments'];
         if(!parsed[k].status) parsed[k].status='active';
-        if(!Array.isArray(parsed[k].allowed_branches)) parsed[k].allowed_branches=[];
-        const p=Array.isArray(parsed[k].perms)?[...parsed[k].perms]:[];
-        if((p.includes('returns')||p.includes('transfers'))&&!p.includes('branch-followup')){
-          p.push('branch-followup');
-          migrated=true;
-        }
-        if(p.includes('janzour')&&!p.includes('janzour-rates')){
+        const p=parsed[k].perms;
+        if(Array.isArray(p)&&p.includes('janzour')&&!p.includes('janzour-rates')){
           p.push('janzour-rates');
           migrated=true;
         }
-        parsed[k].perms=p.filter(x=>x!=='returns'&&x!=='transfers');
       });
       if(migrated) saveUsers(parsed);
       return parsed;
@@ -2063,17 +2112,12 @@ function saveUsers(users){
 let USERS = loadUsers();
 
 let CU=null, shipments=[], drivers_db=[], branches=[], regions=[], stores=[], contact_results_db=[];
-let driversDataSource='api'; // 'api' | 'excel'
 let returns_data=[], transfers_data=[], contacted=new Set(), checked=new Set();
-let couriersApiCache=[];
 let seg='all', sPage=1, masterSeg='regions', meTable='', meRecord=null, alphaFilter='';
 let PER=25;
 let sSortKey='delay_days';
 let sSortDir='desc';
 let autoFetchTimer=null;
-let apiReturnsShipments=[], apiCaptainsCache=[];
-let branchFollowupRows=[], branchFollowupLastFetchAt=0;
-let branchFollowupExpandedTrips=new Set();
 let staffLogState={packageId:'',trackingCode:'',storeName:'',all:[],shown:5};
 let CFG={critDays:3,warnDays:2,discount:50,company:'النورس للشحن',mgrPhone:''};
 let WA_TPLS=[
@@ -2127,24 +2171,8 @@ function closeSidebar(){
 // ══════════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════════
-const NET_TIMEOUT_MS=20000;
-async function fetchWithTimeout(url,options={},timeoutMs=NET_TIMEOUT_MS){
-  const controller=new AbortController();
-  const t=setTimeout(()=>controller.abort(),timeoutMs);
-  try{
-    return await fetch(url,{...options,signal:controller.signal});
-  }catch(err){
-    if(err&&err.name==='AbortError'){
-      throw new Error('انتهت مهلة الاتصال بالخادم');
-    }
-    throw err;
-  }finally{
-    clearTimeout(t);
-  }
-}
-
 async function sb(table,method='GET',body=null,params=''){
-  const r=await fetchWithTimeout(`${SB}/rest/v1/${table}${params}`,{method,headers:H,body:body?JSON.stringify(body):null});
+  const r=await fetch(`${SB}/rest/v1/${table}${params}`,{method,headers:H,body:body?JSON.stringify(body):null});
   if(!r.ok){const e=await r.text();throw new Error(e);}
   return method==='GET'?r.json():true;
 }
@@ -2161,7 +2189,7 @@ async function sbAll(table,baseParams=''){
     }
     url.searchParams.set('limit',batchSize);
     url.searchParams.set('offset',page*batchSize);
-    const r=await fetchWithTimeout(url.toString(),{headers:H});
+    const r=await fetch(url.toString(),{headers:H});
     if(r.status===416)break;
     if(!r.ok){const e=await r.text();throw new Error(e);}
     const batch=await r.json();
@@ -2173,12 +2201,12 @@ async function sbAll(table,baseParams=''){
 }
 async function sbUp(table,data,conflict='merge-duplicates'){
   const prefer=conflict==='ignore'?'resolution=ignore-duplicates,return=minimal':'resolution=merge-duplicates,return=minimal';
-  const r=await fetchWithTimeout(`${SB}/rest/v1/${table}`,{method:'POST',headers:{...H,'Prefer':prefer},body:JSON.stringify(Array.isArray(data)?data:[data])});
+  const r=await fetch(`${SB}/rest/v1/${table}`,{method:'POST',headers:{...H,'Prefer':prefer},body:JSON.stringify(Array.isArray(data)?data:[data])});
   if(!r.ok){const e=await r.text();throw new Error(e);}
   return true;
 }
 async function sbCount(table){
-  const r=await fetchWithTimeout(`${SB}/rest/v1/${table}?select=id`,{headers:{...H,'Prefer':'count=exact','Range':'0-0'}});
+  const r=await fetch(`${SB}/rest/v1/${table}?select=id`,{headers:{...H,'Prefer':'count=exact','Range':'0-0'}});
   const cr=r.headers.get('content-range');
   if(cr){const m=cr.match(/\/(\d+)/);if(m)return parseInt(m[1]);}
   return 0;
@@ -2281,7 +2309,6 @@ async function startApp(){
       sbUp('settings',[{key:'nawris_users',value:JSON.stringify(USERS)}]).catch(()=>{});
     }
   }catch(e){console.warn('⚠️ User sync from Supabase failed:',e);}
-  await loadAPIAssignmentsFromCloud();
 
   applyRole();startClock();
   try{document.getElementById('hero-date').textContent=new Intl.DateTimeFormat('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date());}catch(e){document.getElementById('hero-date').textContent=new Date().toLocaleDateString('ar-LY',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
@@ -2316,11 +2343,11 @@ function applyRole(){
   // Re-read from USERS so any manager edits are reflected without full logout/login
   if(CU&&USERS[CU.username]){
     const fresh=USERS[CU.username];
-    CU.role=fresh.role;CU.perms=fresh.perms;CU.status=fresh.status;CU.name=fresh.name;CU.allowed_branches=fresh.allowed_branches||[];
+    CU.role=fresh.role;CU.perms=fresh.perms;CU.status=fresh.status;CU.name=fresh.name;
     sessionStorage.setItem('nu',JSON.stringify(CU));
   }
   const mgr=CU.role==='manager';
-  const perms=CU.perms||['home','shipments'];
+  const perms=CU.perms||['home','shipments','api-shipments'];
   document.getElementById('uname').textContent=CU.name;
   document.getElementById('uav').textContent=CU.name[0];
   // Update footer role label
@@ -2389,11 +2416,9 @@ async function loadAll(){
       if(r.key==='mgrPhone')CFG.mgrPhone=r.value;
       if(r.key==='api_url'&&document.getElementById('api-url'))document.getElementById('api-url').value=r.value;
       if(r.key==='api_token'&&document.getElementById('api-token'))document.getElementById('api-token').value=r.value;
-      if(r.key==='branch_followup_api_url'&&document.getElementById('bf-api-url'))document.getElementById('bf-api-url').value=r.value;
-      if(r.key==='branch_followup_api_token'&&document.getElementById('bf-api-token'))document.getElementById('bf-api-token').value=r.value;
-      if(r.key==='couriers_api_url'&&document.getElementById('couriers-api-url'))document.getElementById('couriers-api-url').value=r.value;
-      if(r.key==='couriers_api_token'&&document.getElementById('couriers-api-token'))document.getElementById('couriers-api-token').value=r.value;
-      if(r.key==='drivers_source')driversDataSource=(String(r.value||'').toLowerCase()==='excel'?'excel':'api');
+      if(r.key==='nawris_commission_cfg'){
+        try{Object.assign(CommissionCfg,JSON.parse(r.value));localStorage.setItem('nawris_commission_cfg',r.value);}catch(e){}
+      }
       if(r.key==='nawris_users'){
         try{
           const fresh=JSON.parse(r.value);
@@ -2408,22 +2433,13 @@ async function loadAll(){
           }
         }catch(e){console.warn('users sync parse error',e);}
       }
-      if([API_ASSIGNMENTS_SETTINGS_KEY,...API_ASSIGNMENTS_SETTINGS_LEGACY_KEYS].includes(String(r.key||''))){
-        try{
-          const raw=typeof r.value==='string'?JSON.parse(r.value||'{}'):(r.value||{});
-          const merged={...getAPIAssignments(),...normalizeAPIAssignments(raw)};
-          saveAPIAssignments(merged,{skipCloudSync:true});
-        }catch(e){console.warn('api assignments sync parse error',e);}
-      }
     });
-    if(driversDataSource==='api')loadCachedCouriersApiData();
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
     loadReturns();loadTransfers();loadDbStats();
     buildJanzourSet(); // Sync Janzour store set from Supabase stores table
   }catch(e){setSyncState('err','خطأ');toast('خطأ في التحميل: '+e.message,'e');}
 }
-function isDriversApiSource(){return driversDataSource==='api';}
 
 async function loadShipments(){
   setSyncState('busy','تحديث...');
@@ -2453,17 +2469,9 @@ async function loadTransfers(){
 // ══════════════════════════════════════════
 // CLASSIFY & BADGES
 // ══════════════════════════════════════════
-function cls(d,status=''){
-  void status;
-  const daysTxt=toAsciiDigits(d).replace(/[^0-9.\-]/g,'');
-  const days=Number(daysTxt);
-  const safeDays=Number.isFinite(days)?days:0;
-  const crit=Number(CFG.critDays)||0;
-  const warn=Number(CFG.warnDays)||0;
-  return safeDays>=crit?'critical':safeDays>=warn?'warning':'ok';
-}
-function dBadge(d,status=''){
-  const c=cls(d,status);
+function cls(d){return d>CFG.critDays?'critical':d>CFG.warnDays?'warning':'ok';}
+function dBadge(d){
+  const c=cls(d);
   return c==='critical'?`<span class="dp-c">🔴 ${d}ي</span>`:
          c==='warning'? `<span class="dp-w">🟡 ${d}ي</span>`:
                         `<span class="dp-o">🟢 ${d}ي</span>`;
@@ -2478,87 +2486,7 @@ function stBadge(s){
   return`<span class="badge b-dim">${s||'—'}</span>`;
 }
 function ctBadge(id){return contacted.has(String(id))?'<span class="badge b-grn">✅ تم</span>':'<span class="badge b-dim">⏳</span>';}
-function toAsciiDigits(v){
-  return String(v||'')
-    .replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
-    .replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
-}
-function normPhone(p){
-  if(!p)return'';
-  p=toAsciiDigits(p).replace(/[^0-9]/g,'');
-  if(p.startsWith('0')&&p.length===10)p='218'+p.slice(1);
-  return p;
-}
-function normalizePersonName(v){
-  return String(v||'')
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu,' ')
-    .replace(/\s+/g,' ')
-    .trim();
-}
-function resolveDriverRecordByName(name){
-  const target=normalizePersonName(name);
-  if(!target)return null;
-  const pool=(drivers_db||[]).filter(d=>d&&d.name);
-  let hit=pool.find(d=>normalizePersonName(d.name)===target);
-  if(hit)return hit;
-  // Conservative fallback: first/last token match only to avoid wrong person on similar names.
-  const tParts=target.split(' ').filter(Boolean);
-  hit=pool.find(d=>{
-    const n=normalizePersonName(d.name);
-    const nParts=n.split(' ').filter(Boolean);
-    if(!tParts.length||!nParts.length)return false;
-    return tParts[0]===nParts[0] || tParts[tParts.length-1]===nParts[nParts.length-1];
-  });
-  return hit||null;
-}
-function resolveDriverPhoneForShipment(s){
-  if(!s)return '';
-  const algOrderId=String(s.algoriza_order_id||s.order_id||'').trim();
-  if(algOrderId){
-    const apiByOrder=(apiShipments||[]).find(x=>String(x.algoriza_order_id||x.order_id||'').trim()===algOrderId);
-    const apiOrderPhone=apiByOrder?.captain_phone||'';
-    if(apiOrderPhone)return normPhone(apiOrderPhone)||String(apiOrderPhone);
-  }
-  const directApiPhone=s.captain_phone||'';
-  if(directApiPhone)return normPhone(directApiPhone)||String(directApiPhone);
-  const byId=(drivers_db||[]).find(d=>String(d.id||'')===String(s.driver_id||''));
-  const byName=resolveDriverRecordByName(s.driver_name||s.captain||'');
-  const raw=(byId&&byId.phone)||(byName&&byName.phone)||s.driver_phone||'';
-  return normPhone(raw)||String(raw||'');
-}
-function normalizeBranchKey(v){return String(v||'').trim().toLowerCase();}
-function isReturnTrackingCode(code){
-  const c=String(code||'').trim().toUpperCase();
-  if(!c)return false;
-  return c.includes('R');
-}
-function getAllowedBranchesForUser(user){
-  if(!user||user.role==='manager')return [];
-  const arr=Array.isArray(user.allowed_branches)?user.allowed_branches:[];
-  return arr.map(normalizeBranchKey).filter(Boolean);
-}
-function userCanAccessBranch(user,branchName){
-  const allowed=getAllowedBranchesForUser(user);
-  if(!allowed.length)return true;
-  return allowed.includes(normalizeBranchKey(branchName));
-}
-function getUserByEmployeeName(name){
-  const n=String(name||'').trim();
-  if(!n)return null;
-  const key=Object.keys(USERS).find(k=>String(USERS[k]?.name||'').trim()===n);
-  return key?{username:key,...USERS[key]}:null;
-}
-function canAssignShipmentToEmployee(shipment,employeeName){
-  const user=getUserByEmployeeName(employeeName);
-  if(!user)return true;
-  return userCanAccessBranch(user, shipment?.current_branch||'');
-}
-function getVisibleSelectedApiShipments(){
-  const ids=[...document.querySelectorAll('#a-tbody input[type="checkbox"][data-asid]:checked')].map(cb=>String(cb.dataset.asid||''));
-  if(!ids.length)return [];
-  return ids.map(id=>apiShipments.find(x=>String(x.id)===id)).filter(Boolean);
-}
+function normPhone(p){if(!p)return'';p=String(p).replace(/[^0-9]/g,'');if(p.startsWith('0')&&p.length===10)p='218'+p.slice(1);return p;}
 
 // Contact Result helpers — Supabase first, localStorage fallback
 function getCR(sid){
@@ -2843,28 +2771,9 @@ function gf(...keys){return r=>{for(const k of keys){const v=r[k];if(v!==undefin
 // SYNC STATE
 // ══════════════════════════════════════════
 function setSyncState(st,msg){
-  // While a global fetch is running, prevent unrelated calls from forcing "connected".
-  if(st==='ok'&&activeGlobalFetchOps>0){
-    st='busy';
-    msg=globalFetchStatusLabel||'جار الجلب...';
-  }
   const d=document.getElementById('sync-dot');
   d.className='sync-dot'+(st==='err'?' err':st==='busy'?' busy':'');
   document.getElementById('sync-txt').textContent=msg;
-}
-let activeGlobalFetchOps=0;
-let globalFetchStatusLabel='جار الجلب...';
-function setGlobalFetchState(isBusy,label='جار الجلب...'){
-  if(isBusy){
-    globalFetchStatusLabel=label||'جار الجلب...';
-    activeGlobalFetchOps++;
-    setSyncState('busy',globalFetchStatusLabel);
-    return;
-  }
-  activeGlobalFetchOps=Math.max(0,activeGlobalFetchOps-1);
-  if(activeGlobalFetchOps===0){
-    setSyncState('ok','متصل');
-  }
 }
 
 // ══════════════════════════════════════════
@@ -2915,22 +2824,21 @@ function resetAllFilters(){
 // ══════════════════════════════════════════
 // REFRESH
 // ══════════════════════════════════════════
-function refreshAll(){updateKPIs();renderHome();renderDrivers();renderWA();}
+function refreshAll(){updateKPIs();renderHome();renderShipments();renderDrivers();renderWA();}
 
 function updateKPIs(){
-  // Main KPIs now rely on API shipments only.
-  const crit=apiShipments.filter(s=>cls(s.delay_days,s.status)==='critical').length;
-  const warn=apiShipments.filter(s=>cls(s.delay_days,s.status)==='warning').length;
-  const ok=apiShipments.filter(s=>cls(s.delay_days,s.status)==='ok').length;
-  const comp=apiShipments.filter(s=>s.status==='in_company').length;
-  const ret=apiShipments.filter(s=>s.status==='returned').length;
-  document.getElementById('k-total').textContent=apiShipments.length;
+  const crit=shipments.filter(s=>cls(s.delay_days)==='critical').length;
+  const warn=shipments.filter(s=>cls(s.delay_days)==='warning').length;
+  const ok=shipments.filter(s=>cls(s.delay_days)==='ok').length;
+  const comp=shipments.filter(s=>s.status==='in_company').length;
+  const ret=shipments.filter(s=>s.status==='returned').length;
+  document.getElementById('k-total').textContent=shipments.length;
   document.getElementById('k-crit').textContent=crit;
   document.getElementById('k-warn').textContent=warn;
   document.getElementById('k-ok').textContent=ok;
   document.getElementById('k-comp').textContent=comp;
   document.getElementById('k-ret').textContent=ret;
-  if(document.getElementById('tb-crit'))document.getElementById('tb-crit').textContent=crit;
+  document.getElementById('tb-crit').textContent=crit;
   // API KPIs on home
   const akCrit=apiShipments.filter(s=>cls(s.delay_days)==='critical').length;
   const akWarn=apiShipments.filter(s=>cls(s.delay_days)==='warning').length;
@@ -2943,9 +2851,9 @@ function updateKPIs(){
   if(hak('h-ak-driver'))hak('h-ak-driver').textContent=akDrv;
   if(hak('h-ak-comp'))hak('h-ak-comp').textContent=akComp;
   if(hak('h-ak-badge'))hak('h-ak-badge').textContent=apiShipments.length;
-  // Hero counts: API only.
-  const allTotal=apiShipments.length;
-  const ud=[...new Set(apiShipments.map(s=>s.captain).filter(Boolean))];
+  // Hero counts: combine both sources
+  const allTotal=shipments.length+apiShipments.length;
+  const ud=[...new Set([...shipments.map(s=>s.driver_name),...apiShipments.map(s=>s.captain)].filter(Boolean))];
   const tc=ud.length||drivers_db.length||1;
   document.getElementById('h-total').textContent=allTotal;
   document.getElementById('h-drivers').textContent=tc;
@@ -2955,11 +2863,11 @@ function updateKPIs(){
   document.getElementById('h-ct').textContent=contacted.size;
   document.getElementById('h-tc').textContent=tc;
   const ab=document.getElementById('alert-banner');
-  const totalCrit=akCrit;
+  const totalCrit=crit+akCrit;
   if(totalCrit>0){ab.style.display='flex';document.getElementById('alert-title').textContent=`${totalCrit} طرد في خطر حرج (+${CFG.critDays} يوم)!`;}
   else ab.style.display='none';
   // Update sparklines with real data
-  renderKPISparklines({total:apiShipments.length,crit,warn,ok,comp,ret});
+  renderKPISparklines({total:shipments.length,crit,warn,ok,comp,ret});
 }
 
 /* Render sparklines dynamically based on real count (simulate a 7-point trend) */
@@ -3100,14 +3008,6 @@ function setShipSort(key){
 }
 
 function renderShipments(){
-  const shipDelayClass=(d)=>{
-    const daysTxt=toAsciiDigits(d).replace(/[^0-9.\-]/g,'');
-    const days=Number(daysTxt);
-    const safeDays=Number.isFinite(days)?days:0;
-    const crit=Number(CFG.critDays)||0;
-    const warn=Number(CFG.warnDays)||0;
-    return safeDays>=crit?'critical':safeDays>=warn?'warning':'ok';
-  };
   const q=(document.getElementById('s-q')?.value||'').toLowerCase();
   const fd=document.getElementById('s-fd')?.value||'';
   const fst=document.getElementById('s-fst')?.value||'';
@@ -3128,13 +3028,13 @@ function renderShipments(){
   document.getElementById('sn-driver').textContent=list.filter(s=>s.status==='with_driver').length;
   document.getElementById('sn-wait').textContent=list.filter(s=>!contacted.has(String(s.id))).length;
   document.getElementById('sn-comp').textContent=list.filter(s=>s.status==='in_company').length;
-  document.getElementById('sn-late').textContent=list.filter(s=>shipDelayClass(s.delay_days)!=='ok').length;
+  document.getElementById('sn-late').textContent=list.filter(s=>cls(s.delay_days)!=='ok').length;
   if(seg==='driver') list=list.filter(s=>s.status==='with_driver');
   else if(seg==='wait') list=list.filter(s=>!contacted.has(String(s.id)));
   else if(seg==='company') list=list.filter(s=>s.status==='in_company');
-  else if(seg==='late') list=list.filter(s=>shipDelayClass(s.delay_days)!=='ok');
+  else if(seg==='late') list=list.filter(s=>cls(s.delay_days)!=='ok');
   list=list.filter(s=>{
-    if(fd&&shipDelayClass(s.delay_days)!==fd)return false;
+    if(fd&&cls(s.delay_days)!==fd)return false;
     if(fst&&s.status!==fst)return false;
     if(fb&&getCB(s)!==fb)return false;
     if(frb&&getRB(s)!==frb)return false;
@@ -3220,7 +3120,7 @@ function renderShipments(){
     const drvPhone=drv.phone||s.driver_phone||'';
     const brn=branches.find(b=>b.id===s.current_branch_id || b.name===s.branch_name)||{};
     const respBranch=s.responsible_branch||localStorage.getItem('rb_'+s.id)||localStorage.getItem('rb_'+s.tracking_code)||'';
-    return`<tr class="pr" data-sid="${sid}" style="${shipDelayClass(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
+    return`<tr class="pr" data-sid="${sid}" style="${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
       <td onclick="event.stopPropagation()"><input type="checkbox" data-sid="${sid}" ${checked.has(String(s.id))?'checked':''} onchange="this.checked?checked.add(this.dataset.sid):checked.delete(this.dataset.sid)"></td>
       <td style="color:var(--dim);font-size:10px;text-align:center">${(sPage-1)*PER+idx+1}</td>
       <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
@@ -3266,8 +3166,8 @@ function renderShipments(){
           const crVal=cr?cr.value:'';
           const ok=await saveCR(sid,crVal,noteVal);
           if(ok){
-            markCt(sid);
-            btn.textContent='✅';setTimeout(()=>btn.textContent='💾',1500);
+          markCt(sid);
+          btn.textContent='✅';setTimeout(()=>btn.textContent='💾',1500);
           }
         } else if(a==='del'){
           if(!confirm('هل تريد حذف هذا الطرد؟'))return;
@@ -3319,10 +3219,10 @@ function openDetail(sid){
   sid=String(sid);
   const s=shipments.find(x=>String(x.id)===sid);if(!s)return;
   // Enrich from local data
-  const drv=drivers_db.find(d=>String(d.id||'')===String(s.driver_id||'')) || resolveDriverRecordByName(s.driver_name||'') || {};
+  const drv=drivers_db.find(d=>d.id===s.driver_id || d.name===s.driver_name)||{};
   const brn=branches.find(b=>b.id===s.current_branch_id || b.name===s.branch_name)||{};
   const rgn=regions.find(r=>r.id===s.region_id || r.name===s.region_name)||{};
-  const driverPhone=resolveDriverPhoneForShipment(s);
+  const driverPhone=drv.phone||s.driver_phone||'';
   const driverName=drv.name||s.driver_name||'';
   const branchName=brn.name||s.branch_name||'';
   const branchManager=brn.manager_name||s.branch_manager||'';
@@ -3406,8 +3306,7 @@ function renderDrivers(){
     if(!stats[n])stats[n]={name:n,phone:s.driver_phone||'',region:s.region_name||'',branch:s.branch_name||'',total:0,crit:0,warn:0,ok:0,maxD:0};
     const st=stats[n];st.total++;const c=cls(s.delay_days);st[c]++;if(s.delay_days>st.maxD)st.maxD=s.delay_days;
   });
-  const dynamicDrivers=[...drivers_db,...(apiCaptainsCache||[]).map(c=>({name:c.name,phone:c.phone||'',branch:c.branch||'',region:''}))];
-  dynamicDrivers.forEach(d=>{if(!d?.name)return;if(!stats[d.name])stats[d.name]={name:d.name,phone:d.phone||'',region:d.region||'',branch:d.branch||'',total:0,crit:0,warn:0,ok:0,maxD:0};if(!stats[d.name].phone)stats[d.name].phone=d.phone||'';});
+  drivers_db.forEach(d=>{if(!stats[d.name])stats[d.name]={name:d.name,phone:d.phone||'',region:'',branch:'',total:0,crit:0,warn:0,ok:0,maxD:0};if(!stats[d.name].phone)stats[d.name].phone=d.phone||'';});
   let list=Object.values(stats).filter(d=>{
     if(q&&!`${d.name} ${d.region} ${d.branch}`.toLowerCase().includes(q))return false;
     return true;
@@ -3460,107 +3359,31 @@ function renderDrivers(){
 // RETURNS
 // ══════════════════════════════════════════
 function getReturnLocs(){return getAllReturnStatuses().map(s=>s.key);}
-function setBranchFilterOptions(selectId,branches,placeholder){
-  const sel=document.getElementById(selectId);
-  if(!sel)return;
-  const current=sel.value||'';
-  const sorted=[...new Set((branches||[]).map(v=>String(v||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
-  sel.innerHTML=`<option value="">${placeholder}</option>`+sorted.map(b=>`<option value="${b}">${b}</option>`).join('');
-  if(current&&sorted.includes(current))sel.value=current;
-}
-function getTransferTripDayKey(row){
-  const raw=String(
-    row.transfer_date||row.trip_date||row.moved_at||row.date||row.order_date||row.created_at||''
-  ).trim();
-  if(!raw){
-    const d=Number(row.delay_days||0);
-    return Number.isFinite(d)&&d>0?`delay-day-${d}`:'غير محدد';
-  }
-  const m=raw.match(/^(\d{4}-\d{2}-\d{2})/);
-  if(m)return m[1];
-  const d=new Date(raw);
-  if(!isNaN(d.getTime())){
-    const y=d.getFullYear();
-    const mm=String(d.getMonth()+1).padStart(2,'0');
-    const dd=String(d.getDate()).padStart(2,'0');
-    return `${y}-${mm}-${dd}`;
-  }
-  return 'غير محدد';
-}
-function getBFSenderBranch(row){
-  return String(
-    row.previous_branch||row.from_branch||row.fromBranch||row.sender_branch||row.source_branch||row.branch_from||''
-  ).trim();
-}
-function getBFReceiverBranch(row){
-  return String(
-    row.current_branch||row.currentBranch||row.received_branch||row.to_branch||row.toBranch||row.receiver_branch||row.destination_branch||row.branch_to||''
-  ).trim();
-}
-function getBFCompanyBranch(row){
-  return String(
-    row.received_branch||row.current_branch||row.currentBranch||''
-  ).trim();
-}
-function getBFDedupKey(row){
-  return [
-    String(row.tracking_code||'').trim(),
-    getBFSenderBranch(row),
-    getBFReceiverBranch(row),
-    String(row.status||row.raw_status||'').trim(),
-    String(row.delay_days??'').trim(),
-    getTransferTripDayKey(row)
-  ].join('||');
-}
-function toggleBranchFollowupTrip(encodedKey){
-  const key=decodeURIComponent(encodedKey||'');
-  if(!key)return;
-  if(branchFollowupExpandedTrips.has(key))branchFollowupExpandedTrips.delete(key);
-  else branchFollowupExpandedTrips.add(key);
-  renderTransfers();
-}
 function renderReturns(){
-  // Branch follow-up / "in company": API rows delayed > 1 day.
-  const sourceRows=Array.isArray(branchFollowupRows)?branchFollowupRows:[];
+  const loc=document.getElementById('r-loc')?.value||'';
+  const rsn=document.getElementById('r-rsn')?.value||'';
+  const allowed=getReturnLocs();
+  // Build locMap from return statuses (default + custom)
+  const customRS=getAllReturnStatuses();
+  const locMap={with_driver:'مع المندوب',in_warehouse:'في المخزن',returned_to_store:'تسليم للمتجر'};
+  customRS.forEach(s=>{const key=s.label.replace(/\s+/g,'_').toLowerCase();locMap[key]=s.label;});
+  const rsnMap={customer_refused:'رفض العميل',wrong_address:'عنوان خاطئ',no_answer:'لا يرد',damaged:'تالف',other:'أخرى'};
+  let list=returns_data.filter(r=>{
+    if(!allowed.includes(r.location))return false;
+    if(loc&&r.location!==loc)return false;
+    if(rsn&&r.reason!==rsn)return false;
+    return true;
+  });
   const tbody=document.getElementById('r-tbody');
-  if(!sourceRows.length){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mute)">لا توجد بيانات متابعة فروع بعد — اضغط "تحديث" في هذه الصفحة</td></tr>';
-    return;
-  }
-  const companyRows=sourceRows.filter(s=>{
-    const raw=String(s.raw_status||'').trim();
-    const rawNorm=raw.replace(/\s+/g,' ');
-    const st=String(s.status||'').trim().toLowerCase();
-    const inCompany=
-      st==='in_company'||
-      rawNorm.includes('في الشركة')||
-      rawNorm.includes('الشركة')||
-      rawNorm.includes('بالمخزن')||
-      rawNorm.includes('داخل الفرع');
-    if(!inCompany)return false;
-    if(Number(s.delay_days||0)<2)return false;
-    const scopeBranch=getBFCompanyBranch(s);
-    if(scopeBranch&&!userCanAccessBranch(CU,scopeBranch))return false;
-    return true;
-  });
-  setBranchFilterOptions('bf-company-branch',companyRows.map(s=>getBFCompanyBranch(s)),'كل الفروع');
-  const selectedBranch=String(document.getElementById('bf-company-branch')?.value||'').trim();
-  const minDays=Math.max(0,parseInt(document.getElementById('bf-company-days-min')?.value||'2')||2);
-  const list=companyRows.filter(s=>{
-    const branch=getBFCompanyBranch(s);
-    if(selectedBranch&&branch!==selectedBranch)return false;
-    if(Number(s.delay_days||0)<minDays)return false;
-    return true;
-  });
-  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mute)">لا توجد بيانات مطابقة للفلاتر الحالية</td></tr>';return;}
-  tbody.innerHTML=list.map(s=>`<tr>
-    <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code||'—')}</td>
-    <td>${s.client_name||s.receiver_name||'—'}</td>
-    <td>${s.captain||'—'}</td>
-    <td>${stBadge(s.status||s.raw_status)}</td>
-    <td>${getBFCompanyBranch(s)||'—'}</td>
-    <td>${dBadge(s.delay_days,s.status)}</td>
-    <td><span class="badge b-pur">API</span></td>
+  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mute)">لا مرتجعات</td></tr>';return;}
+  tbody.innerHTML=list.map(r=>`<tr>
+    <td class="code-cell">${backofficeOrderLinkHtml(r.shipments?.tracking_code||'—')}</td>
+    <td>${r.shipments?.customer_name||'—'}</td>
+    <td>${r.drivers?.name||'—'}</td>
+    <td><span class="badge b-orn">${rsnMap[r.reason]||r.reason||'—'}</span></td>
+    <td><span class="badge ${r.location==='returned_to_store'?'b-grn':r.location==='in_warehouse'?'b-gold':'b-red'}">${locMap[r.location]||r.location||'—'}</span></td>
+    <td style="font-size:11px;color:var(--mute)">${r.created_at?r.created_at.slice(0,10):'—'}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="updateRetLoc('${r.id}','${r.location}')">تحديث الموقع</button></td>
   </tr>`).join('');
 }
 function openRetModal(sid){
@@ -3592,98 +3415,20 @@ async function updateRetLoc(id,current){
 // ══════════════════════════════════════════
 function getTransferSts(){return getAllTransferStatuses().map(s=>s.key);}
 function renderTransfers(){
-  // Branch follow-up / "in transfer": API rows delayed > 2 days.
-  const sourceRows=Array.isArray(branchFollowupRows)?branchFollowupRows:[];
+  const st=document.getElementById('t-st')?.value||'';
+  const allowed=getTransferSts();
+  const stMap={pending:'معلقة',accepted:'مقبولة',rejected:'مرفوضة'};
+  let list=transfers_data.filter(t=>allowed.includes(t.status)&&(!st||t.status===st));
   const tbody=document.getElementById('t-tbody');
-  if(!sourceRows.length){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mute)">لا توجد بيانات متابعة فروع بعد — اضغط "تحديث" في هذه الصفحة</td></tr>';
-    return;
-  }
-  const minDays=Math.max(0,parseInt(document.getElementById('bf-transfer-days-min')?.value||'3')||3);
-  const transferRows=sourceRows.filter(s=>{
-    const raw=String(s.raw_status||'').trim();
-    const rawNorm=raw.replace(/\s+/g,' ');
-    const st=String(s.status||'').trim().toLowerCase();
-    const inTransfer=
-      st==='transferred'||
-      rawNorm.includes('تحويل')||
-      rawNorm.includes('بالطريق')||
-      (rawNorm.includes('فرع')&&rawNorm.includes('طريق'));
-    if(!inTransfer)return false;
-    if(Number(s.delay_days||0)<minDays)return false;
-    const b1=getBFSenderBranch(s);
-    const b2=getBFReceiverBranch(s);
-    if((b1||b2)&&!userCanAccessBranch(CU,b1)&&!userCanAccessBranch(CU,b2))return false;
-    return true;
-  });
-  setBranchFilterOptions('bf-transfer-from',transferRows.map(s=>getBFSenderBranch(s)),'كل الفروع (المرسل)');
-  setBranchFilterOptions('bf-transfer-to',transferRows.map(s=>getBFReceiverBranch(s)),'كل الفروع (المستلم)');
-  const fromFilter=String(document.getElementById('bf-transfer-from')?.value||'').trim();
-  const toFilter=String(document.getElementById('bf-transfer-to')?.value||'').trim();
-  const viewMode=String(document.getElementById('bf-transfer-view')?.value||'trips');
-  const list=transferRows.filter(s=>{
-    const fromBranch=getBFSenderBranch(s);
-    const toBranch=getBFReceiverBranch(s);
-    if(fromFilter&&fromBranch!==fromFilter)return false;
-    if(toFilter&&toBranch!==toFilter)return false;
-    return true;
-  });
-  if(!list.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mute)">لا توجد بيانات تحويل مطابقة للفلاتر الحالية</td></tr>';return;}
-
-  if(viewMode==='orders'){
-    tbody.innerHTML=list.map(s=>`<tr>
-      <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code||'—')}</td>
-      <td>${getBFSenderBranch(s)||'—'}</td>
-      <td>${getBFReceiverBranch(s)||'—'}</td>
-      <td>${stBadge(s.status||s.raw_status)}</td>
-      <td>${dBadge(s.delay_days,s.status)}</td>
-      <td><span class="badge b-pur">API</span></td>
-    </tr>`).join('');
-    return;
-  }
-
-  const trips=new Map();
-  list.forEach(s=>{
-    const day=getTransferTripDayKey(s);
-    const fromBranch=getBFSenderBranch(s)||'—';
-    const toBranch=getBFReceiverBranch(s)||'—';
-    const key=`${day}||${fromBranch}||${toBranch}`;
-    if(!trips.has(key))trips.set(key,{key,day,fromBranch,toBranch,items:[]});
-    trips.get(key).items.push(s);
-  });
-  const groups=[...trips.values()].sort((a,b)=>a.day===b.day?b.items.length-a.items.length:String(b.day).localeCompare(String(a.day)));
-  const rows=[];
-  groups.forEach((g,idx)=>{
-    const keyEnc=encodeURIComponent(g.key);
-    const opened=branchFollowupExpandedTrips.has(g.key);
-    const delays=g.items.map(x=>Number(x.delay_days||0)).filter(v=>Number.isFinite(v));
-    const minDelay=delays.length?Math.min(...delays):0;
-    const maxDelay=g.items.reduce((m,x)=>Math.max(m,Number(x.delay_days||0)),0);
-    const delayBadge=minDelay===maxDelay?dBadge(maxDelay,'delayed'):`<span class="badge b-gold">${minDelay}-${maxDelay} يوم</span>`;
-    const dayLabel=String(g.day||'');
-    const displayDay=dayLabel.startsWith('delay-day-')?`تأخير ${dayLabel.replace('delay-day-','')} يوم`:dayLabel;
-    rows.push(`<tr style="cursor:pointer" onclick="toggleBranchFollowupTrip('${keyEnc}')">
-      <td><strong>${opened?'▼':'▶'} رحلة ${idx+1}</strong></td>
-      <td>${g.fromBranch}</td>
-      <td>${g.toBranch}</td>
-      <td><span class="badge b-blu">${displayDay}</span></td>
-      <td>${delayBadge}</td>
-      <td><span class="badge b-gold">${g.items.length} طلبية</span></td>
-    </tr>`);
-    if(opened){
-      g.items.forEach(s=>{
-        rows.push(`<tr>
-          <td class="code-cell" style="padding-right:24px">${backofficeOrderLinkHtml(s.tracking_code||'—')}</td>
-          <td>${getBFSenderBranch(s)||'—'}</td>
-          <td>${getBFReceiverBranch(s)||'—'}</td>
-          <td>${stBadge(s.status||s.raw_status)}</td>
-          <td>${dBadge(s.delay_days,s.status)}</td>
-          <td><span class="badge b-dim">${s.client_name||s.captain||'ضمن الرحلة'}</span></td>
-        </tr>`);
-      });
-    }
-  });
-  tbody.innerHTML=rows.join('');
+  if(!list.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mute)">لا تحويلات</td></tr>';return;}
+  tbody.innerHTML=list.map(t=>`<tr>
+    <td class="code-cell">${backofficeOrderLinkHtml(t.shipments?.tracking_code||'—')}</td>
+    <td>${t.from_branch?.name||'—'}</td>
+    <td>${t.to_branch?.name||'—'}</td>
+    <td><span class="badge ${t.status==='accepted'?'b-grn':t.status==='rejected'?'b-red':'b-gold'}">${stMap[t.status]||t.status}</span></td>
+    <td style="font-size:11px;color:var(--mute)">${t.created_at?t.created_at.slice(0,10):'—'}</td>
+    <td>${t.status==='pending'?`<div style="display:flex;gap:4px"><button class="btn btn-grn btn-sm" onclick="updateTransfer('${t.id}','accepted')">قبول</button><button class="btn btn-red btn-sm" onclick="updateTransfer('${t.id}','rejected')">رفض</button></div>`:'—'}</td>
+  </tr>`).join('');
 }
 async function updateTransfer(id,status){
   try{
@@ -3981,30 +3726,23 @@ function showDriverRpt(){
 const MF={
   regions:[{k:'name',l:'اسم المنطقة',req:true},{k:'code',l:'الكود'},{k:'description',l:'وصف'}],
   branches:[{k:'name',l:'اسم الفرع',req:true},{k:'manager_name',l:'اسم المدير'},{k:'manager_phone',l:'هاتف المدير'},{k:'address',l:'العنوان'}],
-  drivers:[{k:'name',l:'اسم المندوب',req:true},{k:'phone',l:'الهاتف'},{k:'phone2',l:'هاتف2'},{k:'vehicle_type',l:'وسيلة النقل'},{k:'branch',l:'الفرع'}],
+  drivers:[{k:'name',l:'اسم المندوب',req:true},{k:'phone',l:'الهاتف'},{k:'phone2',l:'هاتف2'},{k:'vehicle_type',l:'وسيلة النقل'}],
   stores:[{k:'name',l:'اسم المتجر',req:true},{k:'phone',l:'الهاتف'},{k:'address',l:'العنوان'}],
 };
 const MTITLES={regions:'🗺️ المناطق',branches:'🏢 الفروع',drivers:'👤 المناديب',stores:'🏪 المتاجر'};
 
 async function renderMasterContent(){
   const mc=document.getElementById('master-content');
-  const driversReadonly=masterSeg==='drivers'&&isDriversApiSource();
-  const clearBtn=driversReadonly?'':`<button class="btn btn-red btn-sm" onclick="deleteAllMaster('${masterSeg}')" style="gap:5px">🗑️ مسح الكل</button>`;
-  const addBtn=driversReadonly?'':`<button class="btn btn-pur btn-sm" onclick="openMAdd('${masterSeg}')">+ إضافة</button>`;
-  const driversApiBtn=masterSeg==='drivers'?`<button class="btn btn-grn btn-sm" onclick="fetchCouriersFromAPI()">⬇️ جلب من API المناديب</button>`:'';
-  const driversBadge=masterSeg==='drivers'
-    ?`<span class="badge ${driversReadonly?'b-grn':'b-blu'}">مصدر البيانات: ${driversReadonly?'API المناديب':'Excel / إدخال يدوي'}</span>`
-    :'';
-  mc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><span style="font-size:15px;font-weight:700">${MTITLES[masterSeg]} ${driversBadge}</span><div style="display:flex;gap:6px">${driversApiBtn}${clearBtn}${addBtn}</div></div><div id="mt-wrap"><div style="text-align:center;padding:24px;color:var(--mute)">⏳ تحميل...</div></div>`;
+  const clearBtn=`<button class="btn btn-red btn-sm" onclick="deleteAllMaster('${masterSeg}')" style="gap:5px">🗑️ مسح الكل</button>`;
+  mc.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><span style="font-size:15px;font-weight:700">${MTITLES[masterSeg]}</span><div style="display:flex;gap:6px">${clearBtn}<button class="btn btn-pur btn-sm" onclick="openMAdd('${masterSeg}')">+ إضافة</button></div></div><div id="mt-wrap"><div style="text-align:center;padding:24px;color:var(--mute)">⏳ تحميل...</div></div>`;
   try{
-    const data=driversReadonly?[...(drivers_db||[])]:await sb(masterSeg,'GET',null,'?select=*&order=created_at.desc&limit=500');
+    const data=await sb(masterSeg,'GET',null,'?select=*&order=created_at.desc&limit=500');
     const flds=MF[masterSeg]||[];
-    const labels={name:'الاسم',code:'الكود',description:'الوصف',manager_name:'المدير',manager_phone:'هاتف المدير',address:'العنوان',phone:'الهاتف',phone2:'هاتف2',vehicle_type:'وسيلة النقل',branch:'الفرع'};
-    document.getElementById('mt-wrap').innerHTML=`<div style="font-size:11px;color:var(--mute);margin-bottom:8px">${data.length} سجل</div><div class="tw"><table><thead><tr>${flds.map(f=>`<th>${labels[f.k]||f.k}</th>`).join('')}<th>إجراء</th></tr></thead><tbody>${data.length?data.map(r=>`<tr>${flds.map(f=>`<td>${r[f.k]||'—'}</td>`).join('')}<td>${driversReadonly?'<span style="color:var(--mute)">—</span>':`<div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openMEdit('${masterSeg}','${r.id}')">✏️</button><button class="btn btn-red btn-sm" onclick="deleteMaster('${masterSeg}','${r.id}')">🗑️</button></div>`}</td></tr>`).join(''):'<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--mute)">لا بيانات</td></tr>'}</tbody></table></div>`;
+    const labels={name:'الاسم',code:'الكود',description:'الوصف',manager_name:'المدير',manager_phone:'هاتف المدير',address:'العنوان',phone:'الهاتف',phone2:'هاتف2',vehicle_type:'وسيلة النقل'};
+    document.getElementById('mt-wrap').innerHTML=`<div style="font-size:11px;color:var(--mute);margin-bottom:8px">${data.length} سجل</div><div class="tw"><table><thead><tr>${flds.map(f=>`<th>${labels[f.k]||f.k}</th>`).join('')}<th>إجراء</th></tr></thead><tbody>${data.length?data.map(r=>`<tr>${flds.map(f=>`<td>${r[f.k]||'—'}</td>`).join('')}<td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openMEdit('${masterSeg}','${r.id}')">✏️</button><button class="btn btn-red btn-sm" onclick="deleteMaster('${masterSeg}','${r.id}')">🗑️</button></div></td></tr>`).join(''):'<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--mute)">لا بيانات</td></tr>'}</tbody></table></div>`;
   }catch(e){document.getElementById('mt-wrap').innerHTML=`<div style="color:var(--red);padding:16px">خطأ: ${e.message}</div>`;}
 }
 async function deleteAllMaster(table){
-  if(table==='drivers'&&isDriversApiSource()){toast('بيانات المناديب تُدار من API المناديب','w');return;}
   const title=MTITLES[table]||table;
   if(!confirm(`⚠️ هل تريد حذف جميع سجلات "${title}"؟\nهذا الإجراء لا يمكن التراجع عنه!`))return;
   try{
@@ -4025,14 +3763,12 @@ async function deleteAllMaster(table){
   }catch(e){toast('خطأ في الحذف: '+e.message,'e');}
 }
 function openMAdd(table){
-  if(table==='drivers'&&isDriversApiSource()){toast('إضافة المناديب يدويًا متوقفة — استخدم API المناديب أو ارفع Excel للمناديب','w');return;}
   meTable=table;meRecord=null;
   document.getElementById('me-title').textContent='إضافة — '+MTITLES[table];
   document.getElementById('me-body').innerHTML=(MF[table]||[]).map(f=>`<div class="fg"><label class="fl">${f.l}${f.req?' *':''}</label><input class="fi" style="width:100%" id="mf-${f.k}" value="" placeholder="${f.l}"></div>`).join('');
   document.getElementById('me-modal').classList.add('on');
 }
 async function openMEdit(table,id){
-  if(table==='drivers'&&isDriversApiSource()){toast('تعديل المناديب يدويًا متوقف — المصدر API','w');return;}
   meTable=table;
   try{
     const data=await sb(table,'GET',null,`?id=eq.${id}&select=*`);
@@ -4055,7 +3791,6 @@ async function saveMasterRecord(){
   }catch(e){toast('خطأ: '+e.message,'e');}
 }
 async function deleteMaster(table,id){
-  if(table==='drivers'&&isDriversApiSource()){toast('حذف المناديب يدويًا متوقف — المصدر API','w');return;}
   if(!confirm('حذف هذا السجل؟'))return;
   try{
     const r=await fetch(`${SB}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:H});
@@ -4143,12 +3878,6 @@ async function uploadStatic(rows,table){
         if(err.includes('duplicate')||err.includes('unique')||err.includes('PGRST')) success+=batch.length;
         else throw new Error(err);
       }
-    }
-    if(table==='drivers'){
-      driversDataSource='excel';
-      await sbUp('settings',[{key:'drivers_source',value:'excel'}]);
-      localStorage.removeItem('couriers_api_drivers_cache');
-      couriersApiCache=[];
     }
     if(el)el.innerHTML=`<span style="color:var(--grn)">✅ ${success} سجل</span>`;
     toast(`✅ ${success} ${MTITLES[table]||table}`,'s');
@@ -4415,26 +4144,9 @@ async function uploadShipments(rows,forceStatus){
 // ══════════════════════════════════════════
 // CORS proxy via Cloudflare Worker — sends cursor separately to avoid encoding issues
 const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
-function cleanApiUrl(raw){
-  return String(raw||'').trim().replace(/^['"]+|['"]+$/g,'');
-}
-function withQueryParam(url,key,value){
-  const u=new URL(cleanApiUrl(url),location.origin);
-  u.searchParams.set(key,String(value));
-  return u.toString();
-}
-function withQueryParams(url,params){
-  const u=new URL(cleanApiUrl(url),location.origin);
-  Object.entries(params||{}).forEach(([k,v])=>{
-    if(v!==undefined&&v!==null&&String(v).trim()!==''){
-      u.searchParams.set(k,String(v));
-    }
-  });
-  return u.toString();
-}
 async function apiFetch(baseUrl,token,cursor){
   const cleanToken=token?token.replace(/^(Bearer|Token)\s*/i,'').trim():'';
-  const body={url:cleanApiUrl(baseUrl),token:cleanToken};
+  const body={url:baseUrl,token:cleanToken};
   if(cursor)body.cursor=cursor;
   const r=await fetch(PROXY,{
     method:'POST',
@@ -4443,437 +4155,6 @@ async function apiFetch(baseUrl,token,cursor){
   });
   return r;
 }
-
-function mapCouriersFromApiPayload(payload){
-  const candidates=extractCouriersCandidates(payload);
-  if(!Array.isArray(candidates))return [];
-  const keyToIndex=new Map();
-  const mapped=[];
-  const getByPath=(obj,path)=>path.split('.').reduce((acc,key)=>acc&&acc[key]!==undefined?acc[key]:undefined,obj);
-  const pick=(row,paths)=>{
-    for(const p of paths){
-      const v=getByPath(row,p);
-      if(v!==undefined&&v!==null&&String(v).trim()!=='')return v;
-    }
-    return '';
-  };
-  const asPhoneText=(v)=>{
-    if(v===undefined||v===null)return '';
-    if(typeof v==='string'||typeof v==='number'){
-      const txt=toAsciiDigits(String(v).trim());
-      return txt;
-    }
-    if(Array.isArray(v)){
-      for(const item of v){
-        const t=asPhoneText(item);
-        if(t)return t;
-      }
-      return '';
-    }
-    if(typeof v==='object'){
-      const direct=String(
-        v.phone||v.mobile||v.number||v.value||v.msisdn||v.phone_number||v.whatsapp||''
-      ).trim();
-      if(direct)return direct;
-      for(const key of Object.keys(v)){
-        const t=asPhoneText(v[key]);
-        if(t)return t;
-      }
-    }
-    return '';
-  };
-  const pickPhone=(row,paths)=>{
-    for(const p of paths){
-      const raw=getByPath(row,p);
-      const text=asPhoneText(raw);
-      if(text)return text;
-    }
-    return '';
-  };
-  const findPhonesDeep=(obj)=>{
-    const out=[];
-    const seenNodes=new Set();
-    const keyHints=['phone','mobile','whatsapp','msisdn','tel','contact','number','هاتف','جوال','رقم'];
-    const walk=(node,keyPath='')=>{
-      if(node===undefined||node===null)return;
-      if(typeof node==='object'){
-        if(seenNodes.has(node))return;
-        seenNodes.add(node);
-      }
-      if(typeof node==='string'||typeof node==='number'){
-        const text=toAsciiDigits(String(node).trim());
-        const digits=String(text).replace(/[^0-9]/g,'');
-        if((digits.length>=8&&digits.length<=15)||/^(\+?\d[\d\s-]{7,})$/.test(text)){
-          out.push(text);
-        }
-        return;
-      }
-      if(Array.isArray(node)){
-        for(const item of node)walk(item,keyPath+'[]');
-        return;
-      }
-      if(typeof node==='object'){
-        for(const [k,v] of Object.entries(node)){
-          const keyNorm=String(k||'').toLowerCase();
-          const nextPath=keyPath?`${keyPath}.${keyNorm}`:keyNorm;
-          const hinted=keyHints.some(h=>keyNorm.includes(h));
-          if(hinted){
-            const hintedVal=asPhoneText(v);
-            if(hintedVal)out.push(hintedVal);
-          }
-          walk(v,nextPath);
-        }
-      }
-    };
-    walk(obj);
-    // Last-resort fallback: scan the whole JSON text for phone-like numbers.
-    if(!out.length){
-      try{
-        const raw=JSON.stringify(obj)||'';
-        const rx=/(\+?\d[\d\s\-()]{7,}\d)/g;
-        const matches=raw.match(rx)||[];
-        for(const m of matches){
-          const t=toAsciiDigits(String(m||'').trim());
-          const digits=t.replace(/[^0-9]/g,'');
-          if(digits.length>=8&&digits.length<=15){
-            out.push(t);
-          }
-        }
-      }catch(e){}
-    }
-    const uniq=[];const seen=new Set();
-    for(const p of out){
-      const k=normPhone(p)||String(p).trim();
-      if(!k||seen.has(k))continue;
-      seen.add(k);
-      uniq.push(String(p).trim());
-    }
-    return uniq;
-  };
-  for(const row of candidates){
-    const idRaw=pick(row,['id','driver_id','courier_id','employee_id','captain_id','user_id','uuid','code','courier_code']);
-    const idText=String(idRaw||'').trim();
-    const name=String(
-      pick(row,[
-        'name','full_name','driver_name','courier_name','employee_name','captain','ar_name','en_name',
-        'driver.name','driver.full_name','captain_info.name','employee.name','user.name',
-        'profile.name','courier.name','captain.name','اسم المندوب'
-      ])||''
-    ).trim();
-    const phoneRaw=pickPhone(row,[
-      'phone','mobile','phone_number','driver_phone','courier_phone','primary_phone','whatsapp','msisdn',
-      'contact.phone','contact.mobile','contact.whatsapp','driver.phone','driver.mobile','captain_info.phone',
-      'employee.phone','profile.phone','courier.phone','captain.phone','phones','phone_numbers','mobiles','telephones',
-      'contact_numbers','contacts','details.phone','details.mobile','user.phone','user.mobile','هاتف المندوب'
-    ]);
-    const phone2Raw=pickPhone(row,[
-      'phone2','secondary_phone','alt_phone','backup_phone','contact.phone2','driver.phone2','secondary.mobile',
-      'secondary.whatsapp','phones.1','phone_numbers.1'
-    ]);
-    const deepPhones=findPhonesDeep(row);
-    const primaryPhone=phoneRaw||deepPhones[0]||'';
-    const secondaryPhone=phone2Raw||(deepPhones.length>1?deepPhones[1]:'');
-    const normMainPhone=normPhone(primaryPhone)||primaryPhone;
-    const key=idText
-      ? `id::${idText}`
-      : `np::${normalizePersonName(name||'')||'noname'}::${normMainPhone||'nophone'}`;
-    const displayName=name||`مندوب ${idText||mapped.length+1}`;
-    const rec={
-      id:idText||null,
-      name:displayName,
-      phone:normMainPhone,
-      phone2:normPhone(secondaryPhone)||toAsciiDigits(secondaryPhone)||null,
-      vehicle_type:String(pick(row,['vehicle_type','vehicle','transport_type','vehicle.name','car_type','vehicle_type_name'])||'').trim()||null,
-      branch:String(pick(row,['branch','branch_name','current_branch','received_branch','location.branch','branch_info.name','branch.title','branch.label','الفرع'])||'').trim()||null,
-      source:'couriers_api'
-    };
-    if(!keyToIndex.has(key)){
-      keyToIndex.set(key,mapped.length);
-      mapped.push(rec);
-      continue;
-    }
-    // Merge duplicates to preserve non-empty fields from later rows.
-    const idx=keyToIndex.get(key);
-    const prev=mapped[idx];
-    if(!prev.phone&&rec.phone)prev.phone=rec.phone;
-    if(!prev.phone2&&rec.phone2&&rec.phone2!==prev.phone)prev.phone2=rec.phone2;
-    if((!prev.vehicle_type||prev.vehicle_type==='—')&&rec.vehicle_type)prev.vehicle_type=rec.vehicle_type;
-    if((!prev.branch||prev.branch==='—')&&rec.branch)prev.branch=rec.branch;
-    if((!prev.name||prev.name.startsWith('مندوب '))&&name)prev.name=name;
-  }
-  return mapped;
-}
-
-function extractCouriersCandidates(payload){
-  if(Array.isArray(payload))return payload;
-  if(!payload||typeof payload!=='object')return [];
-  const buckets=[
-    payload.couriers,payload.drivers,payload.captains,payload.employees,payload.results,payload.items,payload.data,
-    payload?.payload,payload?.list,payload?.rows,
-    payload?.data?.items,payload?.data?.drivers,payload?.data?.captains,payload?.data?.employees,payload?.data?.data,
-    payload?.data?.list,payload?.data?.rows,payload?.result?.data,payload?.result?.items
-  ];
-  for(const b of buckets){if(Array.isArray(b))return b;}
-  return [];
-}
-
-function applyCouriersApiData(list,{persist=true}={}){
-  couriersApiCache=Array.isArray(list)?list:[];
-  if(couriersApiCache.length)drivers_db=[...couriersApiCache];
-  if(persist){
-    localStorage.setItem('couriers_api_drivers_cache',JSON.stringify(couriersApiCache));
-  }
-}
-
-function loadCachedCouriersApiData(){
-  try{
-    const raw=localStorage.getItem('couriers_api_drivers_cache');
-    if(!raw)return false;
-    const parsed=JSON.parse(raw);
-    if(!Array.isArray(parsed)||!parsed.length)return false;
-    applyCouriersApiData(parsed,{persist:false});
-    return true;
-  }catch(e){
-    return false;
-  }
-}
-
-async function testCouriersAPI(){
-  const url=cleanApiUrl(document.getElementById('couriers-api-url')?.value);
-  const token=document.getElementById('couriers-api-token')?.value?.trim();
-  const el=document.getElementById('couriers-api-status');
-  if(!url){toast('أدخل رابط API المناديب','e');return;}
-  el.textContent='⏳ جارٍ اختبار API المناديب...';
-  try{
-    const res=await apiFetch(url,token);
-    if(!res.ok){
-      const errText=await res.text().catch(()=>'');
-      throw new Error(`HTTP ${res.status}${errText?` — ${errText.substring(0,120)}`:''}`);
-    }
-    const payload=await res.json();
-    const mapped=mapCouriersFromApiPayload(payload);
-    el.innerHTML=`<span style="color:var(--grn)">✅ API المناديب يعمل — ${mapped.length} مندوب</span>`;
-    await sbUp('settings',[{key:'couriers_api_url',value:url},{key:'couriers_api_token',value:token||''}]);
-    toast('✅ اتصال API المناديب ناجح','s');
-  }catch(e){
-    el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
-  }
-}
-
-async function fetchCouriersFromAPI(){
-  const url=cleanApiUrl(document.getElementById('couriers-api-url')?.value);
-  const token=document.getElementById('couriers-api-token')?.value?.trim();
-  const el=document.getElementById('couriers-api-status');
-  if(!url){toast('أدخل رابط API المناديب أولاً','e');return;}
-  el.textContent='⏳ جارٍ جلب بيانات المناديب...';
-  setGlobalFetchState(true,'جار جلب المناديب...');
-  try{
-    let cursor='';
-    let page=0;
-    const maxPages=200;
-    let pageNum=1;
-    const allRows=[];
-    while(page<maxPages){
-      page++;
-      el.textContent=`⏳ جارٍ جلب المناديب... صفحة ${page}`;
-      const pageUrl=cursor?url:withQueryParam(url,'page',pageNum);
-      const res=await apiFetch(pageUrl,token,cursor||'');
-      if(!res.ok){
-        const errText=await res.text().catch(()=>'');
-        throw new Error(`HTTP ${res.status}${errText?` — ${errText.substring(0,120)}`:''}`);
-      }
-      const payload=await res.json();
-      const chunk=extractCouriersCandidates(payload);
-      for(const row of chunk)allRows.push(row);
-      const nextCursor=payload?.meta?.next_cursor||payload?.next_cursor||payload?.pagination?.next_cursor||null;
-      const currentPage=Number(payload?.meta?.current_page||payload?.current_page||payload?.pagination?.current_page||pageNum||0);
-      const lastPage=Number(payload?.meta?.last_page||payload?.last_page||payload?.pagination?.last_page||payload?.meta?.total_pages||payload?.total_pages||payload?.pagination?.total_pages||0);
-      if(nextCursor){
-        cursor=nextCursor;
-      }else if(lastPage&&currentPage&&currentPage<lastPage){
-        pageNum=currentPage+1;
-      }else{
-        break;
-      }
-      if(!chunk.length)break;
-    }
-    const mapped=mapCouriersFromApiPayload(allRows);
-    if(!mapped.length)throw new Error('لا توجد بيانات مناديب صالحة في الرد');
-    const withPhoneCount=mapped.filter(m=>String(m.phone||'').trim()!=='').length;
-    applyCouriersApiData(mapped,{persist:true});
-    driversDataSource='api';
-    await sbUp('settings',[
-      {key:'couriers_api_url',value:url},
-      {key:'couriers_api_token',value:token||''},
-      {key:'drivers_source',value:'api'}
-    ]);
-    if(document.getElementById('sts-drivers'))document.getElementById('sts-drivers').innerHTML=`<span style="color:var(--grn)">✅ تم تحديث ${mapped.length} مندوب من API</span>`;
-    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} مندوب من ${page} صفحة — بأرقام هاتف: ${withPhoneCount}</span>`;
-    if(masterSeg==='drivers'&&document.getElementById('tab-master')?.classList.contains('on'))renderMasterContent();
-    renderDrivers();
-    renderAPIShipments();
-    toast(`✅ تم جلب ${mapped.length} مندوب من API`,'s');
-  }catch(e){
-    el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
-    toast('خطأ API المناديب: '+e.message,'e');
-  }finally{
-    setGlobalFetchState(false);
-  }
-}
-
-function getBranchFollowupAPIConfig(){
-  const defaultUrl='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
-  const url=(localStorage.getItem('branch_followup_api_url')||'').trim()
-    ||document.getElementById('bf-api-url')?.value?.trim()
-    ||defaultUrl;
-  const token=(localStorage.getItem('branch_followup_api_token')||'').trim()
-    ||document.getElementById('bf-api-token')?.value?.trim()
-    ||'';
-  return {url,token};
-}
-
-async function connectBranchFollowupAPI(){
-  let {url,token}=getBranchFollowupAPIConfig();
-  const statusEl=document.getElementById('bf-api-status');
-  if(!url){
-    url='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
-  }
-  if(!token){
-    toast('أدخل Token متابعة الفروع أولاً','w');
-    if(statusEl)statusEl.innerHTML='<span style="color:var(--gold)">⚠️ أدخل Token متابعة الفروع</span>';
-    return;
-  }
-  if(statusEl)statusEl.textContent='⏳ جارٍ اختبار اتصال متابعة الفروع...';
-  try{
-    const testUrl=withDelayDays(url,1);
-    const res=await apiFetch(testUrl,token);
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    localStorage.setItem('branch_followup_api_url',url);
-    localStorage.setItem('branch_followup_api_token',token);
-    await sbUp('settings',[
-      {key:'branch_followup_api_url',value:url},
-      {key:'branch_followup_api_token',value:token}
-    ]);
-    if(statusEl)statusEl.innerHTML='<span style="color:var(--grn)">✅ تم حفظ اتصال متابعة الفروع</span>';
-    toast('✅ تم حفظ إعدادات API متابعة الفروع','s');
-  }catch(e){
-    if(statusEl)statusEl.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
-    toast('خطأ اتصال API متابعة الفروع: '+e.message,'e');
-  }
-}
-
-function withDelayDays(baseUrl,delayDays){
-  const clean=String(baseUrl||'').replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
-  if(clean.includes('delay_days=')){
-    return clean.replace(/([?&])delay_days=\d+/,'$1delay_days='+delayDays);
-  }
-  return `${clean}${clean.includes('?')?'&':'?'}delay_days=${delayDays}`;
-}
-
-async function fetchBranchFollowupRowsByDelay(baseUrl,token,delayDays,maxPages){
-  const dayUrl=withDelayDays(baseUrl,delayDays);
-  const seen=new Set();
-  const rows=[];
-  let nextCursor=null;
-  for(let page=1;page<=maxPages;page++){
-    const res=await apiFetch(dayUrl,token,nextCursor||'');
-    if(!res.ok)break;
-    const json=await res.json();
-    const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
-    nextCursor=json?.meta?.next_cursor||json?.next_cursor||null;
-
-    for(const item of pageData){
-      const code=String(item.code||item.tracking_code||item.order_id||item.ParcelCode||item.id||'').trim();
-      const fromBranch=String(
-        item.previous_branch||item.previousBranch||item.from_branch||item.fromBranch||item.sender_branch||item.source_branch||item.branch_from||''
-      ).trim();
-      const toBranch=String(
-        item.received_branch||item.receivedBranch||item.to_branch||item.toBranch||item.receiver_branch||item.destination_branch||item.branch_to||''
-      ).trim();
-      const rawDelay=item.delay_days??item.delay??item.delayed_days??item.overdue_days??0;
-      const parsedDelay=parseInt(String(rawDelay).replace(/[^\d-]/g,''),10);
-      const delayDaysValue=Number.isFinite(parsedDelay)?parsedDelay:0;
-      const transferDate=String(item.transfer_date||item.trip_date||item.moved_at||'').trim();
-      const createdAt=String(item.created_at||'').trim();
-      const orderDate=String(item.order_date||item.date||'').trim();
-      const statusText=String(item.status||'').trim();
-      const key=[delayDays,code,fromBranch,toBranch,statusText,delayDaysValue,transferDate,orderDate,createdAt].join('::');
-      if(!code||seen.has(key))continue;
-      seen.add(key);
-      rows.push({
-        tracking_code:code,
-        client_name:String(item.client_name||item.customer_name||item.name||'—').trim(),
-        captain:String(item.captain||item.driver_name||item.driver||item.assignee||'').trim(),
-        status:statusText,
-        raw_status:statusText,
-        delay_days:delayDaysValue,
-        previous_branch:fromBranch,
-        from_branch:fromBranch,
-        received_branch:toBranch,
-        to_branch:toBranch,
-        current_branch:String(item.current_branch||item.currentBranch||'').trim(),
-        transfer_date:transferDate,
-        created_at:createdAt,
-        updated_at:String(item.updated_at||'').trim(),
-        order_date:orderDate,
-      });
-    }
-    if(!nextCursor||!pageData.length)break;
-  }
-  return rows;
-}
-
-async function refreshBranchFollowupAPI(force=false){
-  const now=Date.now();
-  if(!force&&branchFollowupRows.length&&(now-branchFollowupLastFetchAt)<5*60*1000){
-    return;
-  }
-  let {url,token}=getBranchFollowupAPIConfig();
-  if(!url||!token){
-    try{
-      const cfg=await sb('settings','GET',null,'?select=key,value');
-      cfg.forEach(r=>{
-        if(!url&&r.key==='branch_followup_api_url')url=r.value||'';
-        if(!token&&r.key==='branch_followup_api_token')token=r.value||'';
-      });
-    }catch(_e){}
-  }
-  if(!url)url='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
-  if(!token){
-    if(force)toast('⚠️ أدخل Token متابعة الفروع أولاً ثم أعد التحديث','w');
-    return;
-  }
-
-  try{
-    const baseUrl=url.replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
-    const MAX_PAGES=150;
-    const [companyRows,transferRows]=await Promise.all([
-      fetchBranchFollowupRowsByDelay(baseUrl,token,1,MAX_PAGES), // in company: more than one day
-      fetchBranchFollowupRowsByDelay(baseUrl,token,2,MAX_PAGES)  // transfers: more than two days
-    ]);
-
-    const dedup=new Map();
-    [...companyRows,...transferRows].forEach(r=>{
-      const key=getBFDedupKey(r);
-      if(!key)return;
-      const prev=dedup.get(key);
-      if(!prev||Number(r.delay_days||0)>=Number(prev.delay_days||0))dedup.set(key,r);
-    });
-    const rows=[...dedup.values()];
-
-    branchFollowupRows=rows;
-    branchFollowupExpandedTrips.clear();
-    branchFollowupLastFetchAt=Date.now();
-    localStorage.setItem('branch_followup_api_rows',JSON.stringify(branchFollowupRows));
-    localStorage.setItem('branch_followup_last_fetch_at',String(branchFollowupLastFetchAt));
-
-    renderReturns();
-    renderTransfers();
-  }catch(e){
-    console.warn('branchFollowupAPI',e);
-  }
-}
-
 async function testAPI(){
   const url=document.getElementById('api-url')?.value?.trim();
   const token=document.getElementById('api-token')?.value?.trim();
@@ -4901,110 +4182,45 @@ async function fetchFromAPI(){
   const el=document.getElementById('api-status');
   if(!url){toast('أدخل رابط API أولاً','e');return;}
   el.textContent='⏳ جارٍ جلب البيانات...';
-  setGlobalFetchState(true,'جار جلب الطرود...');
   try{
-    // Fast full-sync by direct pagination only (no delay_days scanning).
-    const PAGE_SIZE=500;
-    const MAX_PAGES=500;
-    const rawData=[];
-    const seen=new Set();
-    let page=1;
-    let cursor='';
-    let totalPages=1;
-
-    while(page<=MAX_PAGES){
-      const pageUrl=withQueryParams(url,{
-        per_page:PAGE_SIZE,
-        limit:PAGE_SIZE,
-        page
-      });
-      el.textContent=`⏳ جارٍ جلب الطرود... صفحة ${page}${totalPages>1?` من ${totalPages}`:''}`;
-      const res=await apiFetch(pageUrl,token,cursor||'');
-      if(!res.ok){
-        const errText=await res.text().catch(()=>'');
-        throw new Error(`HTTP ${res.status}${errText?` — ${errText.substring(0,120)}`:''}`);
-      }
-      const json=await res.json();
-      const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
-      for(const item of pageData){
-        const code=String(item.tracking_code||item.code||item.order_id||item.ParcelCode||item.id||'').trim();
-        if(code&&!seen.has(code)){seen.add(code);rawData.push(item);}
-      }
-
-      const nextCursor=json?.meta?.next_cursor||json?.next_cursor||json?.pagination?.next_cursor||'';
-      const currentPage=Number(json?.meta?.current_page||json?.current_page||json?.pagination?.current_page||page||1);
-      const lastPage=Number(
-        json?.meta?.last_page
-        ||json?.last_page
-        ||json?.pagination?.last_page
-        ||json?.meta?.total_pages
-        ||json?.total_pages
-        ||json?.pagination?.total_pages
-        ||0
-      );
-      if(lastPage>0)totalPages=lastPage;
-
-      if(nextCursor){
-        cursor=nextCursor;
-        page++;
-        if(!pageData.length)break;
-        continue;
-      }
-      if(lastPage>0){
-        if(currentPage>=lastPage||!pageData.length)break;
-        page=currentPage+1;
-        continue;
-      }
-      break;
+    // Paginated fetch
+    let rawData=[],cursor='',pg=0;
+    while(pg<20){
+      pg++;
+      el.textContent=`⏳ صفحة ${pg}...`;
+      try{
+        const res=await apiFetch(url,token,cursor||'');
+        if(!res.ok){if(pg>1)break;throw new Error(`HTTP ${res.status}`);}
+        const json=await res.json();
+        const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+        if(pageData.length)rawData=rawData.concat(pageData);
+        const nc=json?.meta?.next_cursor||json?.next_cursor||null;
+        if(!nc||!pageData.length)break;
+        cursor=nc;
+      }catch(pgErr){if(pg>1)break;throw pgErr;}
     }
-
     if(!rawData.length){el.textContent='⚠️ لا بيانات في الرد';return;}
     const stMap={'مع المندوب':'with_driver','في الشركة':'in_company','delivered':'delivered','مرتجع':'returned'};
-    const seenMapped=new Set();const mapped=[];
+    const seen=new Set();const mapped=[];
     for(const [i,r] of rawData.entries()){
-      const code=String(r.tracking_code||r.code||r.order_id||r.ParcelCode||r.id||('API-'+Date.now()+'-'+i)).trim();
-      if(seenMapped.has(code))continue;seenMapped.add(code);
+      const code=String(r.code||r.id||r.tracking_code||r.order_id||('API-'+Date.now()+'-'+i)).trim();
+      if(seen.has(code))continue;seen.add(code);
       mapped.push({tracking_code:code,customer_name:String(r.client_name||r.customer_name||r.name||'—').trim(),customer_phone:String(r.receiver_phone||r.customer_phone||r.phone||'—').trim(),status:stMap[r.status]||r.status||'with_driver',delay_days:parseInt(r[delayField]||r.delay_days||0)||0,upload_date:new Date().toISOString().split('T')[0]});
     }
     if(!MANUAL_EXCEL_SHIPMENTS_ONLY){
-      const UPSERT_BATCH_SIZE=1000;
-      const UPSERT_CONCURRENCY=4;
-      const totalChunks=Math.ceil(mapped.length/UPSERT_BATCH_SIZE);
-      const chunks=[];
-      for(let i=0;i<mapped.length;i+=UPSERT_BATCH_SIZE){
-        chunks.push(mapped.slice(i,i+UPSERT_BATCH_SIZE));
-      }
-      let done=0;
-      for(let i=0;i<chunks.length;i+=UPSERT_CONCURRENCY){
-        const group=chunks.slice(i,i+UPSERT_CONCURRENCY);
-        const results=await Promise.all(group.map(async (chunk)=>{
-          const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
-            method:'POST',
-            headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
-            body:JSON.stringify(chunk)
-          });
-          if(!res.ok){
-            const err=await res.text().catch(()=>'');
-            throw new Error('فشل مزامنة الطرود: '+err.substring(0,200));
-          }
-          return true;
-        }));
-        done+=results.length;
-        el.textContent=`⏳ جارٍ حفظ الطرود... ${done}/${totalChunks} دفعة`;
-      }
+    for(let i=0;i<mapped.length;i+=100){
+        const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
+        method:'POST',
+        headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify(mapped.slice(i,i+100))
+      });
+        if(!res.ok){const err=await res.text();throw new Error('فشل مزامنة الطرود: '+err.substring(0,120));}
     }
-    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} طرد من API (${Math.min(page,totalPages)} صفحة)${MANUAL_EXCEL_SHIPMENTS_ONLY?' — بدون إدخال لجدول الطرود الرئيسي':''}</span>`;
+    }
+    el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${mapped.length} طرد من API (${pg} صفحة)${MANUAL_EXCEL_SHIPMENTS_ONLY?' — بدون إدخال لجدول الطرود الرئيسي':''}</span>`;
     toast(`✅ ${mapped.length} طرد من API`,'s');
-    if(mapped.length<=5000){
-      await loadShipments();
-    }
-    loadDbStats();
-  }catch(e){
-    el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
-    toast('خطأ في API: '+e.message,'e');
-  }finally{
-    setGlobalFetchState(false);
-  }
+    await loadShipments();loadDbStats();
+  }catch(e){el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;toast('خطأ في API: '+e.message,'e');}
 }
 function setAutoFetch(){
   const interval=parseInt(document.getElementById('api-interval')?.value||'0');
@@ -5020,7 +4236,7 @@ async function loadDbStats(){
   try{
     const [s,d,b,r,ct]=await Promise.all([sbCount('shipments'),sbCount('drivers'),sbCount('branches'),sbCount('returns'),sbCount('contacted_log')]);
     document.getElementById('db-s').textContent=s;
-    document.getElementById('db-d').textContent=couriersApiCache.length||d;
+    document.getElementById('db-d').textContent=d;
     document.getElementById('db-b').textContent=b;
     document.getElementById('db-r').textContent=r;
     document.getElementById('db-ct').textContent=ct;
@@ -5107,6 +4323,7 @@ function setAlpha(l){
 }
 
 function gTab(id){
+  if(id==='commission-admin'&&(!CU||CU.role!=='manager')){toast('هذه الشاشة للمدير فقط','e');return;}
   document.querySelectorAll('#nav-tabs .sb-item').forEach(t=>t.classList.toggle('on',t.dataset.tab===id));
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('on');p.style.display='none';});
   const pg=document.getElementById('tab-'+id);
@@ -5115,11 +4332,15 @@ function gTab(id){
   if(window.innerWidth<=900)closeSidebar();
   const renders={
     home:renderHome,
-    shipments:()=>{loadCachedAPIShipments();updateAPIKPIs();renderAPIShipments();renderAPIFetchLog();},
+    shipments:renderShipments,
     drivers:renderDrivers,
-    'branch-followup':()=>{setBranchFollowupTab('company');void refreshBranchFollowupAPI();},
+    returns:renderReturns,
+    transfers:renderTransfers,
+    'api-shipments':()=>{loadCachedAPIShipments();updateAPIKPIs();renderAPIShipments();renderAPIFetchLog();},
     janzour:()=>{buildJanzourSet();renderJanzour();},
     'janzour-rates':()=>{renderJanzourRatesPage();},
+    'service-kpi':()=>{renderServiceKpiPage();},
+    'commission-admin':()=>{if(!CU||CU.role!=='manager'){toast('هذه الشاشة للمدير فقط','e');return;}renderCommissionAdminPage();},
     whatsapp:renderWA,
     reports:genDaily,
     staff:()=>{sfPage=1;renderStaff();},
@@ -5130,43 +4351,39 @@ function gTab(id){
   if(renders[id])renders[id]();
 }
 
-function setBranchFollowupTab(mode){
-  const target=mode==='transfers'?'transfers':'company';
-  const modeEl=document.getElementById('bf-mode');
-  if(modeEl&&modeEl.value!==target)modeEl.value=target;
-  const compPane=document.getElementById('bf-company-pane');
-  const trPane=document.getElementById('bf-transfers-pane');
-  if(compPane)compPane.style.display=target==='company'?'block':'none';
-  if(trPane)trPane.style.display=target==='transfers'?'block':'none';
-  if(target==='company')renderReturns();
-  else renderTransfers();
-}
-
 // Tab click delegation (sidebar)
 document.getElementById('nav-tabs').addEventListener('click',e=>{
   const tab=e.target.closest('.sb-item');
   if(tab&&tab.dataset.tab){
+    if(tab.dataset.tab==='commission-admin'&&(!CU||CU.role!=='manager')){toast('غير مسموح','e');return;}
     gTab(tab.dataset.tab);
   }
 });
 
 // ── Navigate to shipments tab with filter ──
 function goShipments(filterType, filterVal){
-  goAPIShipments(filterType, filterVal);
+  gTab('shipments');
+  const delayEl=document.getElementById('s-fd');
+  const statusEl=document.getElementById('s-fst');
+  if(delayEl)delayEl.value='';
+  if(statusEl)statusEl.value='';
+  if(filterType==='delay'&&delayEl)delayEl.value=filterVal;
+  if(filterType==='status'&&statusEl)statusEl.value=filterVal;
+  setSeg('all');
+  renderShipments();
 }
 
 // ── Navigate to API shipments tab with filter ──
 function goAPIShipments(filterType, filterVal){
-  gTab('shipments');
+  gTab('api-shipments');
+  const delayEl=document.getElementById('a-fd');
   const statusEl=document.getElementById('a-fst');
-  const mainTypeEl=document.getElementById('a-main-type');
-  if(mainTypeEl)mainTypeEl.value='';
+  if(delayEl)delayEl.value='';
   if(statusEl)statusEl.value='';
-  if(filterType==='delay'&&mainTypeEl){
-    mainTypeEl.value=filterVal==='ok'?'with_driver':'';
-  }
+  if(filterType==='delay'&&delayEl)delayEl.value=filterVal;
   if(filterType==='status'&&statusEl)statusEl.value=filterVal;
-  setAPISeg('all');
+  apiSeg='all';
+  document.querySelectorAll('.seg[data-aseg]').forEach(el=>el.classList.toggle('on',el.dataset.aseg==='all'));
   renderAPIShipments();
 }
 
@@ -5240,8 +4457,8 @@ function sendToCustomer(sid){
 function sendToDriver2(sid){
   sid=String(sid);
   const s=shipments.find(x=>String(x.id)===sid);if(!s)return;
-  const drv=drivers_db.find(d=>String(d.id||'')===String(s.driver_id||'')) || resolveDriverRecordByName(s.driver_name||'') || {};
-  const ph=normPhone(resolveDriverPhoneForShipment(s));
+  const drv=drivers_db.find(d=>d.id===s.driver_id||d.name===s.driver_name)||{};
+  const ph=normPhone(drv.phone||s.driver_phone||'');
   const msg=`السلام عليكم ${drv.name||s.driver_name||''}
 🕊️ ${CFG.company}
 
@@ -5417,7 +4634,7 @@ async function renderStaff(){
   const capTotal=document.getElementById('staff-api-total');
   if(capEl){
     if(!apiShipments.length){
-      capEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--mute)">لا توجد طرود API — تأكد من تفعيل الجلب التلقائي</div>';
+      capEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--mute)">لا توجد طرود API — اضغط "جلب الآن" من تبويب طرود API</div>';
       if(capTotal)capTotal.textContent='0 طرد';
     } else {
       if(capTotal)capTotal.textContent=apiShipments.length+' طرد';
@@ -5478,7 +4695,7 @@ async function renderStaff(){
       assignStatsEl.innerHTML=`<div class="tw"><table>
         <thead><tr><th>الموظف</th><th>المسند</th><th style="color:var(--red)">حرج</th><th style="color:var(--gold)">تحذير</th><th style="color:var(--grn)">✅ منجز</th><th style="color:var(--gold)">⏳ قيد</th><th style="color:var(--red)">📵 لا يرد</th><th>نسبة الإنجاز</th></tr></thead>
         <tbody>
-          ${unassigned?`<tr><td style="color:var(--mute)" colspan="8">⚠️ ${unassigned} طرد غير مسندة — <span style="color:var(--pur);cursor:pointer" onclick="gTab('shipments');setTimeout(openAssignPanel,200)">وزّعها الآن</span></td></tr>`:''}
+          ${unassigned?`<tr><td style="color:var(--mute)" colspan="8">⚠️ ${unassigned} طرد غير مسندة — <span style="color:var(--pur);cursor:pointer" onclick="gTab('api-shipments');setTimeout(openAssignPanel,200)">وزّعها الآن</span></td></tr>`:''}
           ${rows.filter(r=>r.total>0).map(r=>{
             const pct=r.total?Math.round(r.done/r.total*100):0;
             const pc=pct>70?'var(--grn)':pct>40?'var(--gold)':'var(--red)';
@@ -5822,15 +5039,6 @@ let apiFetchLog=[];
 let aSortKey='delay_days', aSortDir='desc';
 let apiFilteredData=[], apiFilteredIds=[], apiLastSelectedSid='';
 
-function isAPIOriginRow(row){
-  // Keep all rows returned by API. Do not exclude by source fields.
-  return true;
-}
-function isAPIShipmentRecord(s){
-  if(!s||typeof s!=='object')return false;
-  return true;
-}
-
 // ══════════════════════════════════════════
 // JANZOUR STORES — Isolated view
 // ══════════════════════════════════════════
@@ -5897,51 +5105,18 @@ function buildJanzourSet(){
   janzourStoreSet=new Set(sourceNames);
   rebuildJanzourShipments();
 }
-function normalizeIdentityText(v){
-  return String(v||'')
-    .trim()
-    .toLowerCase()
-    .replace(/[\u064B-\u065F\u0670]/g,'')
-    .replace(/[أإآٱ]/g,'ا')
-    .replace(/ى/g,'ي')
-    .replace(/ؤ/g,'و')
-    .replace(/ئ/g,'ي')
-    .replace(/\s+/g,' ');
-}
-function getCurrentUserIdentityKeys(user=CU){
-  if(!user)return [];
-  const keys=new Set();
-  const push=v=>{const n=normalizeIdentityText(v);if(n)keys.add(n);};
-  push(user.name);
-  push(user.username);
-  if(user.username&&USERS[user.username])push(USERS[user.username].name);
-  return [...keys];
-}
-function isShipmentAssignedToCurrentUser(assignedValue,user=CU){
-  const assigned=normalizeIdentityText(assignedValue);
-  if(!assigned)return false;
-  const keys=getCurrentUserIdentityKeys(user);
-  return keys.includes(assigned);
-}
 function rebuildJanzourShipments(){
-  const assignments=getAPIAssignments();
-  const branchScoped=getAllowedBranchesForUser(CU);
   janzourShipments=apiShipments.filter(s=>{
     const name=(s.client_name||'').trim().toLowerCase();
     // Exact match OR partial match (store name is contained in client name)
-    let ok=janzourStoreSet.has(name);
-    if(!ok){
-      for(const sn of janzourStoreSet){if(name.includes(sn)||sn.includes(name)){ok=true;break;}}
-    }
-    if(!ok)return false;
-    if(branchScoped.length&&!userCanAccessBranch(CU,s.current_branch||''))return false;
-    if(CU?.role==='employee'&&!isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU))return false;
-    return true;
+    if(janzourStoreSet.has(name))return true;
+    for(const sn of janzourStoreSet){if(name.includes(sn)||sn.includes(name))return true;}
+    return false;
   });
 }
 
 function resetAPIFilters(){
-  ['a-q','a-view-mode','a-main-type','a-fst','a-fbr'].forEach(id=>{
+  ['a-q','a-fd','a-fst','a-fdays','a-fcap','a-fbr','a-fgov'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){if(el.tagName==='INPUT')el.value='';else el.selectedIndex=0;}
   });
@@ -5950,12 +5125,15 @@ function resetAPIFilters(){
 
 function setAPISeg(s){
   apiSeg=s;aPage=1;
-  const viewEl=document.getElementById('a-view-mode');
-  if(viewEl&&viewEl.value!==s)viewEl.value=s;
+  document.querySelectorAll('[data-aseg]').forEach(el=>el.classList.toggle('on',el.dataset.aseg===s));
   renderAPIShipments();
 }
 
-// Seg click listener removed in favor of dropdown list
+// Listen for seg clicks
+document.addEventListener('click',e=>{
+  const seg=e.target.closest('[data-aseg]');
+  if(seg)setAPISeg(seg.dataset.aseg);
+});
 
 async function fetchAPIShipments(){
   // Try to get API settings from the upload page inputs or from saved settings
@@ -5991,60 +5169,39 @@ async function fetchAPIShipments(){
   if(stEl)stEl.textContent='جارٍ الجلب...';
 
   try{
-    // ── CURSOR PAGINATION FETCH (from day 2 to last available day) ──
+    // ── CURSOR PAGINATION FETCH ──
+    // API returns 100 items per page with next_cursor for pagination
     let rawData=[];
     const seen=new Set();
     const baseUrl=url.replace(/[?&]delay_days=[^&]*/g,'').replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
     const sep=baseUrl.includes('?')?'&':'?';
-    const MIN_DELAY_DAYS=2;
-    const MAX_DELAY_SCAN_DAYS=2000; // safety cap
-    const EMPTY_DAYS_BREAK_STREAK=25; // stop when trailing days are empty
-    const MAX_PAGES_PER_DAY=200;
-    let emptyDaysStreak=0;
+    const startUrl=`${baseUrl}${sep}delay_days=1`;
 
-    for(let delayDay=MIN_DELAY_DAYS;delayDay<=MAX_DELAY_SCAN_DAYS;delayDay++){
-      let nextCursor=null;
-      let dayAdded=0;
-      const dayBaseUrl=`${baseUrl}${sep}delay_days=${delayDay}`;
+    let nextCursor=null;
+    let pageNum=0;
+    const MAX_PAGES=200; // safety limit ~20,000 shipments
 
-      for(let pageNum=1;pageNum<=MAX_PAGES_PER_DAY;pageNum++){
-        if(el)el.textContent=`⏳ جلب اليوم ${delayDay} - صفحة ${pageNum}... [${rawData.length} طرد حتى الآن]`;
+    do{
+      pageNum++;
+      const pageUrl=nextCursor?`${startUrl}&cursor=${encodeURIComponent(nextCursor)}`:startUrl;
+      if(el)el.textContent=`⏳ جلب الصفحة ${pageNum}... [${rawData.length} طرد حتى الآن]`;
 
-        // IMPORTANT: proxy expects cursor in request body (3rd arg), not only in URL.
-        const res=await apiFetch(dayBaseUrl,token,nextCursor||'');
-        if(!res.ok){
-          console.warn(`Delay day ${delayDay}, page ${pageNum} failed: ${res.status}`);
-          break;
-        }
+      const res=await apiFetch(pageUrl,token);
+      if(!res.ok){console.warn(`Page ${pageNum} failed: ${res.status}`);break;}
+      const json=await res.json();
 
-        const json=await res.json();
-        const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
-        nextCursor=json?.meta?.next_cursor||json?.next_cursor||null;
+      const pageData=Array.isArray(json)?json:json?.data||json?.results||json?.orders||json?.shipments||[];
+      nextCursor=json?.meta?.next_cursor||json?.next_cursor||null;
 
-        let newCount=0;
-        for(const item of pageData){
-          const code=String(item.tracking_code||item.code||item.order_id||item.ParcelCode||item.id||'').trim();
-          if(code&&!seen.has(code)){
-            seen.add(code);
-            rawData.push(item);
-            newCount++;
-          }
-        }
-        dayAdded+=newCount;
-        console.log(`Delay ${delayDay}d | page ${pageNum}: ${pageData.length} items, ${newCount} new, total: ${rawData.length}, next_cursor: ${nextCursor?'yes':'no'}`);
-
-        if(!nextCursor||!pageData.length)break;
+      let newCount=0;
+      for(const item of pageData){
+        const code=String(item.code||item.id||item.tracking_code||'').trim();
+        if(code&&!seen.has(code)){seen.add(code);rawData.push(item);newCount++;}
       }
+      console.log(`Page ${pageNum}: ${pageData.length} items, ${newCount} new, total: ${rawData.length}, next_cursor: ${nextCursor?'yes':'no'}`);
 
-      if(dayAdded===0){
-        emptyDaysStreak++;
-      }else{
-        emptyDaysStreak=0;
-      }
-      if(emptyDaysStreak>=EMPTY_DAYS_BREAK_STREAK){
-        break;
-      }
-    }
+      if(!pageData.length)break;
+    }while(nextCursor&&pageNum<MAX_PAGES);
 
     if(!rawData.length){
       if(el)el.textContent='⚠️ لا بيانات في رد API';
@@ -6069,20 +5226,10 @@ async function fetchAPIShipments(){
       return s; // Keep original if no match
     }
     const seen2=new Set();
-    const previousStatusByCode={};
-    apiShipments.forEach(s=>{if(s?.tracking_code)previousStatusByCode[s.tracking_code]=s.status||'';});
     apiShipments=[];
-    apiReturnsShipments=[];
 
     for(const [i,r] of rawData.entries()){
-      const codeCandidates=[
-        r.tracking_code,
-        r.code,
-        r.order_id,
-        r.ParcelCode,
-        r.id,
-      ].map(v=>String(v??'').trim()).filter(Boolean);
-      const code=String(codeCandidates[0]||('API-'+Date.now()+'-'+i)).trim();
+      const code=String(r.code||r.id||r.tracking_code||r.order_id||r.ParcelCode||('API-'+Date.now()+'-'+i)).trim();
       if(seen2.has(code))continue;seen2.add(code);
 
       const days=parseInt(r.delay_days||r[delayField]||r['عدد الايام المتأخرة']||r['التأخير']||0)||0;
@@ -6101,19 +5248,10 @@ async function fetchAPIShipments(){
       const area=String(r.area||r.region_name||r['المنطقة']||'').trim();
       const rawStatus=r.status||r['الحالة']||'with_driver';
       const clientId=r.client_id||'';
-      const resolvedStatus=resolveStatus(rawStatus);
-      const algOrderId=String(r.order_id||r.id||'').trim();
-      const captainPhoneRaw=String(
-        r.captain_phone||r.driver_phone||r.courier_phone||r.phone_captain||r.delivery_man_phone
-        ||(r.driver&&typeof r.driver==='object'?(r.driver.phone||r.driver.mobile||''):'')
-        ||''
-      ).trim();
 
-      const mappedShipment={
+      apiShipments.push({
         id:'api_'+code,
         tracking_code:code,
-        algoriza_order_id:algOrderId,
-        code_pool:codeCandidates.join(' '),
         client_name:clientName,
         client_id:clientId,
         receiver_name:receiverName,
@@ -6121,63 +5259,25 @@ async function fetchAPIShipments(){
         customer_phone:receiverPhone,
         captain:captain,
         driver_name:captain,
-        captain_phone:normPhone(captainPhoneRaw)||captainPhoneRaw,
+        captain_phone:'',
         current_branch:currentBranch,
-        previous_branch:String(r.previous_branch||r.previousBranch||r['الفرع السابق']||'').trim(),
-        received_branch:String(r.received_branch||r.receivedBranch||r['الفرع المستلم']||'').trim(),
         government:government,
         area:area,
         raw_status:rawStatus,
-        status:resolvedStatus,
+        status:resolveStatus(rawStatus),
         delay_days:days,
         source:'api',
         fetched_at:new Date().toISOString(),
         rep_commission:null,
         branch_commission:null
-      };
-      apiShipments.push(mappedShipment);
+      });
     }
-
-    // keep API captains cache as source-of-truth for dynamic captains
-    apiCaptainsCache=[...new Set(
-      [...apiShipments]
-        .map(s=>({name:String(s.captain||'').trim(),phone:String(s.captain_phone||'').trim(),branch:String(s.current_branch||'').trim()}))
-        .filter(c=>c.name)
-        .map(c=>JSON.stringify(c))
-    )].map(x=>JSON.parse(x));
 
     // ── MATCH CAPTAIN PHONES FROM drivers_db ──
     enrichAPICaptainPhones();
 
     // Save to localStorage for persistence
     localStorage.setItem('api_shipments',JSON.stringify(apiShipments));
-    localStorage.setItem('api_returns_shipments',JSON.stringify(apiReturnsShipments));
-    localStorage.setItem('api_captains_cache',JSON.stringify(apiCaptainsCache));
-
-    // status transitions from API update = handled KPI event
-    try{
-      const assignments=getAPIAssignments();
-      const nowIso=new Date().toISOString();
-      const events=JSON.parse(localStorage.getItem('employee_kpi_events')||'[]');
-      apiShipments.forEach(s=>{
-        const prev=previousStatusByCode[s.tracking_code]||'';
-        if(prev&&prev!==s.status){
-          const employee=assignments[s.tracking_code]||'';
-          if(employee){
-            events.push({
-              tracking_code:s.tracking_code,
-              employee_name:employee,
-              old_status:prev,
-              new_status:s.status,
-              delay_days:Number(s.delay_days||0),
-              processed_at:nowIso,
-              processing_minutes:Math.max(1,Number(s.delay_days||0)*24*60)
-            });
-          }
-        }
-      });
-      localStorage.setItem('employee_kpi_events',JSON.stringify(events.slice(-20000)));
-    }catch(e){console.warn('employee_kpi_events',e);}
 
     // Log this fetch
     const logEntry={time:new Date().toLocaleString('ar-LY'),count:apiShipments.length,status:'success'};
@@ -6194,28 +5294,28 @@ async function fetchAPIShipments(){
 
     // In manual Excel only mode, API fetch does not write into main shipments table.
     if(!MANUAL_EXCEL_SHIPMENTS_ONLY){
-      try{
-        const mapped=apiShipments.map(s=>{
-          const rec={
-            tracking_code:s.tracking_code,
-            customer_name:s.client_name||s.receiver_name||'—',
-            customer_phone:s.customer_phone,
-            status:s.status,
-            delay_days:s.delay_days,
-            upload_date:new Date().toISOString().split('T')[0]
-          };
-          if(s.driver_id) rec.driver_id=s.driver_id;
-          return rec;
-        });
-        for(let i=0;i<mapped.length;i+=100){
+    try{
+      const mapped=apiShipments.map(s=>{
+        const rec={
+          tracking_code:s.tracking_code,
+          customer_name:s.client_name||s.receiver_name||'—',
+          customer_phone:s.customer_phone,
+          status:s.status,
+          delay_days:s.delay_days,
+          upload_date:new Date().toISOString().split('T')[0]
+        };
+        if(s.driver_id) rec.driver_id=s.driver_id;
+        return rec;
+      });
+      for(let i=0;i<mapped.length;i+=100){
           const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
-            method:'POST',
-            headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
-            body:JSON.stringify(mapped.slice(i,i+100))
-          });
+          method:'POST',
+          headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
+          body:JSON.stringify(mapped.slice(i,i+100))
+        });
           if(!res.ok){const err=await res.text();throw new Error('فشل تحديث shipments: '+err.substring(0,120));}
-        }
-      }catch(e){console.warn('API->Supabase sync',e);}
+      }
+    }catch(e){console.warn('API->Supabase sync',e);}
     }
 
     renderAPIShipments();
@@ -6266,13 +5366,17 @@ function connectAPI2(){
 function updateAPIKPIs(){
   const isEmployee=CU?.role==='employee';
   const assignments=getAPIAssignments();
-  const assignedOnly=isEmployee?apiShipments.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU)):apiShipments;
-  const crit=apiShipments.filter(s=>cls(s.delay_days,s.status)==='critical').length;
-  const warn=apiShipments.filter(s=>cls(s.delay_days,s.status)==='warning').length;
-  const ok=apiShipments.filter(s=>cls(s.delay_days,s.status)==='ok').length;
+  const myName=CU?.name||'';
+  const assignedOnly=isEmployee
+    ? apiShipments.filter(s=>String(assignments[s.tracking_code]||'')===String(myName))
+    : apiShipments;
+
+  const crit=apiShipments.filter(s=>cls(s.delay_days)==='critical').length;
+  const warn=apiShipments.filter(s=>cls(s.delay_days)==='warning').length;
+  const ok=apiShipments.filter(s=>cls(s.delay_days)==='ok').length;
   const drv=apiShipments.filter(s=>s.status==='with_driver').length;
   const comp=apiShipments.filter(s=>s.status==='in_company').length;
-  const myCrit=assignedOnly.filter(s=>cls(s.delay_days,s.status)==='critical').length;
+  const myCrit=assignedOnly.filter(s=>cls(s.delay_days)==='critical').length;
   const myDrv=assignedOnly.filter(s=>s.status==='with_driver').length;
   const myReturned=assignedOnly.filter(s=>s.status==='returned').length;
 
@@ -6305,14 +5409,10 @@ function updateAPIKPIs(){
   }
 
   // Segments counts
-  const asnAll=document.getElementById('asn-all');
-  const asnDrv=document.getElementById('asn-driver');
-  const asnComp=document.getElementById('asn-comp');
-  const asnLate=document.getElementById('asn-late');
-  if(asnAll)asnAll.textContent=apiShipments.length;
-  if(asnDrv)asnDrv.textContent=drv;
-  if(asnComp)asnComp.textContent=comp;
-  if(asnLate)asnLate.textContent=apiShipments.filter(s=>cls(s.delay_days,s.status)!=='ok').length;
+  document.getElementById('asn-all').textContent=apiShipments.length;
+  document.getElementById('asn-driver').textContent=drv;
+  document.getElementById('asn-comp').textContent=comp;
+  document.getElementById('asn-late').textContent=apiShipments.filter(s=>cls(s.delay_days)!=='ok').length;
 
   // Summary card
   const statusGroups={};
@@ -6341,29 +5441,15 @@ function renderAPIFetchLog(){
   `).join('');
 }
 
-function normalizeSearchToken(v){
-  return String(v??'')
-    // remove zero-width and direction marks that break matching visually
-    .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g,'')
-    // normalize Arabic-Indic digits to latin digits
-    .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-    .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-    .toLowerCase()
-    .trim();
-}
-
-function normalizeCodeToken(v){
-  // Keep only letters and digits for robust code matching
-  return normalizeSearchToken(v).replace(/[^a-z0-9]/g,'');
-}
-
 function renderAPIShipments(){
-  const qRaw=(document.getElementById('a-q')?.value||'');
-  const q=normalizeSearchToken(qRaw);
-  const qCode=normalizeCodeToken(qRaw);
-  const mainType=document.getElementById('a-main-type')?.value||'';
+  const q=(document.getElementById('a-q')?.value||'').toLowerCase();
+  const fd=document.getElementById('a-fd')?.value||'';
   const fst=document.getElementById('a-fst')?.value||'';
+  const fdays=document.getElementById('a-fdays')?.value||'';
+  const fcap=document.getElementById('a-fcap')?.value||'';
   const fbr=document.getElementById('a-fbr')?.value||'';
+  const fgov=document.getElementById('a-fgov')?.value||'';
+  const femp=document.getElementById('a-femp')?.value||'';
   const assignments=getAPIAssignments();
   function updateAPISortHeaderIcons(){
     const keys=['tracking_code','assigned_to','client_name','receiver_name','customer_phone','captain','current_branch','government','area','status','delay_days','cr_result','cr_note'];
@@ -6375,54 +5461,57 @@ function renderAPIShipments(){
   }
 
   // Build filter dropdowns
+  const caps=[...new Set(apiShipments.map(s=>s.captain).filter(Boolean))].sort();
   const brs=[...new Set(apiShipments.map(s=>s.current_branch).filter(Boolean))].sort();
+  const govs=[...new Set(apiShipments.map(s=>s.government).filter(Boolean))].sort();
+  const capEl=document.getElementById('a-fcap');
+  if(capEl&&!fcap){capEl.innerHTML='<option value="">كل المناديب</option>'+caps.map(c=>`<option>${c}</option>`).join('');}
   const brEl=document.getElementById('a-fbr');
   if(brEl&&!fbr){brEl.innerHTML='<option value="">كل الفروع</option>'+brs.map(b=>`<option>${b}</option>`).join('');}
+  const govEl=document.getElementById('a-fgov');
+  if(govEl&&!fgov){govEl.innerHTML='<option value="">كل المحافظات</option>'+govs.map(g=>`<option>${g}</option>`).join('');}
+  const empEl=document.getElementById('a-femp');
+  if(empEl&&!femp){
+    const emps=Object.entries(USERS).filter(([,u])=>u.status!=='inactive').map(([,u])=>u.name);
+    empEl.innerHTML='<option value="">كل الموظفين</option>'+emps.map(e=>`<option>${e}</option>`).join('');
+  }
 
   const myName=CU?.name||'';
-  const isManager=CU?.role==='manager';
-  const isEmployeeScoped=CU?.role==='employee';
-  const myAllowedBranches=getAllowedBranchesForUser(CU);
   let list=[...apiShipments];
-
-  // Branch-scope RBAC (received-branch)
-  if(myAllowedBranches.length){
-    list=list.filter(s=>userCanAccessBranch(CU,s.current_branch||''));
-  }
-  // Assignment isolation: employee sees only own assigned parcels
-  if(isEmployeeScoped){
-    list=list.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU));
-  }
 
   // Segment filter
   if(apiSeg==='driver') list=list.filter(s=>s.status==='with_driver');
-  else if(apiSeg==='returned') list=list.filter(s=>s.status==='returned');
   else if(apiSeg==='company') list=list.filter(s=>s.status==='in_company');
-  else if(apiSeg==='late') list=list.filter(s=>cls(s.delay_days,s.status)!=='ok');
-  else if(apiSeg==='mine') list=list.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU));
+  else if(apiSeg==='late') list=list.filter(s=>cls(s.delay_days)!=='ok');
+  else if(apiSeg==='mine') list=list.filter(s=>assignments[s.tracking_code]===myName);
   else if(apiSeg==='unassigned') list=list.filter(s=>!assignments[s.tracking_code]);
 
   // Update segment counts
   const el=id=>document.getElementById(id);
   if(el('asn-all'))el('asn-all').textContent=apiShipments.length;
-  if(el('asn-mine'))el('asn-mine').textContent=apiShipments.filter(s=>isShipmentAssignedToCurrentUser(assignments[s.tracking_code],CU)).length;
+  if(el('asn-mine'))el('asn-mine').textContent=apiShipments.filter(s=>assignments[s.tracking_code]===myName).length;
   if(el('asn-driver'))el('asn-driver').textContent=apiShipments.filter(s=>s.status==='with_driver').length;
-  if(el('asn-returned'))el('asn-returned').textContent=apiShipments.filter(s=>s.status==='returned').length;
   if(el('asn-comp'))el('asn-comp').textContent=apiShipments.filter(s=>s.status==='in_company').length;
-  if(el('asn-late'))el('asn-late').textContent=apiShipments.filter(s=>cls(s.delay_days,s.status)!=='ok').length;
+  if(el('asn-late'))el('asn-late').textContent=apiShipments.filter(s=>cls(s.delay_days)!=='ok').length;
   if(el('asn-unassigned'))el('asn-unassigned').textContent=apiShipments.filter(s=>!assignments[s.tracking_code]).length;
 
   list=list.filter(s=>{
+    if(fd&&cls(s.delay_days)!==fd)return false;
     if(fst&&s.status!==fst)return false;
+    if(fcap&&s.captain!==fcap)return false;
     if(fbr&&s.current_branch!==fbr)return false;
-    if(mainType&&s.status!==mainType)return false;
-    if(q){
-      const hay=normalizeSearchToken(`${s.tracking_code} ${s.client_name} ${s.receiver_name} ${s.captain} ${s.customer_phone} ${s.current_branch} ${s.government} ${s.area}`);
-      const codeHay=normalizeCodeToken(`${s.tracking_code||''} ${s.code_pool||''}`);
-      const qMatchesText=hay.includes(q);
-      const qMatchesCode=qCode!==''&&codeHay.includes(qCode);
-      if(!qMatchesText&&!qMatchesCode)return false;
+    if(fgov&&s.government!==fgov)return false;
+    if(femp&&assignments[s.tracking_code]!==femp)return false;
+    if(fdays){
+      const d=s.delay_days||0;
+      if(fdays==='0-5'&&(d<0||d>5))return false;
+      if(fdays==='6-10'&&(d<6||d>10))return false;
+      if(fdays==='11-15'&&(d<11||d>15))return false;
+      if(fdays==='16-30'&&(d<16||d>30))return false;
+      if(fdays==='31-60'&&(d<31||d>60))return false;
+      if(fdays==='60+'&&d<61)return false;
     }
+    if(q&&!`${s.tracking_code} ${s.client_name} ${s.receiver_name} ${s.captain} ${s.customer_phone} ${s.current_branch} ${s.government} ${s.area}`.toLowerCase().includes(q))return false;
     return true;
   }).sort((a,b)=>{
     const av=(()=>{
@@ -6473,7 +5562,7 @@ function renderAPIShipments(){
 
   const tbody=document.getElementById('a-tbody');
   if(!page.length){
-    tbody.innerHTML=`<tr><td colspan="18" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج — انتظر الجلب التلقائي أو فعّل الاتصال</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="18" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج — اضغط "جلب الآن" لجلب البيانات من API</td></tr>`;
     const allEl=document.getElementById('achk-all');
     if(allEl)allEl.checked=false;
     buildAPIPgn(total,totalP);
@@ -6491,7 +5580,7 @@ function renderAPIShipments(){
     const assignCell=assignedTo
       ?`<span class="badge b-grn" style="font-size:10px">${assignedTo}</span><button class="btn btn-ghost btn-sm" data-a="undo-assign" data-code="${tc}" style="font-size:10px;padding:2px 6px;margin-inline-start:4px">↩</button>`
       :`<span class="badge b-dim" style="font-size:10px">⏳ غير مسند</span>`;
-    return`<tr class="pr" data-asid="${sid}" style="cursor:pointer;${assignedTo?'background:rgba(58,201,120,.08);':''}${cls(s.delay_days,s.status)==='critical'?'background:rgba(255,58,92,.04)':''}${isShipmentAssignedToCurrentUser(assignedTo,CU)?';border-right:2px solid var(--pur)':''}">
+    return`<tr class="pr" data-asid="${sid}" style="cursor:pointer;${assignedTo?'background:rgba(58,201,120,.08);':''}${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}${assignedTo===myName?';border-right:2px solid var(--pur)':''}">
       <td><input type="checkbox" data-asid="${sid}" ${apiChecked.has(sid)?'checked':''} style="width:16px;height:16px"></td>
       <td class="mob-hide" style="color:var(--dim);font-size:10px;text-align:center">${(aPage-1)*aPER+idx+1}</td>
       <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
@@ -6504,7 +5593,7 @@ function renderAPIShipments(){
       <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.area||'—'}</td>
       <td>${stBadge(s.status)}</td>
-      <td>${dBadge(s.delay_days,s.status)}</td>
+      <td>${dBadge(s.delay_days)}</td>
       <td class="mob-hide"><select class="acr-sel" data-asid="${sid}" data-code="${tc}" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--white);font-family:var(--font)">
         <option value="" ${!cResult?'selected':''}>—</option>
         <option value="solved" ${cResult==='solved'?'selected':''}>✅ تم الحل</option>
@@ -6867,7 +5956,7 @@ function renderJanzour(){
 
   const tbody=el('j-tbody');
   if(!page.length){
-    tbody.innerHTML=`<tr><td colspan="15" style="text-align:center;padding:32px;color:var(--mute)">${janzourShipments.length?'🔍 لا نتائج مطابقة':'🔌 لا توجد بيانات بعد — فعّل اتصال API والجلب التلقائي'}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="15" style="text-align:center;padding:32px;color:var(--mute)">${janzourShipments.length?'🔍 لا نتائج مطابقة':'🔌 اضغط "جلب الآن" في طرود API لتحميل البيانات'}</td></tr>`;
     const allEl=document.getElementById('jchk-all');if(allEl)allEl.checked=false;
   } else {
     tbody.innerHTML=page.map((s,i)=>{
@@ -7026,7 +6115,7 @@ function changeAPIPerPage(val){aPER=parseInt(val)||25;aPage=1;renderAPIShipments
 function openAPIDetail(sid){
   const s=apiShipments.find(x=>String(x.id)===String(sid));if(!s)return;
   const custPhone=s.customer_phone||'';
-  const capPhone=resolveDriverPhoneForShipment(s);
+  const capPhone=s.captain_phone||'';
   const ph=custPhone&&custPhone!=='—'&&custPhone!=='undefined';
   const stLabel=s.raw_status||s.status||'—';
 
@@ -7110,7 +6199,7 @@ function apiWA(sid,target){
   const stLabel=s.raw_status||s.status||'—';
 
   if(target==='captain'){
-    const ph=normPhone(resolveDriverPhoneForShipment(s));
+    const ph=normPhone(s.captain_phone||'');
     if(!ph){toast('لا يوجد رقم للمندوب — تحقق من بيانات المناديب','w');return;}
     const msg=`السلام عليكم ${s.captain||''} 👋\n🕊️ ${CFG.company}\n\nتذكير بطرد متأخر:\n📦 كود الطرد: ${s.tracking_code}\n👤 المتجر: ${s.client_name||'—'}\n📱 المستلم: ${s.receiver_name||'—'}\n📞 هاتف المستلم: ${s.customer_phone||'—'}\n📊 الحالة: ${stLabel}\n⏱️ التأخير: ${s.delay_days} يوم\n🏢 الفرع: ${s.current_branch||'—'}\n\n⚠️ يرجى اتخاذ إجراء فوري\n— إدارة ${CFG.company}`;
     openWAUrl(ph,msg);
@@ -7123,8 +6212,7 @@ function apiWA(sid,target){
       if(brn)branchPhone=brn.manager_phone||'';
     }
     const capName=s.captain||'المندوب';
-    const resolvedCaptainPhone=resolveDriverPhoneForShipment(s);
-    const capPh=resolvedCaptainPhone?'\nرقم المندوب: '+resolvedCaptainPhone:'';
+    const capPh=s.captain_phone?'\nرقم المندوب: '+s.captain_phone:'';
     const brPh=branchPhone?'\n\nللاستفسار يمكنكم التواصل مع فرع '+s.current_branch+' على الرقم: '+branchPhone:'';
     const msg=`السلام عليكم ورحمة الله وبركاته\n${s.receiver_name||s.client_name||''} حياكم الله 🕊️\n\nنود إعلامكم من شركة ${CFG.company} أن طردكم رقم: ${s.tracking_code}\nموجود حالياً مع المندوب: ${capName}${capPh}\n\nوسيتم التواصل معكم لتنسيق موعد التسليم في أقرب وقت إن شاء الله.${brPh}\n\nشكراً لثقتكم بنا 🙏\n— ${CFG.company}`;
     openWAUrl(ph,msg);
@@ -7148,8 +6236,8 @@ async function apiSave(sid,btn){
   const cr=row?.querySelector('.acr-sel');
   const ok=await saveCR(s.tracking_code,cr?cr.value:'',ni?ni.value:'');
   if(ok){
-    btn.textContent='✅';setTimeout(()=>btn.textContent='💾',1500);
-    toast('✅ تم الحفظ','s');
+  btn.textContent='✅';setTimeout(()=>btn.textContent='💾',1500);
+  toast('✅ تم الحفظ','s');
   }
 }
 function apiMove(sid){
@@ -7192,44 +6280,20 @@ function flashAPIRow(sid){
   setTimeout(()=>{row.style.outline=prev||'';row.style.outlineOffset='';},900);
 }
 
-async function bulkWA_API(){
+function bulkWA_API(){
   if(!apiChecked.size){toast('حدد طروداً أولاً','w');return;}
-  const selected=[...apiChecked]
-    .map(id=>apiShipments.find(s=>String(s.id)===String(id)))
-    .filter(Boolean);
-  if(!selected.length){toast('لا توجد طرود مطابقة للتحديد الحالي','w');return;}
-
-  const captains=[...new Set(selected.map(s=>normalizeIdentityText(s.captain||'')).filter(Boolean))];
-  if(captains.length!==1){
-    toast('لازم يكون كل التحديد لنفس المندوب قبل إرسال واتساب','e');
-    return;
-  }
-
-  const captainLabel=String(selected[0].captain||'').trim()||'المندوب';
-  const captainPhoneFromCache=(apiCaptainsCache||[])
-    .find(c=>normalizeIdentityText(c?.name||'')===captains[0])?.phone||'';
-  const captainPhone=selected.map(s=>resolveDriverPhoneForShipment(s)).find(Boolean)
-    || normPhone(captainPhoneFromCache||'')
-    || '';
-  if(!captainPhone){
-    toast(`لا يوجد رقم واتساب محفوظ للمندوب: ${captainLabel}`,'e');
-    return;
-  }
-
-  const codes=[...new Set(selected.map(s=>String(s.tracking_code||'').trim()).filter(Boolean))];
-  const msg=`السلام عليكم ${captainLabel}\n🕊️ ${CFG.company}\n\nالأكواد المحددة للمتابعة (${codes.length}):\n${codes.map(c=>`• ${c}`).join('\n')}\n\nيرجى المتابعة والتأكيد.\n— ${CFG.company}`;
-  openWAUrl(captainPhone,msg);
-
-  let updated=0;
-  for(const s of selected){
-    const prevNote=getCR(s.id).note||'';
-    const ok=await saveCR(s.id,'contacted',prevNote);
-    if(ok)updated++;
-  }
-  renderAPIShipments();
-  renderJanzour();
-  renderAssignStats();
-  toast(`💬 تم إرسال ${codes.length} كود إلى ${captainLabel} وتحديث ${updated} إلى "تم التواصل"`,'s');
+  let count=0;
+  [...apiChecked].forEach(sid=>{
+    const s=apiShipments.find(x=>x.id===sid);
+    if(!s)return;
+    const ph=normPhone(s.customer_phone||'');
+    if(ph){
+      const msg=`السلام عليكم ${s.customer_name||''}\n🕊️ ${CFG.company}\n\nبخصوص طردكم رقم: ${s.tracking_code}\nالتأخير: ${s.delay_days} يوم\n\n— ${CFG.company}`;
+      window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg),'_blank');
+      count++;
+    }
+  });
+  toast(`💬 تم فتح واتساب لـ ${count} عميل`,'s');
 }
 
 async function moveAPIToMain(s){
@@ -7262,12 +6326,12 @@ async function moveAPIToMain(s){
   }catch(e){toast('خطأ: '+e.message,'e');}
 }
 
-// ── ENRICH CAPTAIN PHONES FROM API cache / drivers ──
+// ── ENRICH CAPTAIN PHONES FROM DRIVERS DB ──
 function enrichAPICaptainPhones(){
-  if(!apiShipments.length)return;
+  if(!apiShipments.length||!drivers_db.length)return;
   // Build lookup maps: exact name, fuzzy name
   const byName={};
-  [...(drivers_db||[]),...(apiCaptainsCache||[])].forEach(d=>{if(d?.name)byName[String(d.name).trim()]=d;});
+  drivers_db.forEach(d=>{if(d.name)byName[d.name.trim()]=d;});
 
   let matched=0,unmatched=[];
   apiShipments.forEach(s=>{
@@ -7291,10 +6355,9 @@ function enrichAPICaptainPhones(){
         if(dk)drv=byName[dk];
       }
     }
-    if(!drv)drv=resolveDriverRecordByName(cap);
     if(drv&&drv.phone){
       s.captain_phone=normPhone(drv.phone)||drv.phone;
-      if(drv.id)s.driver_id=drv.id;
+      s.driver_id=drv.id;
       matched++;
     } else {
       if(!unmatched.includes(cap))unmatched.push(cap);
@@ -7338,38 +6401,15 @@ function loadCachedAPIShipments(){
   try{
     const cached=localStorage.getItem('api_shipments');
     if(cached){
-      const parsed=JSON.parse(cached);
-      apiShipments=Array.isArray(parsed)?parsed:[];
+      apiShipments=JSON.parse(cached);
       apiShipments.forEach(s=>{
         if(s.rep_commission===undefined)s.rep_commission=null;
         if(s.branch_commission===undefined)s.branch_commission=null;
-        if(s.code_pool===undefined)s.code_pool=String(s.tracking_code||s.id||'');
       });
       enrichAPICaptainPhones();
       document.getElementById('tb-api').textContent=apiShipments.length;
       updateKPIs();
     }
-    const returnsCached=localStorage.getItem('api_returns_shipments');
-    if(returnsCached){
-      const parsedR=JSON.parse(returnsCached);
-      apiReturnsShipments=Array.isArray(parsedR)?parsedR:[];
-    }
-    const captainsCached=localStorage.getItem('api_captains_cache');
-    if(captainsCached){
-      const parsedC=JSON.parse(captainsCached);
-      apiCaptainsCache=Array.isArray(parsedC)?parsedC:[];
-    }
-    const bfCached=localStorage.getItem('branch_followup_api_rows');
-    if(bfCached){
-      const parsedBf=JSON.parse(bfCached);
-      branchFollowupRows=Array.isArray(parsedBf)?parsedBf:[];
-    }
-    const bfTs=localStorage.getItem('branch_followup_last_fetch_at');
-    branchFollowupLastFetchAt=parseInt(bfTs||'0')||0;
-    const bfUrl=localStorage.getItem('branch_followup_api_url')||'';
-    const bfToken=localStorage.getItem('branch_followup_api_token')||'';
-    const bfUrlEl=document.getElementById('bf-api-url');if(bfUrlEl&&bfUrl)bfUrlEl.value=bfUrl;
-    const bfTokenEl=document.getElementById('bf-api-token');if(bfTokenEl&&bfToken)bfTokenEl.value=bfToken;
     // loadAll() runs buildJanzourSet() before apiShipments is filled from cache — refresh subset now
     buildJanzourSet();
     refreshJanzourRatesPanels();
@@ -7399,7 +6439,6 @@ function renderUsersPage(){
     const u=users[k];
     const [rc,rl]=roleMap[u.role]||['b-dim','—'];
     const permsCount=(u.perms||[]).length;
-    const branchesCount=(u.allowed_branches||[]).length;
     const totalPerms=ALL_TAB_IDS.length;
     const stBadge=u.status==='active'?'<span class="badge b-grn">نشط</span>':'<span class="badge b-red">معطّل</span>';
     const isSelf=CU&&CU.username===k;
@@ -7412,28 +6451,13 @@ function renderUsersPage(){
       <td><span class="badge ${rc}">${rl}</span></td>
       <td style="font-family:var(--mono);font-size:11px;direction:ltr">${u.phone||'—'}</td>
       <td style="font-size:11px;direction:ltr">${u.email||'—'}</td>
-      <td><span class="badge b-pur">${permsCount}/${totalPerms}</span>${branchesCount?` <span class="badge b-blu">${branchesCount} فرع</span>`:''}</td>
+      <td><span class="badge b-pur">${permsCount}/${totalPerms}</span></td>
       <td>${stBadge}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="editUser('${k}')">✏️ تعديل</button>
         ${!isSelf?`<button class="btn btn-ghost btn-sm" onclick="deleteUser('${k}')" style="color:var(--red)">🗑️</button>`:''}
       </td>
     </tr>`;
-  }).join('');
-}
-
-function fillUserBranchesSelect(selectedBranches=[]){
-  const select=document.getElementById('um-branches');
-  if(!select)return;
-  const selected=new Set((Array.isArray(selectedBranches)?selectedBranches:[]).map(v=>String(v||'').trim()).filter(Boolean));
-  const names=[...new Set((branches||[]).map(b=>String(b?.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
-  if(!names.length){
-    select.innerHTML='<option value="" disabled>لا توجد فروع متاحة حالياً</option>';
-    return;
-  }
-  select.innerHTML=names.map(name=>{
-    const esc=String(name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-    return `<option value="${esc}" ${selected.has(name)?'selected':''}>${esc}</option>`;
   }).join('');
 }
 
@@ -7450,7 +6474,8 @@ function openUserModal(editKey){
     document.getElementById('um-phone').value=u.phone||'';
     document.getElementById('um-email').value=u.email||'';
     document.getElementById('um-status').value=u.status||'active';
-    fillUserBranchesSelect(Array.isArray(u.allowed_branches)?u.allowed_branches:[]);
+    const jz=document.getElementById('um-janzour-pct');
+    if(jz)jz.value=u.janzour_commission_pct!=null&&u.janzour_commission_pct!==''?u.janzour_commission_pct:'';
     // Set permission checkboxes
     const perms=u.perms||[];
     document.querySelectorAll('.um-perm').forEach(cb=>{
@@ -7467,10 +6492,10 @@ function openUserModal(editKey){
     document.getElementById('um-phone').value='';
     document.getElementById('um-email').value='';
     document.getElementById('um-status').value='active';
-    fillUserBranchesSelect([]);
+    const jz2=document.getElementById('um-janzour-pct');if(jz2)jz2.value='';
     // Default perms for employee
     document.querySelectorAll('.um-perm').forEach(cb=>{
-      cb.checked=(cb.value==='home'||cb.value==='shipments');
+      cb.checked=(cb.value==='home'||cb.value==='shipments'||cb.value==='api-shipments'||cb.value==='service-kpi');
     });
   }
   onRoleChange();
@@ -7515,7 +6540,6 @@ function saveUser(){
   const phone=document.getElementById('um-phone').value.trim();
   const email=document.getElementById('um-email').value.trim();
   const status=document.getElementById('um-status').value;
-  const selectedBranchOptions=[...(document.getElementById('um-branches')?.selectedOptions||[])];
 
   if(!username){toast('أدخل اسم المستخدم','w');return;}
   if(!pass){toast('أدخل كلمة المرور','w');return;}
@@ -7542,8 +6566,9 @@ function saveUser(){
     }
   }
 
-  const allowed_branches=[...new Set(selectedBranchOptions.map(opt=>String(opt.value||'').trim()).filter(Boolean))];
-  USERS[username]={pass,role,name,phone,email,status,perms,allowed_branches};
+  const jzRaw=document.getElementById('um-janzour-pct')?.value?.trim();
+  const janzour_commission_pct=jzRaw===''||jzRaw===undefined?null:parseFloat(jzRaw);
+  USERS[username]={pass,role,name,phone,email,status,perms,janzour_commission_pct:isNaN(janzour_commission_pct)?null:janzour_commission_pct};
   saveUsers(USERS);
 
   // If editing self, update session
@@ -7876,110 +6901,158 @@ async function janzourQuickDelivered(sid){
   renderJanzour();
 }
 
+function runJanzourCommissionSync(){
+  loadCommissionCfg();
+  buildJanzourSet();
+  const a=getAPIAssignments();
+  const list=janzourShipments;
+  const byEmp={};
+  const seen=new Set();
+  for(const s of list){
+    const emp=(a[s.tracking_code]||'').trim();
+    if(!emp||seen.has(emp))continue;
+    seen.add(emp);
+    let d=0,r=0;
+    for(const x of list){
+      if((a[x.tracking_code]||'').trim()!==emp)continue;
+      const t=commissionClassifyDR(x);
+      if(t==='d')d++;else if(t==='r')r++;
+    }
+    const ratio=(d+r)>0?d/(d+r):1;
+    const w=CommissionCfg.ratioMin+(CommissionCfg.ratioMax-CommissionCfg.ratioMin)*Math.max(0,Math.min(1,ratio));
+    const urec=Object.values(USERS).find(v=>v.name===emp);
+    let rp=CommissionCfg.repPercent;
+    if(urec&&urec.janzour_commission_pct!=null&&urec.janzour_commission_pct!==''&&!isNaN(parseFloat(urec.janzour_commission_pct)))
+      rp=parseFloat(urec.janzour_commission_pct);
+    byEmp[emp]={w,rp};
+  }
+  const base=CommissionCfg.unitBase;
+  const bc=commissionRound2(base*(CommissionCfg.branchPercent/100));
+  let n=0;
+  const jCodes=new Set(list.map(s=>s.tracking_code));
+  for(const s of apiShipments){
+    if(!jCodes.has(s.tracking_code))continue;
+    const emp=(a[s.tracking_code]||'').trim();
+    const pack=emp?byEmp[emp]:null;
+    const w=pack?pack.w:CommissionCfg.ratioMax;
+    const rp=pack?pack.rp:CommissionCfg.repPercent;
+    const rep=emp?commissionRound2(base*(rp/100)*w):0;
+    s.rep_commission=rep;
+    s.branch_commission=bc;
+    n++;
+  }
+  localStorage.setItem('api_shipments',JSON.stringify(apiShipments));
+  buildJanzourSet();
+  refreshJanzourRatesPanels();
+  toast('✅ تم تحديث عمولات '+n+' طرداً في نطاق جنزور','s');
+}
+function computeServiceKpiForTarget(displayName){
+  buildJanzourSet();
+  const a=getAPIAssignments();
+  const list=janzourShipments.filter(s=>(a[s.tracking_code]||'').trim()===displayName);
+  let d=0,r=0,o=0;
+  for(const s of list){
+    const t=commissionClassifyDR(s);
+    if(t==='d')d++;else if(t==='r')r++;else o++;
+  }
+  const term=d+r;
+  const rate=term>0?Math.round(1000*d/term)/10:0;
+  const earnings=commissionRound2(list.reduce((sum,s)=>sum+(parseFloat(s.rep_commission)||0),0));
+  return {total:list.length,rate,earnings,d,r,o};
+}
+function resourceEmployeeServicePerformance(metrics,user){
+  return{
+    user_id:user.username||user.name,
+    name:user.name,
+    total_packages_handled:metrics.total,
+    success_rate_percent:metrics.rate,
+    total_calculated_earnings:metrics.earnings,
+    delivery_vs_return:{deliveries:metrics.d,returns:metrics.r,other_status_shipments:metrics.o}
+  };
+}
+function renderServiceKpiPage(){
+  if(!CU)return;
+  loadCommissionCfg();
+  const mgr=CU.role==='manager';
+  const pick=document.getElementById('skpi-manager-picker');
+  const sel=document.getElementById('skpi-emp');
+  if(pick){
+    pick.style.display=mgr?'block':'none';
+    if(mgr&&sel){
+      const prev=sel.value;
+      sel.innerHTML='<option value="">— أنا —</option>'+Object.keys(USERS).filter(k=>USERS[k].role!=='manager').map(k=>{
+        const u=USERS[k];
+        return`<option value="${String(u.name).replace(/"/g,'&quot;')}">${u.name}</option>`;
+      }).join('');
+      if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+    }
+  }
+  const targetName=(mgr&&sel&&sel.value)?sel.value:CU.name;
+  const targetEntry=Object.entries(USERS).find(([,v])=>v.name===targetName);
+  const uObj=targetEntry?{username:targetEntry[0],...targetEntry[1]}:CU;
+  const m=computeServiceKpiForTarget(targetName);
+  const el=id=>document.getElementById(id);
+  if(el('skpi-total'))el('skpi-total').textContent=m.total;
+  if(el('skpi-rate'))el('skpi-rate').textContent=m.rate+'%';
+  if(el('skpi-earn'))el('skpi-earn').textContent=m.earnings;
+  if(el('skpi-d'))el('skpi-d').textContent=m.d;
+  if(el('skpi-r'))el('skpi-r').textContent=m.r;
+  if(el('skpi-o'))el('skpi-o').textContent=m.o;
+  const payload=resourceEmployeeServicePerformance(m,uObj);
+  if(el('skpi-json'))el('skpi-json').textContent=JSON.stringify({success:true,data:payload,generated_at:new Date().toISOString()},null,2);
+}
+function renderCommissionAdminPage(){
+  if(!CU||CU.role!=='manager')return;
+  loadCommissionCfg();
+  const b=document.getElementById('ccfg-base'),r=document.getElementById('ccfg-rep'),br=document.getElementById('ccfg-br');
+  if(b)b.value=CommissionCfg.unitBase;
+  if(r)r.value=CommissionCfg.repPercent;
+  if(br)br.value=CommissionCfg.branchPercent;
+  const box=document.getElementById('commission-emp-rows');
+  if(!box)return;
+  const rows=Object.keys(USERS).filter(k=>USERS[k].role!=='manager').map(k=>{
+    const u=USERS[k];
+    const v=u.janzour_commission_pct!=null&&u.janzour_commission_pct!==''?u.janzour_commission_pct:'';
+    return`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--rim)">
+      <div style="flex:1;min-width:160px"><strong>${String(u.name).replace(/</g,'&lt;')}</strong><div style="font-size:10px;color:var(--mute);font-family:var(--mono)">${k}</div></div>
+      <div><label style="font-size:11px;color:var(--mute)">عمولة جنزور %</label><br><input type="number" class="fi ca-ov" data-u="${k}" value="${v}" step="0.01" min="0" max="100" style="width:100px;margin-top:4px"></div>
+    </div>`;
+  }).join('');
+  box.innerHTML=rows||'<p style="color:var(--mute)">لا يوجد موظفون</p>';
+}
+function saveCommissionAdminCfg(){
+  CommissionCfg.unitBase=parseFloat(document.getElementById('ccfg-base')?.value)||100;
+  CommissionCfg.repPercent=parseFloat(document.getElementById('ccfg-rep')?.value)||5;
+  CommissionCfg.branchPercent=parseFloat(document.getElementById('ccfg-br')?.value)||2;
+  persistCommissionCfg();
+  toast('✅ تم حفظ إعدادات العمولة','s');
+}
+function saveCommissionOverridesFromAdmin(){
+  document.querySelectorAll('input.ca-ov').forEach(inp=>{
+    const k=inp.dataset.u;
+    if(!k||!USERS[k])return;
+    const raw=inp.value.trim();
+    USERS[k].janzour_commission_pct=raw===''||raw===undefined?null:parseFloat(raw);
+  });
+  saveUsers(USERS);
+  toast('✅ تم حفظ نسب الموظفين','s');
+}
+
 // ═════════════════════════════════
 // ══════════════════════════════════════════
 // API SHIPMENTS ASSIGNMENT SYSTEM
 // ══════════════════════════════════════════
-function normalizeAPIAssignments(raw){
-  if(!raw||typeof raw!=='object')return {};
-  const normalized={};
-  Object.entries(raw).forEach(([code,emp])=>{
-    const trackingCode=String(code||'').trim();
-    const employeeName=String(emp||'').trim();
-    if(trackingCode&&employeeName)normalized[trackingCode]=employeeName;
-  });
-  return normalized;
-}
 function getAPIAssignments(){
-  try{
-    const primary=normalizeAPIAssignments(JSON.parse(localStorage.getItem(API_ASSIGNMENTS_STORAGE_KEY)||'{}'));
-    const legacy=API_ASSIGNMENTS_STORAGE_LEGACY_KEYS.reduce((acc,key)=>{
-      try{
-        const raw=localStorage.getItem(key);
-        if(raw)Object.assign(acc,normalizeAPIAssignments(JSON.parse(raw)));
-      }catch{}
-      return acc;
-    },{});
-    const merged={...legacy,...primary};
-    return normalizeAPIAssignments(merged);
-  }catch{
-    return {};
-  }
+  try{return JSON.parse(localStorage.getItem('api_assignments')||'{}');}catch{return {};}
 }
-let apiAssignmentsCloudSyncTimer=null;
-function scheduleAPIAssignmentsCloudSync(){
-  if(apiAssignmentsCloudSyncTimer)clearTimeout(apiAssignmentsCloudSyncTimer);
-  apiAssignmentsCloudSyncTimer=setTimeout(()=>{
-    const payload=getAPIAssignments();
-    sbUp('settings',[{key:API_ASSIGNMENTS_SETTINGS_KEY,value:JSON.stringify(payload)}])
-      .catch(e=>console.warn('⚠️ api_assignments cloud sync failed:',e));
-  },250);
-}
-function saveAPIAssignments(obj,{skipCloudSync=false}={}){
-  const normalized=normalizeAPIAssignments(obj);
-  localStorage.setItem(API_ASSIGNMENTS_STORAGE_KEY,JSON.stringify(normalized));
-  API_ASSIGNMENTS_STORAGE_LEGACY_KEYS.forEach(k=>localStorage.setItem(k,JSON.stringify(normalized)));
-  if(!skipCloudSync)scheduleAPIAssignmentsCloudSync();
-}
-async function loadAPIAssignmentsFromCloud(){
-  try{
-    const keys=[API_ASSIGNMENTS_SETTINGS_KEY,...API_ASSIGNMENTS_SETTINGS_LEGACY_KEYS];
-    const rows=await sb('settings','GET',null,`?key=in.(${keys.map(k=>`"${k}"`).join(',')})&select=key,value`);
-    const cloud=(rows||[]).reduce((acc,row)=>{
-      try{
-        const raw=typeof row.value==='string'?JSON.parse(row.value||'{}'):(row.value||{});
-        Object.assign(acc,normalizeAPIAssignments(raw));
-      }catch{}
-      return acc;
-    },{});
-    if(Object.keys(cloud).length){
-      saveAPIAssignments(cloud,{skipCloudSync:true});
-      // Normalize cloud to the current primary key for consistent reads.
-      sbUp('settings',[{key:API_ASSIGNMENTS_SETTINGS_KEY,value:JSON.stringify(cloud)}]).catch(()=>{});
-      return cloud;
-    }
-    const local=getAPIAssignments();
-    if(Object.keys(local).length){
-      sbUp('settings',[{key:API_ASSIGNMENTS_SETTINGS_KEY,value:JSON.stringify(local)}]).catch(()=>{});
-    }
-    return local;
-  }catch(e){
-    console.warn('⚠️ loadAPIAssignmentsFromCloud failed:',e);
-    return getAPIAssignments();
-  }
-}
-let assignmentsSyncInFlight=false;
-async function syncAssignmentsNow(){
-  if(assignmentsSyncInFlight)return;
-  assignmentsSyncInFlight=true;
-  try{
-    toast('⏳ جاري مزامنة التعيينات...','i');
-    await loadAPIAssignmentsFromCloud();
-    rebuildJanzourShipments();
-    renderAPIShipments();
-    renderJanzour();
-    renderAssignStats();
-    refreshAssignPanelEmps();
-    updateAssignLiveCounter();
-    updateJAssignLiveCounter();
-    toast('✅ تم تحديث التعيينات الآن','s');
-  }catch(e){
-    toast('❌ تعذّر مزامنة التعيينات','e');
-  }finally{
-    assignmentsSyncInFlight=false;
-  }
-}
+function saveAPIAssignments(obj){localStorage.setItem('api_assignments',JSON.stringify(obj));}
 
 function setAssignedTo(code,empName){
-  const s=apiShipments.find(x=>String(x.tracking_code)===String(code));
-  if(empName&&s&&!canAssignShipmentToEmployee(s,empName)){
-    toast(`❌ لا يمكن إسناد ${code} إلى ${empName} خارج صلاحيات الفروع`,'e');
-    return;
-  }
   const a=getAPIAssignments();
   if(empName)a[code]=empName;
   else delete a[code];
   saveAPIAssignments(a);
+  const s=apiShipments.find(x=>String(x.tracking_code)===String(code));
   renderAPIShipments();
   renderAssignStats();
   updateAssignLiveCounter();
@@ -8006,13 +7079,7 @@ function autoAssign(method){
 
   if(method==='equal'){
     // Round-robin
-    let idx=0;
-    unassigned.forEach(s=>{
-      const eligible=emps.filter(emp=>canAssignShipmentToEmployee(s,emp));
-      if(!eligible.length)return;
-      a[s.tracking_code]=eligible[idx%eligible.length];
-      idx++;
-    });
+    unassigned.forEach((s,i)=>{a[s.tracking_code]=emps[i%emps.length];});
   }
   else if(method==='branch'){
     // Group by branch then assign
@@ -8025,9 +7092,7 @@ function autoAssign(method){
     const branches=Object.keys(branchMap);
     branches.forEach((br,bi)=>{
       const emp=emps[bi%emps.length];
-      branchMap[br].forEach(s=>{
-        if(!a[s.tracking_code]&&canAssignShipmentToEmployee(s,emp))a[s.tracking_code]=emp;
-      });
+      branchMap[br].forEach(s=>{if(!a[s.tracking_code])a[s.tracking_code]=emp;});
     });
   }
   else if(method==='workload'){
@@ -8036,9 +7101,7 @@ function autoAssign(method){
     emps.forEach(e=>{counts[e]=0;});
     Object.values(a).forEach(e=>{if(counts[e]!==undefined)counts[e]++;});
     unassigned.forEach(s=>{
-      const eligible=emps.filter(emp=>canAssignShipmentToEmployee(s,emp));
-      if(!eligible.length)return;
-      const emp=eligible.reduce((a,b)=>counts[a]<=counts[b]?a:b);
+      const emp=emps.reduce((a,b)=>counts[a]<=counts[b]?a:b);
       a[s.tracking_code]=emp;
       counts[emp]++;
     });
@@ -8057,13 +7120,9 @@ function assignSelected(){
   if(!emp){toast('اختر موظفاً أولاً','w');return;}
   const a=getAPIAssignments();
   let count=0;
-  const selected=getVisibleSelectedApiShipments();
-  if(!selected.length){toast('حدد الطرود المطلوبة أولاً','w');return;}
-  selected.forEach(s=>{
-    if(canAssignShipmentToEmployee(s,emp)){
-      a[s.tracking_code]=emp;
-      count++;
-    }
+  apiChecked.forEach(sid=>{
+    const s=apiShipments.find(x=>String(x.id)===sid);
+    if(s){a[s.tracking_code]=emp;count++;}
   });
   saveAPIAssignments(a);
   renderAPIShipments();
@@ -8078,7 +7137,7 @@ function bulkAssignFilteredBranch(){
   const targets=apiFilteredData.filter(s=>!branch||String(s.current_branch||'')===branch);
   if(!targets.length){toast('لا توجد طرود مطابقة للفلتر الحالي','w');return;}
   const a=getAPIAssignments();
-  targets.forEach(s=>{if(canAssignShipmentToEmployee(s,emp))a[s.tracking_code]=emp;});
+  targets.forEach(s=>{a[s.tracking_code]=emp;});
   saveAPIAssignments(a);
   renderAPIShipments();
   renderAssignStats();
@@ -8089,9 +7148,8 @@ function bulkAssignFilteredBranch(){
 function unassignSelected(){
   const a=getAPIAssignments();
   let count=0;
-  const selected=getVisibleSelectedApiShipments();
-  if(!selected.length){toast('حدد الطرود المطلوبة أولاً','w');return;}
-  selected.forEach(s=>{
+  apiChecked.forEach(sid=>{
+    const s=apiShipments.find(x=>String(x.id)===sid);
     if(s&&a[s.tracking_code]){delete a[s.tracking_code];count++;}
   });
   saveAPIAssignments(a);
@@ -8189,7 +7247,7 @@ function renderAssignStats(){
     if(!emp)return;
     if(!empMap[emp])empMap[emp]={name:emp,total:0,crit:0,done:0};
     empMap[emp].total++;
-    if(cls(s.delay_days,s.status)==='critical')empMap[emp].crit++;
+    if(cls(s.delay_days)==='critical')empMap[emp].crit++;
     const cr=getCR(s.tracking_code);
     if(cr.result==='solved'||cr.result==='contacted')empMap[emp].done++;
   });
@@ -8211,11 +7269,7 @@ function renderAssignStats(){
     }).join('')}`;
 }
 
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',()=>{init();},{once:true});
-}else{
-  init();
-}
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
