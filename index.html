@@ -7206,9 +7206,13 @@ async function bulkWA_API(){
   }
 
   const captainLabel=String(selected[0].captain||'').trim()||'المندوب';
-  const captainPhone=selected.map(s=>normPhone(s.captain_phone||'')).find(Boolean)||'';
+  const captainPhoneFromCache=(apiCaptainsCache||[])
+    .find(c=>normalizeIdentityText(c?.name||'')===captains[0])?.phone||'';
+  const captainPhone=selected.map(s=>resolveDriverPhoneForShipment(s)).find(Boolean)
+    || normPhone(captainPhoneFromCache||'')
+    || '';
   if(!captainPhone){
-    toast('لا يوجد رقم واتساب للمندوب المحدد','e');
+    toast(`لا يوجد رقم واتساب محفوظ للمندوب: ${captainLabel}`,'e');
     return;
   }
 
