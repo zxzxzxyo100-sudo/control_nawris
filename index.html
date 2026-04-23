@@ -2454,20 +2454,7 @@ async function loadTransfers(){
 // CLASSIFY & BADGES
 // ══════════════════════════════════════════
 function cls(d,status=''){
-  const rawStatus=String(status||'').trim().toLowerCase();
-  const statusMap={
-    'مع المندوب':'with_driver',
-    'في الشركة':'in_company',
-    'مؤجلة مع المندوب':'delayed',
-    'متأخر':'delayed',
-    'مُسلَّم':'delivered',
-    'مسلم':'delivered',
-    'مرتجع':'returned',
-    'محوّل':'transferred'
-  };
-  const st=statusMap[rawStatus]||rawStatus;
-  const tracked=st===''||st==='with_driver'||st==='in_company'||st==='delayed';
-  if(!tracked)return 'ok';
+  void status;
   const daysTxt=toAsciiDigits(d).replace(/[^0-9.\-]/g,'');
   const days=Number(daysTxt);
   const safeDays=Number.isFinite(days)?days:0;
