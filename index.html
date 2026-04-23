@@ -499,8 +499,8 @@ tbody td{padding:13px 16px;border-bottom:1px solid #e8eef5;color:#334155;white-s
 tbody tr:last-child td{border-bottom:none}
 tbody tr.pr:hover td{background:rgba(124,77,255,.07)}
 tbody tr:hover td{background:rgba(124,77,255,.04)}
-.code-cell{font-family:var(--mono);font-size:var(--fs-xs);font-weight:700;color:var(--blu);letter-spacing:.02em}
-a.bo-order-link{color:#2563eb;text-decoration:underline;cursor:pointer;font-family:var(--mono);font-weight:600}
+.code-cell{font-family:var(--mono);font-size:var(--fs-xs);font-weight:700;color:var(--blu);letter-spacing:.02em;direction:ltr;unicode-bidi:isolate;text-align:left}
+a.bo-order-link{color:#2563eb;text-decoration:underline;cursor:pointer;font-family:var(--mono);font-weight:600;direction:ltr;unicode-bidi:isolate;display:inline-block}
 a.bo-order-link:hover{color:#1d4ed8}
 html.light a.bo-order-link{color:#1d4ed8}
 
@@ -3464,7 +3464,7 @@ function backofficeOrderLinkHtml(code){
   const c=String(code??'').trim();
   if(!c||c==='—')return boEscHtml(c||'—');
   const href=BO_ORDER_BASE+encodeURIComponent(c);
-  return'<a class="bo-order-link" href="'+boEscAttr(href)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">'+boEscHtml(c)+'</a>';
+  return'<a class="bo-order-link" href="'+boEscAttr(href)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"><bdi dir="ltr">'+boEscHtml(c)+'</bdi></a>';
 }
 
 // ══════════════════════════════════════════
