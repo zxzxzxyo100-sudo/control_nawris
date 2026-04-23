@@ -1044,6 +1044,14 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div style="font-size:18px;font-weight:800">🏢 في الشركة</div>
       <button class="btn btn-ghost btn-sm" onclick="loadReturns()">↻ تحديث</button>
     </div>
+    <div class="card" style="border-right:3px solid var(--blu);margin-bottom:12px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input class="fi fi-grow" id="branch-api-url-r" placeholder="رابط API متابعة الفروع..." dir="ltr">
+        <input class="fi" id="branch-api-token-r" type="password" placeholder="X-API-TOKEN..." dir="ltr" style="min-width:180px">
+        <button class="btn btn-blu btn-sm" onclick="connectBranchAPI()">🔌 ربط متابعة الفروع</button>
+      </div>
+      <div id="branch-api-status-r" style="font-size:11px;color:var(--mute);margin-top:6px">API متابعة الفروع مستقل عن API الطرود</div>
+    </div>
     <div class="fbar">
       <select class="fi" id="r-loc" onchange="renderReturns()" id="r-loc-sel">
         <option value="">كل المواقع</option>
@@ -1073,6 +1081,14 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div style="font-size:18px;font-weight:800">🔄 التحويلات</div>
       <button class="btn btn-ghost btn-sm" onclick="loadTransfers()">↻ تحديث</button>
+    </div>
+    <div class="card" style="border-right:3px solid var(--blu);margin-bottom:12px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input class="fi fi-grow" id="branch-api-url-t" placeholder="رابط API متابعة الفروع..." dir="ltr">
+        <input class="fi" id="branch-api-token-t" type="password" placeholder="X-API-TOKEN..." dir="ltr" style="min-width:180px">
+        <button class="btn btn-blu btn-sm" onclick="connectBranchAPI()">🔌 ربط متابعة الفروع</button>
+      </div>
+      <div id="branch-api-status-t" style="font-size:11px;color:var(--mute);margin-top:6px">هذا الربط خاص بفي الشركة + التحويلات</div>
     </div>
     <div class="fbar">
       <select class="fi" id="t-st" onchange="renderTransfers()">
@@ -2529,6 +2545,14 @@ async function loadAll(){
       if(r.key==='mgrPhone')CFG.mgrPhone=r.value;
       if(r.key==='api_url'&&document.getElementById('api-url'))document.getElementById('api-url').value=r.value;
       if(r.key==='api_token'&&document.getElementById('api-token'))document.getElementById('api-token').value=r.value;
+      if(r.key==='branch_api_url'){
+        const elR=document.getElementById('branch-api-url-r');if(elR)elR.value=r.value||'';
+        const elT=document.getElementById('branch-api-url-t');if(elT)elT.value=r.value||'';
+      }
+      if(r.key==='branch_api_token'){
+        const elR=document.getElementById('branch-api-token-r');if(elR)elR.value=r.value||'';
+        const elT=document.getElementById('branch-api-token-t');if(elT)elT.value=r.value||'';
+      }
       if(r.key==='nawris_commission_cfg'){
         try{Object.assign(CommissionCfg,JSON.parse(r.value));localStorage.setItem('nawris_commission_cfg',r.value);}catch(e){}
       }
@@ -2567,11 +2591,12 @@ async function loadShipments(){
 }
 
 async function loadReturns(){
-  const EXTERNAL_DELAYED_API='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
+  const cfg=getBranchApiConfig();
+  const EXTERNAL_DELAYED_API=cfg.url;
   const MIN_COMPANY_DELAY=2;
   try{
     // Branch follow-up "في الشركة": start delay from 2 days.
-    const token=(document.getElementById('api-token2')?.value||document.getElementById('api-token')?.value||'').trim();
+    const token=cfg.token;
     const res=await apiFetch(`${EXTERNAL_DELAYED_API}?delay_days=${MIN_COMPANY_DELAY}`,token);
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const payload=await res.json();
@@ -2604,13 +2629,14 @@ async function loadReturns(){
   }
 }
 async function loadTransfers(){
-  const EXTERNAL_DELAYED_API='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
+  const cfg=getBranchApiConfig();
+  const EXTERNAL_DELAYED_API=cfg.url;
   const MIN_TRANSFER_DELAY=3;
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="tr-loading">⏳ جارٍ تحميل التحويلات...</div>';
   try{
     // Transfers follow-up: start delay from 3 days.
-    const token=(document.getElementById('api-token2')?.value||document.getElementById('api-token')?.value||'').trim();
+    const token=cfg.token;
     const res=await apiFetch(`${EXTERNAL_DELAYED_API}?delay_days=${MIN_TRANSFER_DELAY}`,token);
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const payload=await res.json();
@@ -4497,6 +4523,44 @@ async function apiFetch(baseUrl,token,cursor){
     body:JSON.stringify(body)
   });
   return r;
+}
+function getBranchApiConfig(){
+  const defaultUrl='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
+  const url=(document.getElementById('branch-api-url-r')?.value||document.getElementById('branch-api-url-t')?.value||defaultUrl).trim();
+  const token=(document.getElementById('branch-api-token-r')?.value||document.getElementById('branch-api-token-t')?.value||'').trim();
+  return {url:url||defaultUrl,token};
+}
+function syncBranchApiInputs(url,token){
+  const uR=document.getElementById('branch-api-url-r');if(uR)uR.value=url||'';
+  const uT=document.getElementById('branch-api-url-t');if(uT)uT.value=url||'';
+  const tR=document.getElementById('branch-api-token-r');if(tR)tR.value=token||'';
+  const tT=document.getElementById('branch-api-token-t');if(tT)tT.value=token||'';
+}
+function setBranchApiStatus(msg,type='info'){
+  const color=type==='ok'?'var(--grn)':type==='err'?'var(--red)':'var(--mute)';
+  ['branch-api-status-r','branch-api-status-t'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=`<span style="color:${color}">${msg}</span>`;
+  });
+}
+async function connectBranchAPI(){
+  const cfg=getBranchApiConfig();
+  if(!cfg.url){toast('أدخل رابط API متابعة الفروع','e');return;}
+  if(!cfg.token){toast('أدخل X-API-TOKEN لمتابعة الفروع','e');return;}
+  setBranchApiStatus('⏳ جارٍ اختبار الربط...');
+  try{
+    const probe=await apiFetch(`${cfg.url}?delay_days=1`,cfg.token);
+    if(!probe.ok)throw new Error(`HTTP ${probe.status}`);
+    await sbUp('settings',[{key:'branch_api_url',value:cfg.url},{key:'branch_api_token',value:cfg.token}]);
+    syncBranchApiInputs(cfg.url,cfg.token);
+    setBranchApiStatus('✅ تم حفظ وربط API متابعة الفروع بنجاح','ok');
+    toast('✅ تم ربط API متابعة الفروع','s');
+    loadReturns();
+    loadTransfers();
+  }catch(e){
+    setBranchApiStatus(`❌ فشل الربط: ${e.message}`,'err');
+    toast('خطأ API متابعة الفروع: '+e.message,'e');
+  }
 }
 async function testAPI(){
   const url=document.getElementById('api-url')?.value?.trim();
@@ -6950,11 +7014,13 @@ function enrichAPICaptainPhones(){
 async function autoSyncAPI(){
   try{
     const cfg=await sb('settings','GET',null,'?select=key,value');
-    let url='',token='',interval=0;
+    let url='',token='',interval=0,branchUrl='',branchToken='';
     cfg.forEach(r=>{
       if(r.key==='api_url')url=r.value||'';
       if(r.key==='api_token')token=r.value||'';
       if(r.key==='api_auto_interval')interval=parseInt(r.value)||0;
+      if(r.key==='branch_api_url')branchUrl=r.value||'';
+      if(r.key==='branch_api_token')branchToken=r.value||'';
     });
     if(!url)return;
     // Set inputs
@@ -6971,6 +7037,10 @@ async function autoSyncAPI(){
     if(interval>0){
       if(autoFetchTimer2)clearInterval(autoFetchTimer2);
       autoFetchTimer2=setInterval(fetchAPIShipments,interval*3600000);
+    }
+    if(branchUrl||branchToken){
+      syncBranchApiInputs(branchUrl||'https://backoffice.nawris.algoriza.com/external-api/orders/delayed',branchToken||'');
+      setBranchApiStatus('✅ API متابعة الفروع مفعل بشكل مستقل','ok');
     }
   }catch(e){console.warn('autoSyncAPI',e);}
 }
