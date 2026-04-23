@@ -2700,6 +2700,7 @@ async function loadTransfers(){
       const fromBranch=prevBranch||String(r.current_branch||r.from_branch||r.branch||'').trim()||'—';
       const toBranch=recvBranch||String(r.received_branch||r.to_branch||r.branch||'').trim()||'—';
       const branchRoute=`${fromBranch} → ${toBranch}`;
+      const delayDaysNow=parseInt(r.delay_days||r.delay||0)||0;
       const derivedTripId=
         r.trip_id||
         r.tripId||
@@ -2714,6 +2715,9 @@ async function loadTransfers(){
         customer_name:customerName,
         city:cityName,
         branch:branchRoute,
+        from_branch:fromBranch,
+        to_branch:toBranch,
+        delay_days:delayDaysNow,
         status:(r.status||'pending').toString().toLowerCase(),
         created_at:r.created_at||new Date().toISOString(),
         source:'api'
@@ -2737,6 +2741,9 @@ async function loadTransfers(){
         customer_name:t.shipments?.customer_name||'—',
         city:t.to_branch?.name||'—',
         branch:`${t.from_branch?.name||'—'} → ${t.to_branch?.name||'—'}`,
+        from_branch:t.from_branch?.name||'—',
+        to_branch:t.to_branch?.name||'—',
+        delay_days:t.delay_days??null,
         status:(t.status||'pending').toString().toLowerCase(),
         created_at:t.created_at||new Date().toISOString(),
         source:'legacy'
@@ -3733,10 +3740,26 @@ async function updateRetLoc(id,current){
 // ══════════════════════════════════════════
 // TRANSFERS
 // ══════════════════════════════════════════
+function transferDateKey(v){
+  try{
+    if(!v)return 'بدون-تاريخ';
+    const d=new Date(v);
+    if(Number.isNaN(d.getTime()))return 'بدون-تاريخ';
+    return d.toISOString().slice(0,10);
+  }catch(_){
+    return 'بدون-تاريخ';
+  }
+}
 function groupByTrip(transferShipments){
   const grouped={};
   transferShipments.forEach(s=>{
-    const tripId=String(s?.trip_id||'بدون رحلة');
+    const branchParts=String(s?.branch||'').split('→');
+    const fromBranch=String(s?.from_branch||branchParts[0]||'—').trim()||'—';
+    const toBranch=String(s?.to_branch||branchParts[1]||'—').trim()||'—';
+    const delayKey=Number.isFinite(Number(s?.delay_days))?String(Number(s.delay_days)):'—';
+    const dayKey=transferDateKey(s?.created_at);
+    // Same trip rule: same sender + receiver + delay days + date.
+    const tripId=`${fromBranch}|||${toBranch}|||${delayKey}|||${dayKey}`;
     if(!grouped[tripId])grouped[tripId]=[];
     grouped[tripId].push(s);
   });
@@ -3836,6 +3859,11 @@ function renderTransfers(){
     const tripRow=document.createElement('div');
     tripRow.className='trip-row';
     tripRow.dataset.tripId=tripId;
+    const firstRow=filtered[0]||{};
+    const fromLabel=String(firstRow.from_branch||'—').trim()||'—';
+    const toLabel=String(firstRow.to_branch||'—').trim()||'—';
+    const delayLabel=Number.isFinite(Number(firstRow.delay_days))?`${Number(firstRow.delay_days)}ي`:'—';
+    const dateLabel=transferDateKey(firstRow.created_at);
 
     const tripCell=document.createElement('div');
     tripCell.className='trip-id-cell';
@@ -3843,7 +3871,7 @@ function renderTransfers(){
     arrow.className='trip-toggle';
     arrow.textContent='▸';
     const tripLabel=document.createElement('span');
-    tripLabel.textContent=`رحلة #${tripId}`;
+    tripLabel.textContent=`${fromLabel} → ${toLabel} • ${delayLabel} • ${dateLabel}`;
     tripCell.append(arrow,tripLabel);
 
     const countCell=document.createElement('div');
