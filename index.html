@@ -5976,6 +5976,17 @@ async function fetchAPIShipments(){
       ).trim();
     };
     const getNextPageUrl=(json,currentUrl='')=>{
+      const linksArray=json?.links?.data||json?.data?.links?.data||json?.meta?.links||json?.data?.meta?.links;
+      if(Array.isArray(linksArray)){
+        const nextFromArray=linksArray.find(x=>{
+          const label=String(x?.label||'').toLowerCase();
+          return label.includes('next')||label.includes('التالي')||label.includes('»');
+        });
+        const nextUrl=String(nextFromArray?.url||'').trim();
+        if(nextUrl){
+          try{return new URL(nextUrl,currentUrl||window.location.origin).toString();}catch(_){return nextUrl;}
+        }
+      }
       const raw=String(
         json?.links?.next
         || json?.data?.links?.next
@@ -5987,6 +5998,30 @@ async function fetchAPIShipments(){
       ).trim();
       if(!raw)return '';
       try{return new URL(raw,currentUrl||window.location.origin).toString();}catch(_){return raw;}
+    };
+    const getNextPageByNumber=(json,currentUrl='')=>{
+      const current=Number(
+        json?.meta?.current_page
+        || json?.current_page
+        || json?.data?.current_page
+        || json?.pagination?.current_page
+        || 0
+      );
+      const last=Number(
+        json?.meta?.last_page
+        || json?.last_page
+        || json?.data?.last_page
+        || json?.pagination?.last_page
+        || 0
+      );
+      if(!current||!last||current>=last)return '';
+      try{
+        const u=new URL(currentUrl||window.location.origin);
+        u.searchParams.set('page',String(current+1));
+        return u.toString();
+      }catch(_){
+        return '';
+      }
     };
     const fetchPageWithRetry=async(baseUrl,cursorVal='',retries=2)=>{
       const cursorStr=String(cursorVal||'').trim();
@@ -6087,7 +6122,7 @@ async function fetchAPIShipments(){
         const json=pageResult.json;
         const pageData=getPageRows(json);
         nextCursor=getNextCursor(json)||null;
-        nextPageUrl=getNextPageUrl(json,pageUrl)||'';
+        nextPageUrl=getNextPageUrl(json,pageUrl)||getNextPageByNumber(json,pageUrl)||'';
         dayRawCount+=pageData.length;
         const newCount=appendUniqueItems(pageData);
         console.log(`${label} | Page ${pageNum}: ${pageData.length} items, ${newCount} new, total: ${rawData.length}, next_cursor: ${nextCursor?'yes':'no'}, next_url: ${nextPageUrl?'yes':'no'}, via: ${pageResult.mode}`);
