@@ -791,7 +791,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <div class="sb-subitem" data-staff-menu="summary">ملخص نتائج التواصل</div>
         <div class="sb-subitem" data-staff-menu="captains">أداء المناديب</div>
       </div>
-      <div class="sb-item manager-only" data-tab="commission-admin"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> عمولات جنزور</div>
       <div class="sb-item manager-only" data-tab="master" data-menu-toggle="database"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> database <span class="sb-caret">▾</span></div>
       <div class="sb-submenu manager-only" data-menu="database">
         <div class="sb-subitem" data-db-menu="master">البيانات الثابتة</div>
@@ -1602,27 +1601,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     </div>
   </div>
 
-  <div class="page manager-only" id="tab-commission-admin">
-    <div class="page-hdr">
-      <div class="page-title"><span class="page-title-accent"></span>عمولات جنزور — تحكم المدير</div>
-    </div>
-    <p style="font-size:12px;color:var(--mute);margin-bottom:14px">النسبة تُطبَّق على الوحدة الأساسية بعد ضربها في وزن يعتمد على نسبة تسليم/مرتجع لطرود جنزور المسندة لذلك الموظف.</p>
-    <div class="kgrid" style="margin-bottom:16px">
-      <div class="kcard gold"><div class="klbl">الوحدة الأساسية</div><input class="fi" id="ccfg-base" type="number" step="1" style="margin-top:6px;width:100%;font-weight:800"></div>
-      <div class="kcard orn"><div class="klbl">نسبة المندوب الافتراضية %</div><input class="fi" id="ccfg-rep" type="number" step="0.1" style="margin-top:6px;width:100%;font-weight:800"></div>
-      <div class="kcard blu"><div class="klbl">نسبة الفرع %</div><input class="fi" id="ccfg-br" type="number" step="0.1" style="margin-top:6px;width:100%;font-weight:800"></div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-      <button class="btn btn-pur" onclick="saveCommissionAdminCfg()">💾 حفظ الإعدادات</button>
-      <button class="btn btn-grn" onclick="runJanzourCommissionSync()">⚡ إعادة حساب العمولات لطرود جنزور</button>
-    </div>
-    <div class="card" style="padding:14px">
-      <div class="ctitle" style="margin-bottom:10px">نسب عمولة يدوية لكل موظف (جنزور) %</div>
-      <p style="font-size:11px;color:var(--mute);margin-bottom:10px">اترك الحقل فارغاً للعودة للنسبة الافتراضية أعلاه.</p>
-      <div id="commission-emp-rows"></div>
-      <button class="btn btn-pur" style="margin-top:12px" onclick="saveCommissionOverridesFromAdmin()">💾 حفظ نسب الموظفين</button>
-    </div>
-  </div>
 
   <div class="page" id="tab-whatsapp">
     <div style="font-size:18px;font-weight:800;margin-bottom:14px">💬 مراسلة المناديب</div>
@@ -2058,10 +2036,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <option value="inactive">معطّل</option>
         </select>
       </div>
-      <div class="fg">
-        <label class="fl">نسبة عمولة جنزور (%) — اختياري</label>
-        <input type="number" class="fi" style="width:100%" id="um-janzour-pct" min="0" max="100" step="0.01" placeholder="الافتراضي من شاشة عمولات المدير">
-      </div>
       <div class="fg" id="um-perms-section">
         <label class="fl">الصلاحيات — الصفحات المسموحة</label>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:6px" id="um-perms-grid">
@@ -2085,6 +2059,8 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="janzour"> 🟢 متابعة جنزور
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="janzour-rates"> 📊 نسب ومعدلات جنزور
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
@@ -2113,6 +2089,11 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <button class="btn btn-ghost btn-sm" onclick="toggleAllPerms(true)" type="button">✅ تحديد الكل</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleAllPerms(false)" type="button">✕ إلغاء الكل</button>
         </div>
+      </div>
+      <div class="fg" id="um-rbranches-section">
+        <label class="fl">صلاحية استلام الفروع (تظهر في التعيين)</label>
+        <div id="um-rbranches-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-top:6px"></div>
+        <div style="font-size:11px;color:var(--mute);margin-top:6px">اختر الفروع التي يسمح للموظف باستلام طرودها.</div>
       </div>
     </div>
     <div class="mf">
@@ -7878,14 +7859,13 @@ function openUserModal(editKey){
     document.getElementById('um-phone').value=u.phone||'';
     document.getElementById('um-email').value=u.email||'';
     document.getElementById('um-status').value=u.status||'active';
-    const jz=document.getElementById('um-janzour-pct');
-    if(jz)jz.value=u.janzour_commission_pct!=null&&u.janzour_commission_pct!==''?u.janzour_commission_pct:'';
     // Set permission checkboxes
     const perms=u.perms||[];
     document.querySelectorAll('.um-perm').forEach(cb=>{
       if(cb.value==='home'){cb.checked=true;return;}
       cb.checked=perms.includes(cb.value);
     });
+    renderUserBranchPermissions(getUserReceivedBranches(u));
   } else {
     document.getElementById('user-modal-title').textContent='إضافة مستخدم جديد';
     document.getElementById('um-username').value='';
@@ -7896,11 +7876,11 @@ function openUserModal(editKey){
     document.getElementById('um-phone').value='';
     document.getElementById('um-email').value='';
     document.getElementById('um-status').value='active';
-    const jz2=document.getElementById('um-janzour-pct');if(jz2)jz2.value='';
     // Default perms for employee
     document.querySelectorAll('.um-perm').forEach(cb=>{
       cb.checked=(cb.value==='home'||cb.value==='shipments'||cb.value==='api-shipments'||cb.value==='service-kpi');
     });
+    renderUserBranchPermissions([]);
   }
   onRoleChange();
   document.getElementById('user-modal').classList.add('on');
@@ -7917,16 +7897,37 @@ function togglePassVis(){
 function onRoleChange(){
   const role=document.getElementById('um-role').value;
   const section=document.getElementById('um-perms-section');
+  const branchSection=document.getElementById('um-rbranches-section');
   if(role==='manager'){
     // Managers get all perms, disable checkboxes
     document.querySelectorAll('.um-perm').forEach(cb=>{cb.checked=true;cb.disabled=true;});
     section.style.opacity='.5';
+    document.querySelectorAll('.um-rbranch').forEach(cb=>{cb.checked=false;cb.disabled=true;});
+    if(branchSection)branchSection.style.opacity='.5';
   } else {
     document.querySelectorAll('.um-perm').forEach(cb=>{
       cb.disabled=(cb.value==='home'); // home always enabled
     });
     section.style.opacity='1';
+    document.querySelectorAll('.um-rbranch').forEach(cb=>{cb.disabled=false;});
+    if(branchSection)branchSection.style.opacity='1';
   }
+}
+
+function renderUserBranchPermissions(selected){
+  const box=document.getElementById('um-rbranches-grid');
+  if(!box)return;
+  const selectedNorm=new Set((selected||[]).map(v=>normalizeIdentityText(v)).filter(Boolean));
+  const names=[...new Set((branches||[]).map(b=>String(b?.name||b?.branch_name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  if(!names.length){
+    box.innerHTML='<div style="font-size:12px;color:var(--mute);padding:8px;border:1px dashed var(--rim);border-radius:var(--r2)">لا توجد فروع محملة حالياً.</div>';
+    return;
+  }
+  box.innerHTML=names.map(name=>{
+    const checked=selectedNorm.has(normalizeIdentityText(name))?'checked':'';
+    const safe=name.replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    return `<label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer"><input type="checkbox" class="um-rbranch" value="${safe}" ${checked}> 🏢 ${safe}</label>`;
+  }).join('');
 }
 
 function toggleAllPerms(val){
@@ -7970,9 +7971,10 @@ function saveUser(){
     }
   }
 
-  const jzRaw=document.getElementById('um-janzour-pct')?.value?.trim();
-  const janzour_commission_pct=jzRaw===''||jzRaw===undefined?null:parseFloat(jzRaw);
-  USERS[username]={pass,role,name,phone,email,status,perms,janzour_commission_pct:isNaN(janzour_commission_pct)?null:janzour_commission_pct};
+  const received_branches=role==='manager'
+    ? []
+    : [...new Set([...document.querySelectorAll('.um-rbranch:checked')].map(cb=>String(cb.value||'').trim()).filter(Boolean))];
+  USERS[username]={pass,role,name,phone,email,status,perms,received_branches};
   saveUsers(USERS);
 
   // If editing self, update session
