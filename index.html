@@ -1291,6 +1291,10 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div class="fbar">
       <button class="btn btn-ghost btn-sm" onclick="openApiFiltersDrawer()">⚙️ تصفية</button>
       <button class="btn btn-ghost btn-sm" onclick="resetAPIFilters();renderAPIShipments();" title="مسح الفلاتر">✕ مسح</button>
+      <label class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="a-show-processed" onchange="renderAPIShipments()">
+        إظهار المعالَجة
+      </label>
     </div>
     <div class="flt-drawer-overlay" id="api-filters-overlay" onclick="closeApiFiltersDrawer()"></div>
     <aside class="flt-drawer" id="api-filters-drawer" aria-hidden="true">
@@ -3493,7 +3497,12 @@ function renderShipments(){
   const fdays=document.getElementById('s-fdays')?.value||'';
   const fcontact=document.getElementById('s-fcontact')?.value||'';
   const fcr=document.getElementById('s-fcr')?.value||'';
-  let list=shipments;
+  const assignments=getAPIAssignments();
+  const isEmployee=CU?.role==='employee';
+  const myName=CU?.name||'';
+  let list=isEmployee
+    ? shipments.filter(s=>String(assignments[s.tracking_code]||'')===String(myName))
+    : shipments;
   // Helper to get responsible branch for a shipment
   const getRB=s=>s.responsible_branch||localStorage.getItem('rb_'+s.id)||localStorage.getItem('rb_'+s.tracking_code)||'';
   // Helper to get current branch enriched
@@ -5982,6 +5991,8 @@ let unifiedApiMounted=false, unifiedApiFetched=false;
 let apiFetchLog=[];
 let aSortKey='delay_days', aSortDir='desc';
 let apiFilteredData=[], apiFilteredIds=[], apiLastSelectedSid='';
+let apiProcessedCodes=new Set();
+try{apiProcessedCodes=new Set(JSON.parse(sessionStorage.getItem('api_processed_codes')||'[]'));}catch(_){apiProcessedCodes=new Set();}
 
 // ══════════════════════════════════════════
 // JANZOUR STORES — Isolated view
@@ -6131,6 +6142,47 @@ document.addEventListener('click',e=>{
   const seg=e.target.closest('[data-aseg]');
   if(seg)setAPISeg(seg.dataset.aseg);
 });
+
+function getExplicitlySelectedApiIds(){
+  const ids=[...document.querySelectorAll('#a-tbody input[type="checkbox"][data-asid]:checked')].map(el=>String(el.dataset.asid||'').trim()).filter(Boolean);
+  return [...new Set(ids)];
+}
+function getUserReceivedBranches(userObj){
+  const raw=userObj?.received_branches??userObj?.received_branch??userObj?.['received-branch']??[];
+  const list=Array.isArray(raw)?raw:String(raw||'').split(/[,\n|]/);
+  const fromPerms=(Array.isArray(userObj?.perms)?userObj.perms:[])
+    .filter(p=>String(p||'').toLowerCase().startsWith('received-branch:'))
+    .flatMap(p=>String(p).split(':').slice(1).join(':').split(/[,\n|]/));
+  return [...list,...fromPerms].map(v=>normalizeIdentityText(v)).filter(Boolean);
+}
+function canAssignParcelToEmployee(parcel,empName){
+  const emp=Object.values(USERS).find(u=>String(u?.name||'')===String(empName||''));
+  if(!emp)return false;
+  const restricted=getUserReceivedBranches(emp);
+  if(!restricted.length)return true;
+  const branchNorm=normalizeIdentityText(parcel?.current_branch||parcel?.branch||'');
+  if(!branchNorm)return true;
+  return !restricted.some(b=>branchNorm===b||branchNorm.includes(b)||b.includes(branchNorm));
+}
+function persistApiProcessedCodes(){
+  try{sessionStorage.setItem('api_processed_codes',JSON.stringify([...apiProcessedCodes]));}catch(_){}
+}
+function reconcileApiProcessedFromStatus(nextShipments){
+  let snap={};
+  try{snap=JSON.parse(sessionStorage.getItem('api_status_snapshot')||'{}')||{};}catch(_){snap={};}
+  const nextSnap={};
+  (nextShipments||[]).forEach(s=>{
+    const code=String(s?.tracking_code||'').trim();
+    if(!code)return;
+    const st=String(s?.status||'').trim().toLowerCase();
+    nextSnap[code]=st;
+    const prev=String(snap[code]||'').trim().toLowerCase();
+    if(prev&&prev!==st)apiProcessedCodes.add(code);
+    if(st==='delivered'||st==='returned'||st==='processed')apiProcessedCodes.add(code);
+  });
+  try{sessionStorage.setItem('api_status_snapshot',JSON.stringify(nextSnap));}catch(_){}
+  persistApiProcessedCodes();
+}
 
 async function fetchAPIShipments(){
   // Try to get API settings from the upload page inputs or from saved settings
@@ -6497,6 +6549,7 @@ async function fetchAPIShipments(){
         branch_commission:null
       });
     }
+    reconcileApiProcessedFromStatus(apiShipments);
 
     // Always show full API data by default after each sync.
     apiSeg='all';
@@ -6603,24 +6656,25 @@ function updateAPIKPIs(){
     ? apiShipments.filter(s=>String(assignments[s.tracking_code]||'')===String(myName))
     : apiShipments;
 
-  const crit=apiShipments.filter(s=>cls(s.delay_days)==='critical').length;
-  const warn=apiShipments.filter(s=>cls(s.delay_days)==='warning').length;
-  const ok=apiShipments.filter(s=>cls(s.delay_days)==='ok').length;
-  const drv=apiShipments.filter(s=>s.status==='with_driver').length;
-  const comp=apiShipments.filter(s=>s.status==='in_company').length;
+  const kpiScope=isEmployee?assignedOnly:apiShipments;
+  const crit=kpiScope.filter(s=>cls(s.delay_days)==='critical').length;
+  const warn=kpiScope.filter(s=>cls(s.delay_days)==='warning').length;
+  const ok=kpiScope.filter(s=>cls(s.delay_days)==='ok').length;
+  const drv=kpiScope.filter(s=>s.status==='with_driver').length;
+  const comp=kpiScope.filter(s=>s.status==='in_company').length;
   const myCrit=assignedOnly.filter(s=>cls(s.delay_days)==='critical').length;
   const myDrv=assignedOnly.filter(s=>s.status==='with_driver').length;
   const myReturned=assignedOnly.filter(s=>s.status==='returned').length;
 
   const setTxt=(id,v)=>{const x=document.getElementById(id);if(x)x.textContent=v;};
-  setTxt('ak-total',isEmployee?assignedOnly.length:apiShipments.length);
+  setTxt('ak-total',kpiScope.length);
   setTxt('ak-crit',isEmployee?myCrit:crit);
   setTxt('ak-warn',warn);
   setTxt('ak-ok',isEmployee?myReturned:ok);
   setTxt('ak-driver',isEmployee?myDrv:drv);
   setTxt('ak-comp',comp);
   const tbApiEl2=document.getElementById('tb-api');
-  if(tbApiEl2)tbApiEl2.textContent=isEmployee?assignedOnly.length:apiShipments.length;
+  if(tbApiEl2)tbApiEl2.textContent=kpiScope.length;
 
   const setDisp=(id,v)=>{const x=document.getElementById(id);if(x)x.style.display=v;};
   if(isEmployee){
@@ -6642,10 +6696,10 @@ function updateAPIKPIs(){
   }
 
   // Segments counts (guarded; API panel might be unmounted temporarily)
-  setTxt('asn-all',apiShipments.length);
+  setTxt('asn-all',kpiScope.length);
   setTxt('asn-driver',drv);
   setTxt('asn-comp',comp);
-  setTxt('asn-late',apiShipments.filter(s=>cls(s.delay_days)!=='ok').length);
+  setTxt('asn-late',kpiScope.filter(s=>cls(s.delay_days)!=='ok').length);
 
   // Summary card
   const statusGroups={};
@@ -6712,7 +6766,15 @@ function renderAPIShipments(){
   }
 
   const myName=CU?.name||'';
+  const isEmployee=CU?.role==='employee';
+  const showProcessed=!!document.getElementById('a-show-processed')?.checked;
   let list=[...apiShipments];
+  if(isEmployee){
+    list=list.filter(s=>String(assignments[s.tracking_code]||'')===String(myName));
+  }
+  if(!showProcessed){
+    list=list.filter(s=>!apiProcessedCodes.has(String(s.tracking_code||'')));
+  }
 
   // Segment filter
   if(apiSeg==='driver') list=list.filter(s=>s.status==='with_driver');
@@ -6723,12 +6785,13 @@ function renderAPIShipments(){
 
   // Update segment counts
   const el=id=>document.getElementById(id);
-  if(el('asn-all'))el('asn-all').textContent=apiShipments.length;
-  if(el('asn-mine'))el('asn-mine').textContent=apiShipments.filter(s=>assignments[s.tracking_code]===myName).length;
-  if(el('asn-driver'))el('asn-driver').textContent=apiShipments.filter(s=>s.status==='with_driver').length;
-  if(el('asn-comp'))el('asn-comp').textContent=apiShipments.filter(s=>s.status==='in_company').length;
-  if(el('asn-late'))el('asn-late').textContent=apiShipments.filter(s=>cls(s.delay_days)!=='ok').length;
-  if(el('asn-unassigned'))el('asn-unassigned').textContent=apiShipments.filter(s=>!assignments[s.tracking_code]).length;
+  const scopeForCounts=isEmployee?apiShipments.filter(s=>assignments[s.tracking_code]===myName):apiShipments;
+  if(el('asn-all'))el('asn-all').textContent=scopeForCounts.length;
+  if(el('asn-mine'))el('asn-mine').textContent=scopeForCounts.filter(s=>assignments[s.tracking_code]===myName).length;
+  if(el('asn-driver'))el('asn-driver').textContent=scopeForCounts.filter(s=>s.status==='with_driver').length;
+  if(el('asn-comp'))el('asn-comp').textContent=scopeForCounts.filter(s=>s.status==='in_company').length;
+  if(el('asn-late'))el('asn-late').textContent=scopeForCounts.filter(s=>cls(s.delay_days)!=='ok').length;
+  if(el('asn-unassigned'))el('asn-unassigned').textContent=scopeForCounts.filter(s=>!assignments[s.tracking_code]).length;
 
   list=list.filter(s=>{
     if(fd&&cls(s.delay_days)!==fd)return false;
@@ -8458,16 +8521,21 @@ function autoAssign(method){
 function assignSelected(){
   const emp=document.getElementById('manual-assign-emp')?.value;
   if(!emp){toast('اختر موظفاً أولاً','w');return;}
+  const selectedIds=getExplicitlySelectedApiIds();
+  if(!selectedIds.length){toast('حدد الطرود عبر checkbox أولاً','w');return;}
   const a=getAPIAssignments();
-  let count=0;
-  apiChecked.forEach(sid=>{
-    const s=apiShipments.find(x=>String(x.id)===sid);
-    if(s){a[s.tracking_code]=emp;count++;}
+  let count=0,blocked=0;
+  selectedIds.forEach(sid=>{
+    const s=apiShipments.find(x=>String(x.id)===String(sid));
+    if(!s)return;
+    if(!canAssignParcelToEmployee(s,emp)){blocked++;return;}
+    a[s.tracking_code]=emp;count++;
   });
   saveAPIAssignments(a);
   renderAPIShipments();
   renderAssignStats();
   refreshAssignPanelEmps();
+  if(blocked>0)toast(`⚠️ تم منع ${blocked} طرد بسبب صلاحية received-branch`,'w');
   toast(`✅ تم تعيين ${count} طرد إلى ${emp}`,'s');
 }
 function bulkAssignFilteredBranch(){
@@ -8477,19 +8545,26 @@ function bulkAssignFilteredBranch(){
   const targets=apiFilteredData.filter(s=>!branch||String(s.current_branch||'')===branch);
   if(!targets.length){toast('لا توجد طرود مطابقة للفلتر الحالي','w');return;}
   const a=getAPIAssignments();
-  targets.forEach(s=>{a[s.tracking_code]=emp;});
+  let count=0,blocked=0;
+  targets.forEach(s=>{
+    if(!canAssignParcelToEmployee(s,emp)){blocked++;return;}
+    a[s.tracking_code]=emp;count++;
+  });
   saveAPIAssignments(a);
   renderAPIShipments();
   renderAssignStats();
   refreshAssignPanelEmps();
-  toast(`✅ تم تعيين ${targets.length} طرد من ${branch||'كل الفروع'} إلى ${emp}`,'s');
+  if(blocked>0)toast(`⚠️ تم منع ${blocked} طرد بسبب صلاحية received-branch`,'w');
+  toast(`✅ تم تعيين ${count} طرد من ${branch||'كل الفروع'} إلى ${emp}`,'s');
 }
 
 function unassignSelected(){
+  const selectedIds=getExplicitlySelectedApiIds();
+  if(!selectedIds.length){toast('حدد الطرود عبر checkbox أولاً','w');return;}
   const a=getAPIAssignments();
   let count=0;
-  apiChecked.forEach(sid=>{
-    const s=apiShipments.find(x=>String(x.id)===sid);
+  selectedIds.forEach(sid=>{
+    const s=apiShipments.find(x=>String(x.id)===String(sid));
     if(s&&a[s.tracking_code]){delete a[s.tracking_code];count++;}
   });
   saveAPIAssignments(a);
@@ -8534,23 +8609,31 @@ function refreshAssignPanelEmps(){
   const counts={};
   emps.forEach(u=>{counts[u.name]=0;});
   Object.values(a).forEach(name=>{if(counts[name]!==undefined)counts[name]++;else counts[name]=1;});
+  const selectedIds=getExplicitlySelectedApiIds();
+  const selectedParcels=selectedIds.length
+    ? selectedIds.map(id=>apiShipments.find(s=>String(s.id)===String(id))).filter(Boolean)
+    : apiFilteredData.slice();
+  const selectableEmps=emps.filter(u=>selectedParcels.every(p=>canAssignParcelToEmployee(p,u.name)));
 
   // Employee checkboxes as cards
   const checksEl=document.getElementById('assign-emp-checks');
   const isMob=window.innerWidth<=640;
-  if(checksEl)checksEl.innerHTML=emps.map(u=>`
+  if(checksEl)checksEl.innerHTML=emps.map(u=>{
+    const disabled=!selectableEmps.some(se=>se.name===u.name);
+    return `
     <label style="display:flex;align-items:center;gap:8px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r2);padding:${isMob?'12px 14px':'7px 12px'};cursor:pointer;transition:border-color .15s;min-height:${isMob?'48px':'auto'}" onmouseover="this.style.borderColor='var(--pur)'" onmouseout="this.style.borderColor='var(--rim)'">
-      <input type="checkbox" value="${u.name}" checked style="accent-color:var(--pur);width:${isMob?'18px':'13px'};height:${isMob?'18px':'13px'};flex-shrink:0">
+      <input type="checkbox" value="${u.name}" ${disabled?'':'checked'} ${disabled?'disabled':''} style="accent-color:var(--pur);width:${isMob?'18px':'13px'};height:${isMob?'18px':'13px'};flex-shrink:0">
       <span style="font-size:${isMob?'14px':'12px'};font-weight:700;color:var(--white)">${u.name}</span>
       <span style="font-size:11px;color:var(--mute)">${u.role==='manager'?'مدير':'موظف'}</span>
-      <span style="font-size:11px;font-family:var(--mono);color:var(--pur);margin-right:auto">${counts[u.name]||0} طرد</span>
-    </label>`).join('');
+      <span style="font-size:11px;font-family:var(--mono);color:${disabled?'var(--red)':'var(--pur)'};margin-right:auto">${disabled?'غير متاح':' '+(counts[u.name]||0)+' طرد'}</span>
+    </label>`;
+  }).join('');
 
   // Manual assign dropdown
   const manEl=document.getElementById('manual-assign-emp');
-  if(manEl)manEl.innerHTML='<option value="">اختر موظف...</option>'+emps.map(u=>`<option value="${u.name}">${u.name} (${counts[u.name]||0} طرد)</option>`).join('');
+  if(manEl)manEl.innerHTML='<option value="">اختر موظف...</option>'+selectableEmps.map(u=>`<option value="${u.name}">${u.name} (${counts[u.name]||0} طرد)</option>`).join('');
   const brEmpEl=document.getElementById('assign-branch-emp');
-  if(brEmpEl)brEmpEl.innerHTML='<option value="">اختر موظف...</option>'+emps.map(u=>`<option value="${u.name}">${u.name} (${counts[u.name]||0})</option>`).join('');
+  if(brEmpEl)brEmpEl.innerHTML='<option value="">اختر موظف...</option>'+selectableEmps.map(u=>`<option value="${u.name}">${u.name} (${counts[u.name]||0})</option>`).join('');
   const brEl=document.getElementById('assign-branch-filter');
   if(brEl){
     const prev=brEl.value;
