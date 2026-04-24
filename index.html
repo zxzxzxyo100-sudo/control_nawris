@@ -5975,6 +5975,19 @@ async function fetchAPIShipments(){
         || ''
       ).trim();
     };
+    const getNextPageUrl=(json,currentUrl='')=>{
+      const raw=String(
+        json?.links?.next
+        || json?.data?.links?.next
+        || json?.pagination?.next_page_url
+        || json?.meta?.next_page_url
+        || json?.next_page_url
+        || json?.data?.next_page_url
+        || ''
+      ).trim();
+      if(!raw)return '';
+      try{return new URL(raw,currentUrl||window.location.origin).toString();}catch(_){return raw;}
+    };
     const fetchPageWithRetry=async(baseUrl,cursorVal='',retries=2)=>{
       const cursorStr=String(cursorVal||'').trim();
       const withCursorInQuery=cursorStr
@@ -6035,13 +6048,23 @@ async function fetchAPIShipments(){
 
     const fetchAllPagesForBase=async(baseUrl,label)=>{
       let nextCursor=null;
+      let nextPageUrl='';
       let pageNum=0;
       const seenCursors=new Set();
+      const seenPageUrls=new Set();
       let dayRawCount=0;
       do{
         pageNum++;
-        const cursorForPage=String(nextCursor||'').trim();
-        if(cursorForPage){
+        const pageUrl=String(nextPageUrl||baseUrl).trim();
+        if(nextPageUrl){
+          if(seenPageUrls.has(pageUrl)){
+            console.warn(`Pagination stopped (${label}): repeated next URL.`);
+            break;
+          }
+          seenPageUrls.add(pageUrl);
+        }
+        const cursorForPage=nextPageUrl?'':String(nextCursor||'').trim();
+        if(!nextPageUrl&&cursorForPage){
           if(seenCursors.has(cursorForPage)){
             console.warn(`Pagination stopped (${label}): repeated next_cursor (${cursorForPage}).`);
             break;
@@ -6052,7 +6075,7 @@ async function fetchAPIShipments(){
 
         let pageResult=null;
         try{
-          pageResult=await fetchPageWithRetry(baseUrl,cursorForPage,2);
+          pageResult=await fetchPageWithRetry(pageUrl,cursorForPage,2);
         }catch(fetchErr){
           // Don't fully block users if later pages fail (e.g. unstable cursor modes / server 500).
           if(rawData.length>0){
@@ -6064,12 +6087,13 @@ async function fetchAPIShipments(){
         const json=pageResult.json;
         const pageData=getPageRows(json);
         nextCursor=getNextCursor(json)||null;
+        nextPageUrl=getNextPageUrl(json,pageUrl)||'';
         dayRawCount+=pageData.length;
         const newCount=appendUniqueItems(pageData);
-        console.log(`${label} | Page ${pageNum}: ${pageData.length} items, ${newCount} new, total: ${rawData.length}, next_cursor: ${nextCursor?'yes':'no'}, via: ${pageResult.mode}`);
+        console.log(`${label} | Page ${pageNum}: ${pageData.length} items, ${newCount} new, total: ${rawData.length}, next_cursor: ${nextCursor?'yes':'no'}, next_url: ${nextPageUrl?'yes':'no'}, via: ${pageResult.mode}`);
 
         if(!pageData.length)break;
-      }while(nextCursor&&pageNum<MAX_PAGES);
+      }while((nextPageUrl||nextCursor)&&pageNum<MAX_PAGES);
       return dayRawCount;
     };
 
