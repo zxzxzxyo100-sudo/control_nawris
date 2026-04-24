@@ -5939,17 +5939,19 @@ async function fetchAPIShipments(){
         });
       }catch(_){}
       const candidates=namedCandidates
-        .map(v=>String(v||'').trim())
+        .map(v=>String(v||'').trim().replace(/[\u200e\u200f\u202a-\u202e]/g,''))
         .filter(Boolean);
       if(!candidates.length)return 'API-'+Date.now()+'-'+fallbackIndex;
-      // Prefer explicit code-like values (digits with optional latin suffix/prefix), no spaces.
-      const strictCode=candidates.find(v=>/^[A-Za-z]?\d{4,}[A-Za-z]?$/.test(v));
-      if(strictCode)return strictCode;
+      // Prefer explicit mixed codes first (e.g. 3055045R), then numeric-only codes.
+      const strictMixed=candidates.find(v=>/^(?=.*\d)(?=.*[A-Za-z])[A-Za-z]?\d{4,}[A-Za-z]?$/.test(v));
+      if(strictMixed)return strictMixed.toUpperCase();
+      const strictDigits=candidates.find(v=>/^\d{4,}$/.test(v));
+      if(strictDigits)return strictDigits;
       // Then any compact alphanumeric token without spaces (avoid names/phrases).
       const compactToken=candidates.find(v=>/^[A-Za-z0-9_-]{5,30}$/.test(v)&&/\d/.test(v));
-      if(compactToken)return compactToken;
+      if(compactToken)return compactToken.toUpperCase();
       // Fallback to prioritized tracking fields only.
-      return candidates[0];
+      return candidates[0].toUpperCase();
     };
     const getPageRows=(json)=>{
       if(Array.isArray(json))return json;
