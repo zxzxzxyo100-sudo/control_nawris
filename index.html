@@ -888,7 +888,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <svg class="kcard-sparkline" id="sp-crit" viewBox="0 0 120 36" preserveAspectRatio="none"><polyline points="0,8 20,12 40,10 60,14 80,12 100,16 120,18"/></svg>
       </div>
       <div class="kcard gold" onclick="goShipments('delay','warning')">
-        <div class="klbl">تحذير 7-15 يوم</div>
+        <div class="klbl">متأخر 2+ يوم</div>
         <div class="kval" id="k-warn">0</div>
         <div class="kcard-actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> مراقبة</div>
         <svg class="kcard-sparkline" id="sp-warn" viewBox="0 0 120 36" preserveAspectRatio="none"><polyline points="0,20 20,18 40,22 60,16 80,14 100,18 120,12"/></svg>
@@ -898,12 +898,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <div class="kval" id="k-ok">0</div>
         <div class="kcard-actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg> بحسب الجدول</div>
         <svg class="kcard-sparkline" id="sp-ok" viewBox="0 0 120 36" preserveAspectRatio="none"><polyline points="0,28 20,22 40,18 60,14 80,10 100,8 120,6"/></svg>
-      </div>
-      <div class="kcard blu" onclick="goShipments('status','in_company')">
-        <div class="klbl">في الشركة</div>
-        <div class="kval" id="k-comp">0</div>
-        <div class="kcard-actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> عرض</div>
-        <svg class="kcard-sparkline" id="sp-comp" viewBox="0 0 120 36" preserveAspectRatio="none"><polyline points="0,16 20,20 40,14 60,18 80,12 100,16 120,10"/></svg>
       </div>
       <div class="kcard orn" onclick="goShipments('status','returned')">
         <div class="klbl">مرتجعة</div>
@@ -929,9 +923,9 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="api-kgrid" id="h-api-kpis">
         <div class="api-kcard pur" onclick="goAPIShipments('','')"><div class="klbl">إجمالي API</div><div class="kval" id="h-ak-total">0</div></div>
         <div class="api-kcard red" onclick="goAPIShipments('delay','critical')"><div class="kcard-header"><div class="klbl">حرج +15 يوم</div><span class="pulse-dot"></span></div><div class="kval" id="h-ak-crit">0</div></div>
-        <div class="api-kcard gold" onclick="goAPIShipments('delay','warning')"><div class="klbl">تحذير 7-15 يوم</div><div class="kval" id="h-ak-warn">0</div></div>
+        <div class="api-kcard gold" onclick="goAPIShipments('delay','warning')"><div class="klbl">متأخر 2+ يوم</div><div class="kval" id="h-ak-warn">0</div></div>
         <div class="api-kcard grn" onclick="goAPIShipments('status','with_driver')"><div class="klbl">مع المندوب</div><div class="kval" id="h-ak-driver">0</div></div>
-        <div class="api-kcard blu" onclick="goAPIShipments('status','in_company')"><div class="klbl">في الشركة</div><div class="kval" id="h-ak-comp">0</div></div>
+        <div class="api-kcard orn" onclick="goAPIShipments('status','returned')"><div class="klbl">مرتجع</div><div class="kval" id="h-ak-ret">0</div></div>
       </div>
     </div>
 
@@ -970,7 +964,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div class="segs">
       <div class="seg on" data-seg="all">الكل <span class="seg-n" id="sn-all">0</span></div>
       <div class="seg" data-seg="driver">🚗 مع المندوب <span class="seg-n" id="sn-driver">0</span></div>
-      <div class="seg" data-seg="company">🏢 في الشركة <span class="seg-n" id="sn-comp">0</span></div>
+      <div class="seg" data-seg="returned">↩️ مرتجع <span class="seg-n" id="sn-ret">0</span></div>
       <div class="seg" data-seg="wait">⏳ انتظار تواصل <span class="seg-n" id="sn-wait">0</span></div>
       <div class="seg" data-seg="late">🔴 متأخرة <span class="seg-n" id="sn-late">0</span></div>
     </div>
@@ -982,7 +976,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <select class="fi" id="s-fd" onchange="renderShipments()" style="min-width:120px">
         <option value="">كل التأخير</option>
         <option value="critical">🔴 +15 يوم</option>
-        <option value="warning">🟡 7-15 يوم</option>
+        <option value="warning">🟡 متأخر 2+ يوم</option>
         <option value="ok">🟢 في الموعد</option>
       </select>
       <select class="fi" id="s-fst" onchange="renderShipments()" style="min-width:120px">
@@ -1280,10 +1274,10 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div class="kgrid" style="margin-bottom:16px">
       <div class="kcard pur" id="ak-card-total"><div class="klbl" id="ak-lbl-total">إجمالي الطرود</div><div class="kval" id="ak-total">0</div></div>
       <div class="kcard red" id="ak-card-crit"><div class="klbl" id="ak-lbl-crit">حرج +15 يوم</div><div class="kval" id="ak-crit">0</div></div>
-      <div class="kcard gold" id="ak-card-warn"><div class="klbl" id="ak-lbl-warn">تحذير 7-15 يوم</div><div class="kval" id="ak-warn">0</div></div>
+      <div class="kcard gold" id="ak-card-warn"><div class="klbl" id="ak-lbl-warn">متأخر 2+ يوم</div><div class="kval" id="ak-warn">0</div></div>
       <div class="kcard grn" id="ak-card-ok"><div class="klbl" id="ak-lbl-ok">في الموعد</div><div class="kval" id="ak-ok">0</div></div>
       <div class="kcard blu" id="ak-card-driver"><div class="klbl" id="ak-lbl-driver">مع المندوب</div><div class="kval" id="ak-driver">0</div></div>
-      <div class="kcard orn" id="ak-card-comp"><div class="klbl" id="ak-lbl-comp">في الشركة</div><div class="kval" id="ak-comp">0</div></div>
+      <div class="kcard orn" id="ak-card-ret"><div class="klbl" id="ak-lbl-ret">مرتجع</div><div class="kval" id="ak-ret">0</div></div>
     </div>
 
     <!-- Filters -->
@@ -1306,7 +1300,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <select class="fi" id="a-fd" onchange="renderAPIShipments()" style="min-width:120px">
           <option value="">كل التأخير</option>
           <option value="critical">🔴 +15 يوم</option>
-          <option value="warning">🟡 7-15 يوم</option>
+          <option value="warning">🟡 متأخر 2+ يوم</option>
           <option value="ok">🟢 في الموعد</option>
         </select>
         <select class="fi" id="a-fst" onchange="renderAPIShipments()" style="min-width:120px">
@@ -1400,9 +1394,9 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div class="kgrid" id="j-kgrid" style="margin-bottom:16px">
       <div class="kcard grn"><div class="klbl">إجمالي جنزور</div><div class="kval" id="jk-total">0</div></div>
       <div class="kcard red"><div class="klbl">حرج +15 يوم</div><div class="kval" id="jk-crit">0</div></div>
-      <div class="kcard gold"><div class="klbl">تحذير 7-15 يوم</div><div class="kval" id="jk-warn">0</div></div>
+      <div class="kcard gold"><div class="klbl">متأخر 2+ يوم</div><div class="kval" id="jk-warn">0</div></div>
       <div class="kcard blu"><div class="klbl">مع المندوب</div><div class="kval" id="jk-driver">0</div></div>
-      <div class="kcard pur"><div class="klbl">في الشركة</div><div class="kval" id="jk-comp">0</div></div>
+      <div class="kcard pur"><div class="klbl">مرتجع</div><div class="kval" id="jk-ret">0</div></div>
       <div class="kcard orn"><div class="klbl">متاجر نشطة</div><div class="kval" id="jk-stores">0</div></div>
     </div>
 
@@ -1413,7 +1407,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="seg" data-jseg="warning">🟡 تحذير <span class="seg-n" id="jsn-warn">0</span></div>
       <div class="seg" data-jseg="ok">🟢 في الموعد <span class="seg-n" id="jsn-ok">0</span></div>
       <div class="seg" data-jseg="driver">🚗 مع المندوب <span class="seg-n" id="jsn-driver">0</span></div>
-      <div class="seg" data-jseg="company">🏢 في الشركة <span class="seg-n" id="jsn-comp">0</span></div>
+      <div class="seg" data-jseg="returned">↩️ مرتجع <span class="seg-n" id="jsn-ret">0</span></div>
     </div>
 
     <!-- Segments: contact result filter -->
@@ -1625,7 +1619,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
             <select class="fi" style="width:100%" id="bulk-f">
               <option value="all">كل المناديب</option>
               <option value="critical">المتأخرون +15 يوم</option>
-              <option value="warning">المتأخرون 7-15 يوم</option>
+              <option value="warning">المتأخرون 2+ يوم</option>
               <option value="company">في الشركة (مدير الفرع)</option>
             </select>
           </div>
@@ -2878,7 +2872,7 @@ async function loadTransfers(){
 // ══════════════════════════════════════════
 function cls(d){
   const days=Number(d)||0;
-  return days>=CFG.critDays?'critical':days>=CFG.warnDays?'warning':'ok';
+  return days>=CFG.critDays?'critical':days>=2?'warning':'ok';
 }
 function dBadge(d){
   const c=cls(d);
@@ -3289,26 +3283,24 @@ function updateKPIs(){
   const crit=mergedSource.filter(s=>cls(s.delay_days)==='critical').length;
   const warn=mergedSource.filter(s=>cls(s.delay_days)==='warning').length;
   const ok=mergedSource.filter(s=>cls(s.delay_days)==='ok').length;
-  const comp=mergedSource.filter(s=>s.status==='in_company').length;
   const ret=mergedSource.filter(s=>s.status==='returned').length;
   document.getElementById('k-total').textContent=mergedSource.length;
   document.getElementById('k-crit').textContent=crit;
   document.getElementById('k-warn').textContent=warn;
   document.getElementById('k-ok').textContent=ok;
-  document.getElementById('k-comp').textContent=comp;
   document.getElementById('k-ret').textContent=ret;
   document.getElementById('tb-crit').textContent=crit;
   // API KPIs on home
   const akCrit=apiShipments.filter(s=>cls(s.delay_days)==='critical').length;
   const akWarn=apiShipments.filter(s=>cls(s.delay_days)==='warning').length;
   const akDrv=apiShipments.filter(s=>s.status==='with_driver').length;
-  const akComp=apiShipments.filter(s=>s.status==='in_company').length;
+  const akRet=apiShipments.filter(s=>s.status==='returned').length;
   const hak=id=>document.getElementById(id);
   if(hak('h-ak-total'))hak('h-ak-total').textContent=apiShipments.length;
   if(hak('h-ak-crit'))hak('h-ak-crit').textContent=akCrit;
   if(hak('h-ak-warn'))hak('h-ak-warn').textContent=akWarn;
   if(hak('h-ak-driver'))hak('h-ak-driver').textContent=akDrv;
-  if(hak('h-ak-comp'))hak('h-ak-comp').textContent=akComp;
+  if(hak('h-ak-ret'))hak('h-ak-ret').textContent=akRet;
   if(hak('h-ak-badge'))hak('h-ak-badge').textContent=apiShipments.length;
   const homeApiSummary=document.getElementById('home-api-summary');
   // Hide duplicated API summary when API is already used as primary KPI source.
@@ -3329,7 +3321,7 @@ function updateKPIs(){
   if(totalCrit>0){ab.style.display='flex';document.getElementById('alert-title').textContent=`${totalCrit} طرد في خطر حرج (+${CFG.critDays} يوم)!`;}
   else ab.style.display='none';
   // Update sparklines with real data
-  renderKPISparklines({total:mergedSource.length,crit,warn,ok,comp,ret});
+  renderKPISparklines({total:mergedSource.length,crit,warn,ok,ret});
 }
 
 /* Render sparklines dynamically based on real count (simulate a 7-point trend) */
@@ -3345,7 +3337,7 @@ function renderKPISparklines(vals){
     }
     return pts.join(' ');
   }
-  const map={total:{up:true},crit:{up:false},warn:{up:false},ok:{up:true},comp:{up:true},ret:{up:false}};
+  const map={total:{up:true},crit:{up:false},warn:{up:false},ok:{up:true},ret:{up:false}};
   Object.keys(map).forEach(k=>{
     const el=document.getElementById('sp-'+k);
     if(!el)return;
@@ -3494,11 +3486,12 @@ function renderShipments(){
   document.getElementById('sn-all').textContent=list.length;
   document.getElementById('sn-driver').textContent=list.filter(s=>s.status==='with_driver').length;
   document.getElementById('sn-wait').textContent=list.filter(s=>!contacted.has(String(s.id))).length;
-  document.getElementById('sn-comp').textContent=list.filter(s=>s.status==='in_company').length;
+  document.getElementById('sn-ret').textContent=list.filter(s=>s.status==='returned').length;
   document.getElementById('sn-late').textContent=list.filter(s=>cls(s.delay_days)!=='ok').length;
   if(seg==='driver') list=list.filter(s=>s.status==='with_driver');
   else if(seg==='wait') list=list.filter(s=>!contacted.has(String(s.id)));
   else if(seg==='company') list=list.filter(s=>s.status==='in_company');
+  else if(seg==='returned') list=list.filter(s=>s.status==='returned');
   else if(seg==='late') list=list.filter(s=>cls(s.delay_days)!=='ok');
   list=list.filter(s=>{
     if(fd&&cls(s.delay_days)!==fd)return false;
@@ -6645,7 +6638,7 @@ function updateAPIKPIs(){
   const warn=kpiScope.filter(s=>cls(s.delay_days)==='warning').length;
   const ok=kpiScope.filter(s=>cls(s.delay_days)==='ok').length;
   const drv=kpiScope.filter(s=>s.status==='with_driver').length;
-  const comp=kpiScope.filter(s=>s.status==='in_company').length;
+  const ret=kpiScope.filter(s=>s.status==='returned').length;
   const myCrit=assignedOnly.filter(s=>cls(s.delay_days)==='critical').length;
   const myDrv=assignedOnly.filter(s=>s.status==='with_driver').length;
   const myReturned=assignedOnly.filter(s=>s.status==='returned').length;
@@ -6656,7 +6649,7 @@ function updateAPIKPIs(){
   setTxt('ak-warn',warn);
   setTxt('ak-ok',isEmployee?myReturned:ok);
   setTxt('ak-driver',isEmployee?myDrv:drv);
-  setTxt('ak-comp',comp);
+  setTxt('ak-ret',ret);
   const tbApiEl2=document.getElementById('tb-api');
   if(tbApiEl2)tbApiEl2.textContent=kpiScope.length;
 
@@ -6667,22 +6660,22 @@ function updateAPIKPIs(){
     setTxt('ak-lbl-driver','مع المندوب');
     setTxt('ak-lbl-ok','راجع');
     setDisp('ak-card-warn','none');
-    setDisp('ak-card-comp','none');
+    setDisp('ak-card-ret','none');
   }else{
     setTxt('ak-lbl-total','إجمالي الطرود');
     setTxt('ak-lbl-crit','حرج +15 يوم');
-    setTxt('ak-lbl-warn','تحذير 7-15 يوم');
+    setTxt('ak-lbl-warn','متأخر 2+ يوم');
     setTxt('ak-lbl-ok','في الموعد');
     setTxt('ak-lbl-driver','مع المندوب');
-    setTxt('ak-lbl-comp','في الشركة');
+    setTxt('ak-lbl-ret','مرتجع');
     setDisp('ak-card-warn','');
-    setDisp('ak-card-comp','');
+    setDisp('ak-card-ret','');
   }
 
   // Segments counts (guarded; API panel might be unmounted temporarily)
   setTxt('asn-all',kpiScope.length);
   setTxt('asn-driver',drv);
-  setTxt('asn-comp',comp);
+  setTxt('asn-ret',ret);
   setTxt('asn-late',kpiScope.filter(s=>cls(s.delay_days)!=='ok').length);
 
   // Summary card
@@ -6764,6 +6757,7 @@ function renderAPIShipments(){
   // Segment filter
   if(apiSeg==='driver') list=list.filter(s=>s.status==='with_driver');
   else if(apiSeg==='company') list=list.filter(s=>s.status==='in_company');
+  else if(apiSeg==='returned') list=list.filter(s=>s.status==='returned');
   else if(apiSeg==='late') list=list.filter(s=>cls(s.delay_days)!=='ok');
   else if(apiSeg==='mine') list=list.filter(s=>assignments[s.tracking_code]===myName);
   else if(apiSeg==='unassigned') list=list.filter(s=>!assignments[s.tracking_code]);
@@ -6774,7 +6768,7 @@ function renderAPIShipments(){
   if(el('asn-all'))el('asn-all').textContent=scopeForCounts.length;
   if(el('asn-mine'))el('asn-mine').textContent=scopeForCounts.filter(s=>assignments[s.tracking_code]===myName).length;
   if(el('asn-driver'))el('asn-driver').textContent=scopeForCounts.filter(s=>s.status==='with_driver').length;
-  if(el('asn-comp'))el('asn-comp').textContent=scopeForCounts.filter(s=>s.status==='in_company').length;
+  if(el('asn-ret'))el('asn-ret').textContent=scopeForCounts.filter(s=>s.status==='returned').length;
   if(el('asn-late'))el('asn-late').textContent=scopeForCounts.filter(s=>cls(s.delay_days)!=='ok').length;
   if(el('asn-unassigned'))el('asn-unassigned').textContent=scopeForCounts.filter(s=>!assignments[s.tracking_code]).length;
 
@@ -7117,14 +7111,14 @@ function updateJanzourKPIs(list){
   const crit=janzourShipments.filter(s=>cls(s.delay_days)==='critical').length;
   const warn=janzourShipments.filter(s=>cls(s.delay_days)==='warning').length;
   const driver=janzourShipments.filter(s=>s.status==='with_driver').length;
-  const comp=janzourShipments.filter(s=>s.status==='in_company').length;
+  const ret=janzourShipments.filter(s=>s.status==='returned').length;
   const activeStores=new Set(janzourShipments.map(s=>s.client_name)).size;
   const el=id=>document.getElementById(id);
   if(el('jk-total'))el('jk-total').textContent=total;
   if(el('jk-crit'))el('jk-crit').textContent=crit;
   if(el('jk-warn'))el('jk-warn').textContent=warn;
   if(el('jk-driver'))el('jk-driver').textContent=driver;
-  if(el('jk-comp'))el('jk-comp').textContent=comp;
+  if(el('jk-ret'))el('jk-ret').textContent=ret;
   if(el('jk-stores'))el('jk-stores').textContent=activeStores;
   if(el('tb-janzour'))el('tb-janzour').textContent=total;
   if(el('j-store-count'))el('j-store-count').textContent=janzourStoreSet.size;
@@ -7134,7 +7128,7 @@ function updateJanzourKPIs(list){
   if(el('jsn-warn'))el('jsn-warn').textContent=warn;
   if(el('jsn-ok'))el('jsn-ok').textContent=janzourShipments.filter(s=>cls(s.delay_days)==='ok').length;
   if(el('jsn-driver'))el('jsn-driver').textContent=driver;
-  if(el('jsn-comp'))el('jsn-comp').textContent=comp;
+  if(el('jsn-ret'))el('jsn-ret').textContent=ret;
 }
 
 function renderJanzour(){
@@ -7179,6 +7173,7 @@ function renderJanzour(){
   else if(janzourSeg==='ok')list=list.filter(s=>cls(s.delay_days)==='ok');
   else if(janzourSeg==='driver')list=list.filter(s=>s.status==='with_driver');
   else if(janzourSeg==='company')list=list.filter(s=>s.status==='in_company');
+  else if(janzourSeg==='returned')list=list.filter(s=>s.status==='returned');
 
   if(fcap)list=list.filter(s=>String(s.captain||'').trim()===fcap);
   if(fbranch)list=list.filter(s=>String(s.current_branch||'').trim()===fbranch);
