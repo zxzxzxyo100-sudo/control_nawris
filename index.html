@@ -6569,8 +6569,8 @@ async function fetchAPIShipments(){
       const minD=Math.min(...delays);
       const allSameAsThreshold=minD===maxD&&maxD===startDelay;
       if(allSameAsThreshold){
-        if(el)el.textContent='⏳ يبدو أن الـ API يصفّي حسب عتبة تأخير ثابتة — جلب دفعات إضافية (3…25 يوم)…';
-        const extraDelays=[25,20,15,10,7,5,4,3].filter(d=>d!==startDelay);
+        if(el)el.textContent='⏳ يبدو أن الـ API يصفّي حسب عتبة تأخير ثابتة — جلب دفعات إضافية…';
+        const extraDelays=[400,350,300,250,200,150,100,75,60,50,40,35,30,25,20,15,10,7,5,4,3].filter(d=>d!==startDelay);
         for(const d of extraDelays){
           const sweepUrl=new URL(parsedBaseUrl.toString());
           sweepUrl.searchParams.set('delay_days',String(d));
@@ -6671,6 +6671,11 @@ async function fetchAPIShipments(){
       });
     }catch(_){}
     reconcileApiProcessedFromStatus(apiShipments);
+    // Clean stale returned codes from processed list so R-codes always show.
+    apiShipments.forEach(s=>{
+      if(s.status==='returned')apiProcessedCodes.delete(String(s.tracking_code||''));
+    });
+    persistApiProcessedCodes();
 
     // Always show full API data by default after each sync.
     apiSeg='all';
