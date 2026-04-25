@@ -1118,16 +1118,13 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="flt-drawer-head">
         <strong style="font-size:14px">تصفية المرتجعات</strong>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('r-q').value='';document.getElementById('r-loc').value='';document.getElementById('r-rsn').value='';document.getElementById('r-fbranch').value='';document.getElementById('r-fdriver').value='';document.getElementById('r-fdelay').value='';renderReturns();">✕ مسح</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('r-q').value='';document.getElementById('r-fbranch').value='';document.getElementById('r-fdelay').value='';renderReturns();">✕ مسح</button>
           <button class="btn btn-ghost btn-sm" onclick="closeReturnsFiltersDrawer()">✕ إغلاق</button>
         </div>
       </div>
       <div class="flt-drawer-body">
         <input class="fi fi-grow" id="r-q" type="text" placeholder="🔍 بحث بالكود، العميل، المندوب..." oninput="renderReturns()">
-        <select class="fi" id="r-loc" onchange="renderReturns()"></select>
-        <select class="fi" id="r-rsn" onchange="renderReturns()"></select>
         <select class="fi" id="r-fbranch" onchange="renderReturns()"></select>
-        <select class="fi" id="r-fdriver" onchange="renderReturns()"></select>
         <select class="fi" id="r-fdelay" onchange="renderReturns()">
           <option value="">كل أيام التأخير</option>
           <option value="0-2">0-2 أيام</option>
