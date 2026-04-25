@@ -1404,7 +1404,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
             <th class="mob-hide">#</th><th onclick="setAPISort('tracking_code')" style="cursor:pointer;user-select:none">الكود <span id="a-sort-tracking_code">↕</span></th><th class="mob-hide" onclick="setAPISort('assigned_to')" style="cursor:pointer;user-select:none">المسند إلى <span id="a-sort-assigned_to">↕</span></th><th onclick="setAPISort('client_name')" style="cursor:pointer;user-select:none">المتجر / العميل <span id="a-sort-client_name">↕</span></th><th class="mob-hide" onclick="setAPISort('receiver_name')" style="cursor:pointer;user-select:none">المستلم <span id="a-sort-receiver_name">↕</span></th><th class="mob-hide" onclick="setAPISort('customer_phone')" style="cursor:pointer;user-select:none">هاتف المستلم <span id="a-sort-customer_phone">↕</span></th>
             <th class="mob-hide" onclick="setAPISort('captain')" style="cursor:pointer;user-select:none">المندوب <span id="a-sort-captain">↕</span></th><th class="mob-hide" onclick="setAPISort('current_branch')" style="cursor:pointer;user-select:none">الفرع <span id="a-sort-current_branch">↕</span></th><th class="mob-hide" onclick="setAPISort('government')" style="cursor:pointer;user-select:none">المحافظة <span id="a-sort-government">↕</span></th><th class="mob-hide" onclick="setAPISort('area')" style="cursor:pointer;user-select:none">المنطقة <span id="a-sort-area">↕</span></th>
             <th onclick="setAPISort('status')" style="cursor:pointer;user-select:none">الحالة <span id="a-sort-status">↕</span></th><th onclick="setAPISort('delay_days')" style="cursor:pointer;user-select:none">التأخير <span id="a-sort-delay_days">↓</span></th><th class="mob-hide" onclick="setAPISort('cr_result')" style="cursor:pointer;user-select:none">نتيجة التواصل <span id="a-sort-cr_result">↕</span></th><th class="mob-hide" onclick="setAPISort('cr_note')" style="cursor:pointer;user-select:none">ملاحظة <span id="a-sort-cr_note">↕</span></th>
-            <th>واتساب</th><th class="mob-hide">حفظ</th><th class="mob-hide">نقل</th>
+            <th>واتساب</th><th class="mob-hide">حفظ</th>
           </tr></thead>
           <tbody id="a-tbody"><tr><td colspan="18" style="text-align:center;padding:36px;color:var(--mute)">🔗 اضغط "جلب الآن" أو أعد إعدادات API من تبويب "رفع البيانات"</td></tr></tbody>
         </table>
@@ -7604,7 +7604,6 @@ function renderAPIShipments(){
       <td class="mob-hide"><input type="text" value="${note}" placeholder="ملاحظة..." data-asid="${sid}" data-code="${tc}" class="anote-inp" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--white);font-family:var(--font);width:100px"></td>
       <td style="white-space:nowrap"><div style="display:flex;gap:3px">${ph?`<button class="btn btn-wa btn-sm" data-a="wa-receiver" style="font-size:10px;padding:3px 6px" title="واتساب للمستلم">📱</button>`:''}${s.captain_phone?`<button class="btn btn-ghost btn-sm" data-a="wa-captain" style="font-size:10px;padding:3px 6px;border-color:var(--wa);color:var(--wa)" title="واتساب المندوب">🚗</button>`:''}</div></td>
       <td class="mob-hide"><button class="btn btn-ghost btn-sm" data-a="save-row" style="font-size:11px;padding:4px 9px">💾</button></td>
-      <td class="mob-hide"><button class="btn btn-pur btn-sm" data-a="move-row" style="font-size:10px;padding:4px 8px" title="نقل للطرود الرئيسية">📦→</button></td>
     </tr>`;
   }).join('');
   const allEl=document.getElementById('achk-all');
@@ -7624,7 +7623,6 @@ function renderAPIShipments(){
         if(a==='wa-receiver')return apiWA(sid,'receiver');
         if(a==='wa-captain')return apiWA(sid,'captain');
         if(a==='save-row')return apiSave(sid,actionBtn);
-        if(a==='move-row')return apiMove(sid);
         if(a==='undo-assign'){
           const s=apiShipments.find(x=>String(x.id)===sid);
           if(s){
@@ -8188,7 +8186,6 @@ function openAPIDetail(sid){
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" style="flex:1;min-width:140px" onclick="closeM('sd-modal')">✅ تم التواصل</button>
-        <button class="btn btn-pur btn-sm" style="flex:1;min-width:140px" onclick="apiMove('${sid}');closeM('sd-modal')">📦 نقل للطرود الرئيسية</button>
       </div>
     </div>`;
   document.getElementById('sd-modal').classList.add('on');
