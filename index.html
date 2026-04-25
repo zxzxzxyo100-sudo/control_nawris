@@ -1209,9 +1209,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     </div>
     <div class="branch-kpis">
       <div class="branch-kpi total"><div>إجمالي الشحنات</div><strong id="t-kpi-total">0</strong></div>
-      <div class="branch-kpi pending"><div>بالطريق</div><strong id="t-kpi-way">0</strong></div>
-      <div class="branch-kpi delayed"><div>متأخر</div><strong id="t-kpi-delayed">0</strong></div>
-      <div class="branch-kpi delivered"><div>تم التسليم</div><strong id="t-kpi-delivered">0</strong></div>
+      <div class="branch-kpi delivered" id="t-show-processed-mode" style="cursor:pointer" onclick="toggleTransferProcessed()"><div>تمت المعالجة</div><strong id="t-kpi-processed">0</strong></div>
     </div>
     <div class="fbar branch-filters sticky">
       <button class="btn btn-ghost btn-sm" onclick="openTransfersFiltersDrawer()">⚙️ تصفية</button>
@@ -4346,6 +4344,22 @@ function updateTransfersSortHeaderIcons(){
     if(el)el.textContent=getTransfersSortArrow(k);
   });
 }
+function _getTransferProcessedCache(){
+  try{return JSON.parse(localStorage.getItem('tf_processed_cache')||'{}');}catch{return {};}
+}
+function toggleTransferProcessed(){
+  const el=document.getElementById('t-show-processed-mode');
+  if(!el)return;
+  const isActive=!!el.dataset.active;
+  if(isActive){
+    delete el.dataset.active;
+    el.style.outline='';
+  }else{
+    el.dataset.active='1';
+    el.style.outline='2px solid var(--pur)';
+  }
+  renderTransfers();
+}
 function setTransfersSort(key){
   if(tSortKey===key)tSortDir=tSortDir==='asc'?'desc':'asc';
   else{tSortKey=key;tSortDir='asc';}
@@ -4366,13 +4380,50 @@ function renderTransfers(){
   if(fromEl&&!fromBranchFilter)fromEl.innerHTML='<option value="">فرع المُرسل</option>'+fromSet.map(b=>`<option>${b}</option>`).join('');
   const toEl=document.getElementById('t-to-branch');
   if(toEl&&!toBranchFilter)toEl.innerHTML='<option value="">فرع المُستلم</option>'+toSet.map(b=>`<option>${b}</option>`).join('');
-  const total=transfers_data.length;
-  const way=transfers_data.filter(s=>getTransferStatusMeta(s.status).label==='بالطريق').length;
-  const delayed=transfers_data.filter(s=>getTransferStatusMeta(s.status).label==='متأخر').length;
-  const delivered=transfers_data.filter(s=>getTransferStatusMeta(s.status).label==='تم التسليم').length;
+  // ── Snapshot: track transfer codes to detect API-processed ones ──
+  const currentTransferCodes=new Set(transfers_data.map(s=>String(s.shipment_code||s.tracking_code||'').trim()).filter(Boolean));
+  // Cache current items
+  const tCache=_getTransferProcessedCache();
+  transfers_data.forEach(s=>{
+    const tc=String(s.shipment_code||s.tracking_code||'').trim();
+    if(tc)tCache[tc]={code:tc,from:s.from_branch||'',to:s.to_branch||'',customer:s.customer_name||'',delay:s.delay_days||0,status:s.status||''};
+  });
+  localStorage.setItem('tf_processed_cache',JSON.stringify(tCache));
+  // Save seen codes
+  try{
+    const prev=JSON.parse(localStorage.getItem('tf_seen_codes')||'[]');
+    const merged=[...new Set([...prev,...currentTransferCodes])];
+    localStorage.setItem('tf_seen_codes',JSON.stringify(merged));
+  }catch{}
+  // Find disappeared codes
+  let tfSeenBefore=[];
+  try{tfSeenBefore=JSON.parse(localStorage.getItem('tf_seen_codes')||'[]');}catch{}
+  const tfDisappeared=tfSeenBefore.filter(tc=>!currentTransferCodes.has(tc));
+  const showTransferProcessed=!!document.getElementById('t-show-processed-mode')?.dataset?.active;
+
   const setTxt=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=String(val);};
-  setTxt('t-kpi-total',total);setTxt('t-kpi-way',way);setTxt('t-kpi-delayed',delayed);setTxt('t-kpi-delivered',delivered);
+  setTxt('t-kpi-total',transfers_data.length);
+  setTxt('t-kpi-processed',tfDisappeared.length);
   updateTransfersSortHeaderIcons();
+
+  // If showing processed, render disappeared items as simple list
+  if(showTransferProcessed){
+    if(!tfDisappeared.length){
+      container.innerHTML='<div class="tr-empty">لا توجد تحويلات معالجة</div>';
+      return;
+    }
+    container.innerHTML=tfDisappeared.map(tc=>{
+      const c=tCache[tc]||{};
+      return `<div class="trip-row" style="padding:10px 12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span class="code-cell" style="font-family:var(--mono);font-size:12px" dir="ltr">${tc}</span>
+        <span style="font-size:11px;color:var(--mute)">${c.from||'—'} → ${c.to||'—'}</span>
+        <span style="font-size:11px">${c.customer||'—'}</span>
+        <span class="badge b-grn">تمت المعالجة</span>
+      </div>`;
+    }).join('');
+    return;
+  }
+
   const frag=document.createDocumentFragment();
   let renderedTrips=0;
   const sortedTripIds=[...transferTripOrder].sort((a,b)=>{
