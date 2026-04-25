@@ -4018,17 +4018,28 @@ function renderReturns(){
   });
   // Split into active vs processed
   const isRetProcessed=(r)=>{
-    const tc=r.shipments?.tracking_code||'';
+    const tc=r.shipments?.tracking_code||r.tracking_code||'';
     const cr=getCR('ret_'+tc);
     return cr.result==='solved'||cr.result==='contacted';
   };
   const activeList=list.filter(r=>!isRetProcessed(r));
-  const processedList=list.filter(r=>isRetProcessed(r));
+  // Processed: from current data + cached items that disappeared from API
+  const processedFromData=list.filter(r=>isRetProcessed(r));
+  const currentCodes=new Set(returns_data.map(r=>r.shipments?.tracking_code||'').filter(Boolean));
+  const cache=_getRetProcessedCache();
+  const processedFromCache=Object.values(cache)
+    .filter(c=>!currentCodes.has(c.tracking_code))
+    .filter(c=>{const cr=getCR('ret_'+c.tracking_code);return cr.result==='solved'||cr.result==='contacted';})
+    .map(c=>({shipments:{tracking_code:c.tracking_code,customer_name:c.customer_name,customer_phone:c.customer_phone},drivers:{name:c.driver_name,phone:c.driver_phone},branch:c.branch,location:c.location,delay_days:c.delay_days,reason:c.reason,_cached:true}));
+  const processedList=[...processedFromData,...processedFromCache];
   const showProcessedRet=!!document.getElementById('r-show-processed-mode')?.dataset?.active;
 
   const setTxt=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=String(val);};
   setTxt('r-kpi-total',activeList.length);
   setTxt('r-kpi-processed',processedList.length);
+
+  // Auto-cache all currently processed items from live data
+  processedFromData.forEach(r=>_saveRetProcessedItem(r));
 
   // Show active or processed based on toggle
   list=showProcessedRet?processedList:activeList;
@@ -4137,6 +4148,33 @@ function waReturnBranch(brName){
   openWAUrl(ph,msg);
 }
 
+// ── Track processed returns so they persist even after API status changes ──
+function _getRetProcessedCache(){
+  try{return JSON.parse(localStorage.getItem('ret_processed_cache')||'{}');}catch{return {};}
+}
+function _saveRetProcessedItem(r){
+  const tc=r.shipments?.tracking_code||'';
+  if(!tc)return;
+  const cache=_getRetProcessedCache();
+  cache[tc]={
+    tracking_code:tc,
+    customer_name:r.shipments?.customer_name||'',
+    customer_phone:r.shipments?.customer_phone||'',
+    driver_name:r.drivers?.name||'',
+    driver_phone:r.drivers?.phone||'',
+    branch:r.branch||r.branches?.name||'',
+    location:r.location||'',
+    delay_days:r.delay_days||0,
+    reason:r.reason||''
+  };
+  localStorage.setItem('ret_processed_cache',JSON.stringify(cache));
+}
+function _removeRetProcessedItem(tc){
+  const cache=_getRetProcessedCache();
+  delete cache[tc];
+  localStorage.setItem('ret_processed_cache',JSON.stringify(cache));
+}
+
 // Event delegation for returns contact results & notes
 document.addEventListener('change',e=>{
   if(e.target.classList.contains('rcr-sel')){
@@ -4145,6 +4183,15 @@ document.addEventListener('change',e=>{
     const noteEl=document.querySelector(`.rnote-inp[data-rsid="${sid}"]`);
     const note=noteEl?.value||'';
     saveCR(sid,val,note);
+    // Cache parcel data when marking as processed
+    const tc=e.target.dataset.code||'';
+    if(val==='solved'||val==='contacted'){
+      const r=returns_data.find(x=>(x.shipments?.tracking_code||'')===tc);
+      if(r)_saveRetProcessedItem(r);
+    }else{
+      _removeRetProcessedItem(tc);
+    }
+    renderReturns();
   }
 });
 document.addEventListener('blur',e=>{
