@@ -2729,6 +2729,7 @@ async function loadAll(){
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
     loadAssignmentsFromSupabase().then(()=>{renderAPIShipments();renderAssignStats();}).catch(()=>{});
+    _loadProcessedFromSupabase().then(()=>{try{renderReturns();renderTransfers();}catch(_){}}).catch(()=>{});
     loadReturns();loadTransfers();loadDbStats();
     buildJanzourSet(); // Sync Janzour store set from Supabase stores table
   }catch(e){setSyncState('err','خطأ');toast('خطأ في التحميل: '+e.message,'e');}
@@ -4024,6 +4025,7 @@ function renderReturns(){
     const merged=[...new Set([...prev,...currentCodes])];
     localStorage.setItem('ret_seen_codes',JSON.stringify(merged));
   }catch{}
+  _syncProcessedToSupabase();
 
   // A parcel is "processed" if:
   // 1. Employee set contact result (solved/contacted), OR
@@ -4160,7 +4162,7 @@ function waReturnBranch(brName){
   openWAUrl(ph,msg);
 }
 
-// ── Track processed returns so they persist even after API status changes ──
+// ── Track processed returns/transfers — synced to Supabase ──
 function _getRetProcessedCache(){
   try{return JSON.parse(localStorage.getItem('ret_processed_cache')||'{}');}catch{return {};}
 }
@@ -4185,6 +4187,43 @@ function _removeRetProcessedItem(tc){
   const cache=_getRetProcessedCache();
   delete cache[tc];
   localStorage.setItem('ret_processed_cache',JSON.stringify(cache));
+}
+// ── Supabase sync for seen codes & cache (debounced) ──
+let _processedSyncTimer=null;
+function _syncProcessedToSupabase(){
+  clearTimeout(_processedSyncTimer);
+  _processedSyncTimer=setTimeout(async()=>{
+    try{
+      const payload=[
+        {key:'ret_seen_codes',value:localStorage.getItem('ret_seen_codes')||'[]'},
+        {key:'ret_processed_cache',value:localStorage.getItem('ret_processed_cache')||'{}'},
+        {key:'tf_seen_codes',value:localStorage.getItem('tf_seen_codes')||'[]'},
+        {key:'tf_processed_cache',value:localStorage.getItem('tf_processed_cache')||'{}'}
+      ];
+      await sbUp('settings',payload);
+    }catch(e){console.warn('Processed sync failed:',e);}
+  },800);
+}
+async function _loadProcessedFromSupabase(){
+  try{
+    const rows=await sb('settings','GET',null,"?key=in.(ret_seen_codes,ret_processed_cache,tf_seen_codes,tf_processed_cache)&select=key,value");
+    rows.forEach(r=>{
+      const local=localStorage.getItem(r.key);
+      if(r.key.includes('seen_codes')){
+        // Merge arrays
+        const remote=JSON.parse(r.value||'[]');
+        const localArr=JSON.parse(local||'[]');
+        const merged=[...new Set([...localArr,...remote])];
+        localStorage.setItem(r.key,JSON.stringify(merged));
+      }else{
+        // Merge objects: remote wins for missing keys
+        const remote=JSON.parse(r.value||'{}');
+        const localObj=JSON.parse(local||'{}');
+        const merged={...remote,...localObj};
+        localStorage.setItem(r.key,JSON.stringify(merged));
+      }
+    });
+  }catch(e){console.warn('Failed to load processed from Supabase:',e);}
 }
 
 // Event delegation for returns contact results & notes
@@ -4395,6 +4434,7 @@ function renderTransfers(){
     const merged=[...new Set([...prev,...currentTransferCodes])];
     localStorage.setItem('tf_seen_codes',JSON.stringify(merged));
   }catch{}
+  _syncProcessedToSupabase();
   // Find disappeared codes
   let tfSeenBefore=[];
   try{tfSeenBefore=JSON.parse(localStorage.getItem('tf_seen_codes')||'[]');}catch{}
