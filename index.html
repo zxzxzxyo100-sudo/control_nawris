@@ -1124,26 +1124,10 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       </div>
       <div class="flt-drawer-body">
         <input class="fi fi-grow" id="r-q" type="text" placeholder="🔍 بحث بالكود، العميل، المندوب..." oninput="renderReturns()">
-        <select class="fi" id="r-loc" onchange="renderReturns()">
-          <option value="">كل المواقع</option>
-          <option value="with_driver">مع المندوب</option>
-          <option value="in_warehouse">في المخزن</option>
-          <option value="returned_to_store">تم التسليم للمتجر</option>
-        </select>
-        <select class="fi" id="r-rsn" onchange="renderReturns()">
-          <option value="">كل الحالات</option>
-          <option value="customer_refused">رفض العميل</option>
-          <option value="wrong_address">عنوان خاطئ</option>
-          <option value="no_answer">لا يرد</option>
-          <option value="damaged">تالف</option>
-          <option value="other">أخرى</option>
-        </select>
-        <select class="fi" id="r-fbranch" onchange="renderReturns()">
-          <option value="">كل الفروع</option>
-        </select>
-        <select class="fi" id="r-fdriver" onchange="renderReturns()">
-          <option value="">كل المناديب</option>
-        </select>
+        <select class="fi" id="r-loc" onchange="renderReturns()"></select>
+        <select class="fi" id="r-rsn" onchange="renderReturns()"></select>
+        <select class="fi" id="r-fbranch" onchange="renderReturns()"></select>
+        <select class="fi" id="r-fdriver" onchange="renderReturns()"></select>
         <select class="fi" id="r-fdelay" onchange="renderReturns()">
           <option value="">كل أيام التأخير</option>
           <option value="0-2">0-2 أيام</option>
@@ -3884,7 +3868,17 @@ function renderReturns(){
   customRS.forEach(s=>{const key=s.label.replace(/\s+/g,'_').toLowerCase();locMap[key]=s.label;});
   const rsnMap={customer_refused:'رفض العميل',wrong_address:'عنوان خاطئ',no_answer:'لا يرد',damaged:'تالف',other:'أخرى'};
 
-  // Build dynamic dropdown options for branch and driver
+  // Build all dropdown options dynamically from data
+  const locEl=document.getElementById('r-loc');
+  if(locEl&&!loc){
+    const locOpts=Object.entries(locMap).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+    locEl.innerHTML='<option value="">كل المواقع</option>'+locOpts;
+  }
+  const rsnEl=document.getElementById('r-rsn');
+  if(rsnEl&&!rsn){
+    const rsnOpts=Object.entries(rsnMap).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+    rsnEl.innerHTML='<option value="">كل الحالات</option>'+rsnOpts;
+  }
   const branchesSet=new Set(returns_data.map(r=>String(r.branch||r.branches?.name||'').trim()).filter(Boolean));
   const driversSet=new Set(returns_data.map(r=>String(r.drivers?.name||'').trim()).filter(Boolean));
   const brEl=document.getElementById('r-fbranch');
