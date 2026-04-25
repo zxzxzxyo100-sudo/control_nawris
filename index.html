@@ -15,8 +15,8 @@
   --fs-xs:13px;
   --fs-2xs:12px;
   --crm-sidebar-w:280px;
-  --bg:#f4f7fb;--bg2:#ffffff;--bg3:#ffffff;--bg4:#f8fafc;--bg5:#eef2f7;
-  --rim:#dbe4ee;--rim2:#c8d7e6;--dim:#64748b;--mute:#607086;--pale:#1f2a37;--white:#0f172a;
+  --bg:#000000;--bg2:#0a0a0a;--bg3:#111111;--bg4:#1a1a1a;--bg5:#222222;
+  --rim:#2a2a2a;--rim2:#333333;--dim:#6b7280;--mute:#9ca3af;--pale:#d1d5db;--white:#f3f4f6;
   --gold:#d97706;--gd:rgba(217,119,6,.12);--gb:rgba(217,119,6,.26);
   --red:#dc2626;--rd:rgba(220,38,38,.1);--rb:rgba(220,38,38,.2);
   --grn:#16a34a;--grd:rgba(22,163,74,.1);--grb:rgba(22,163,74,.2);
@@ -100,7 +100,7 @@ html.light .theme-pill-thumb{background:#fff;right:auto;left:1px}
 
 *{margin:0;padding:0;box-sizing:border-box}
 html{height:100%;overflow-x:hidden;font-size:var(--fs-base)}
-body{font-family:var(--ar-font);background:var(--bg);color:var(--white);min-height:100vh;height:100%;font-size:1rem;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased;background-image:radial-gradient(ellipse 80% 50% at 100% -20%, rgba(14,165,233,.08), transparent),radial-gradient(ellipse 60% 40% at 0% 100%, rgba(12,74,110,.06), transparent)}
+body{font-family:var(--ar-font);background:var(--bg);color:var(--white);min-height:100vh;height:100%;font-size:1rem;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 /* Use Inter for numbers and latin text */
 .kval,.kval *,.kval span,
 .mono-num,
@@ -131,7 +131,7 @@ table td:first-child{font-family:var(--mono);font-feature-settings:"tnum"}
 @keyframes ldFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── LOGIN ── */
-#login-screen{position:fixed;inset:0;z-index:8000;background:var(--bg);display:none;align-items:center;justify-content:center;background-image:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(155,109,255,.1),transparent)}
+#login-screen{position:fixed;inset:0;z-index:8000;background:var(--bg);display:none;align-items:center;justify-content:center}
 .lbox{background:var(--bg3);border:1px solid var(--rim2);border-radius:20px;padding:48px 40px;width:420px;max-width:95vw;text-align:center;box-shadow:0 0 80px rgba(155,109,255,.1)}
 .llogo{font-size:52px;margin-bottom:12px}
 .lbrand{font-size:20px;font-weight:900;color:var(--pur);margin-bottom:6px;line-height:1.4}
