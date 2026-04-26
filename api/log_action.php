@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/db.php';
+require_once __DIR__ . '/staff_performance_lib.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(['success' => false, 'message' => 'Method not allowed'], 405);
@@ -23,7 +24,11 @@ if (!is_array($payload)) {
 }
 
 $packageRaw = (string)($payload['package_id'] ?? '');
+$trackingFull = trim((string)($payload['tracking_code'] ?? $packageRaw));
 $packageId = preg_replace('/[^0-9]/', '', $packageRaw);
+if ($packageId === '' && $trackingFull !== '') {
+    $packageId = (string) sprintf('%u', crc32(staff_perf_normalize_code($trackingFull)));
+}
 $actionType = trim((string)($payload['action_type'] ?? ''));
 $status = trim((string)($payload['status'] ?? ''));
 
@@ -33,22 +38,56 @@ if ($packageId === '' || $actionType === '') {
 
 try {
     $pdo = crm_pdo();
-    $stmt = $pdo->prepare(
+    $ins = $pdo->prepare(
         'INSERT INTO package_logs (package_id, employee_id, employee_name, action_type, status)
          VALUES (:package_id, :employee_id, :employee_name, :action_type, :status)'
     );
-    $stmt->execute([
+    $params = [
         ':package_id' => $packageId,
-        ':employee_id' => (int)$employeeId,
-        ':employee_name' => (string)$employeeName,
+        ':employee_id' => (int) $employeeId,
+        ':employee_name' => (string) $employeeName,
         ':action_type' => $actionType,
         ':status' => $status !== '' ? $status : null,
-    ]);
+    ];
+    $hasTcCol = false;
+    try {
+        $chk = $pdo->query(
+            "SELECT COUNT(*) AS c FROM information_schema.columns
+             WHERE table_schema = DATABASE() AND table_name = 'package_logs' AND column_name = 'tracking_code'"
+        );
+        $row = $chk ? $chk->fetch() : null;
+        $hasTcCol = $row && (int) $row['c'] > 0;
+    } catch (Throwable) {
+        $hasTcCol = false;
+    }
+    if ($hasTcCol) {
+        $ins = $pdo->prepare(
+            'INSERT INTO package_logs (package_id, tracking_code, employee_id, employee_name, action_type, status)
+             VALUES (:package_id, :tracking_code, :employee_id, :employee_name, :action_type, :status)'
+        );
+        $params[':tracking_code'] = $trackingFull !== '' ? $trackingFull : null;
+    }
+    $ins->execute($params);
+
+    // Server-side monthly counters (all devices) — no decrement.
+    if ($actionType === 'follow_up_update' && in_array($status, ['contacted', 'solved'], true) && $trackingFull !== '') {
+        try {
+            if ($status === 'contacted') {
+                staff_perf_record_event($pdo, (string) $employeeName, 'contacted', $trackingFull, null);
+            } elseif ($status === 'solved') {
+                staff_perf_record_event($pdo, (string) $employeeName, 'resolved', $trackingFull, null);
+            }
+        } catch (Throwable $e) {
+            if (getenv('STAFF_PERF_DEBUG') === '1') {
+                error_log('staff_perf_record_event: ' . $e->getMessage());
+            }
+        }
+    }
 
     json_response([
         'success' => true,
         'message' => 'Action logged',
-        'id' => (int)$pdo->lastInsertId(),
+        'id' => (int) $pdo->lastInsertId(),
     ], 200);
 } catch (Throwable $e) {
     json_response([
