@@ -1536,6 +1536,17 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <option value="delivered">✅ تم التسليم</option>
         <option value="returned">↩️ مرتجع</option>
       </select>
+      <select class="fi" id="j-fd" onchange="renderJanzour()" style="min-width:120px" title="تطابق تبويب الطرود">
+        <option value="">كل التأخير</option>
+        <option value="critical">🔴 +15 يوم</option>
+        <option value="warning">🟡 متأخر 2+ يوم</option>
+        <option value="ok">🟢 في الموعد</option>
+      </select>
+      <select class="fi manager-only" id="j-femp" onchange="renderJanzour()" style="min-width:140px" title="تطابق تبويب الطرود"><option value="">كل الموظفين</option></select>
+      <label class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="j-show-processed" onchange="renderJanzour()">
+        إظهار المعالَجة فقط
+      </label>
       <button class="btn btn-ghost btn-sm" onclick="resetJanzourFilters()">✕ مسح</button>
     </div>
     <div style="font-size:11px;color:var(--mute);margin-bottom:8px;margin-top:4px">
@@ -2521,6 +2532,7 @@ async function init(){
         const fresh=JSON.parse(rows[0].value);
         Object.keys(fresh).forEach(k=>USERS[k]=fresh[k]);
         localStorage.setItem('nawris_users',JSON.stringify(USERS));
+        try{sanitizeAPIAssignmentsToStore();}catch(_){}
       }
     }catch(e){console.warn('pre-login user sync failed',e);}
     const ld=document.getElementById('loading');
@@ -2772,9 +2784,9 @@ async function loadAll(){
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
     loadAssignmentsFromSupabase().then(()=>{
-      stripManagerAssignmentsFromStore();
       renderAPIShipments();
       renderAssignStats();
+      try{renderJanzour();}catch(_){}
     }).catch(()=>{});
     _loadProcessedFromSupabase().then(()=>{try{renderReturns();renderTransfers();}catch(_){}}).catch(()=>{});
     loadReturns();loadTransfers();loadDbStats();
@@ -6805,6 +6817,21 @@ function rebuildJanzourShipments(){
     return false;
   });
 }
+/** نفس منطق تطابق متاجر جنزور — للفلترة عند «إظهار المعالجة فقط» والطرود المختفية من API */
+function isJanzourStoreClientName(clientName){
+  const name=(clientName||'').trim().toLowerCase();
+  if(!name)return false;
+  if(janzourStoreSet.has(name))return true;
+  for(const sn of janzourStoreSet){if(name.includes(sn)||sn.includes(name))return true;}
+  return false;
+}
+/** طرود جنزور الظاهرة للموظف (مرتبطة بمنطق تبويب الطرود) */
+function getJanzourScopeList(){
+  const assignments=getAPIAssignments();
+  const myName=CU?.name||'';
+  if(CU?.role!=='employee')return janzourShipments.slice();
+  return janzourShipments.filter(s=>String(assignments[s.tracking_code]||'')===String(myName));
+}
 
 function resetAPIFilters(){
   ['a-q','a-fd','a-fst','a-fdays','a-fcap','a-fbr','a-fgov'].forEach(id=>{
@@ -7948,7 +7975,8 @@ document.addEventListener('click',e=>{
   if(jcrseg)setJCrSeg(jcrseg.dataset.jcrseg);
 });
 function resetJanzourFilters(){
-  ['j-q','j-fcap','j-fbranch','j-fgov','j-fstatus'].forEach(id=>{const el=document.getElementById(id);if(el){if(el.tagName==='INPUT')el.value='';else el.selectedIndex=0;}});
+  ['j-q','j-fcap','j-fbranch','j-fgov','j-fstatus','j-fd','j-femp'].forEach(id=>{const el=document.getElementById(id);if(el){if(el.tagName==='INPUT'&&el.type==='checkbox')el.checked=false;else if(el.tagName==='INPUT')el.value='';else el.selectedIndex=0;}});
+  const jsp=document.getElementById('j-show-processed');if(jsp)jsp.checked=false;
   janzourCrSeg='all';
   document.querySelectorAll('[data-jcrseg]').forEach(el=>el.classList.toggle('on',el.dataset.jcrseg==='all'));
   setJSeg('all');
@@ -8089,13 +8117,14 @@ function bulkUnassignFilteredJanzourBranch(){
   toast(`✕ تم إلغاء تعيين ${count} طرد من ${branch||'كل الفروع'}`,'s');
 }
 
-function updateJanzourKPIs(list){
-  const total=janzourShipments.length;
-  const crit=janzourShipments.filter(s=>cls(s.delay_days)==='critical').length;
-  const warn=janzourShipments.filter(s=>cls(s.delay_days)==='warning').length;
-  const driver=janzourShipments.filter(s=>s.status==='with_driver').length;
-  const ret=janzourShipments.filter(s=>s.status==='returned').length;
-  const activeStores=new Set(janzourShipments.map(s=>s.client_name)).size;
+function updateJanzourKPIs(){
+  const scope=getJanzourScopeList();
+  const total=scope.length;
+  const crit=scope.filter(s=>cls(s.delay_days)==='critical').length;
+  const warn=scope.filter(s=>cls(s.delay_days)==='warning').length;
+  const driver=scope.filter(s=>s.status==='with_driver').length;
+  const ret=scope.filter(s=>s.status==='returned').length;
+  const activeStores=new Set(scope.map(s=>s.client_name)).size;
   const el=id=>document.getElementById(id);
   if(el('jk-total'))el('jk-total').textContent=total;
   if(el('jk-crit'))el('jk-crit').textContent=crit;
@@ -8105,11 +8134,10 @@ function updateJanzourKPIs(list){
   if(el('jk-stores'))el('jk-stores').textContent=activeStores;
   if(el('tb-janzour'))el('tb-janzour').textContent=total;
   if(el('j-store-count'))el('j-store-count').textContent=janzourStoreSet.size;
-  // Segment counts
   if(el('jsn-all'))el('jsn-all').textContent=total;
   if(el('jsn-crit'))el('jsn-crit').textContent=crit;
   if(el('jsn-warn'))el('jsn-warn').textContent=warn;
-  if(el('jsn-ok'))el('jsn-ok').textContent=janzourShipments.filter(s=>cls(s.delay_days)==='ok').length;
+  if(el('jsn-ok'))el('jsn-ok').textContent=scope.filter(s=>cls(s.delay_days)==='ok').length;
   if(el('jsn-driver'))el('jsn-driver').textContent=driver;
   if(el('jsn-ret'))el('jsn-ret').textContent=ret;
 }
@@ -8120,8 +8148,12 @@ function renderJanzour(){
   rebuildJanzourShipments();
   updateJanzourKPIs();
   const assignments=getAPIAssignments();
+  const myName=CU?.name||'';
+  const isEmployee=CU?.role==='employee';
 
-  const q=(document.getElementById('j-q')?.value||'').toLowerCase().trim();
+  const q=normalizeIdentityText(document.getElementById('j-q')?.value||'');
+  const showProcessed=!!document.getElementById('j-show-processed')?.checked;
+  const hasExplicitQuery=Boolean(q&&String(q).trim());
 
   // Escape option value/label so names with ", <, & cannot break the DOM or leave a stale filter that zeroes the table
   function jEscOpt(v){
@@ -8138,18 +8170,66 @@ function renderJanzour(){
   rebuildSelect('j-fcap','👤 كل المناديب',new Set(janzourShipments.map(s=>s.captain).filter(Boolean)));
   rebuildSelect('j-fbranch','🏢 كل الفروع',new Set(janzourShipments.map(s=>s.current_branch).filter(Boolean)));
   rebuildSelect('j-fgov','🗺️ كل المحافظات',new Set(janzourShipments.map(s=>s.government).filter(Boolean)));
-
+  const empJEl=document.getElementById('j-femp');
+  const fempJPre=(empJEl?.value||'').trim();
+  if(empJEl&&!fempJPre){
+    const emps=Object.entries(USERS).filter(([,u])=>u.status!=='inactive').map(([,u])=>u.name);
+    empJEl.innerHTML='<option value="">كل الموظفين</option>'+emps.map(e=>`<option>${e}</option>`).join('');
+  }
+  const jfd=(document.getElementById('j-fd')?.value||'').trim();
   const fcap=(document.getElementById('j-fcap')?.value||'').trim();
   const fbranch=(document.getElementById('j-fbranch')?.value||'').trim();
   const fgov=(document.getElementById('j-fgov')?.value||'').trim();
   const fstatus=(document.getElementById('j-fstatus')?.value||'').trim();
+  const fempJ=(document.getElementById('j-femp')?.value||'').trim();
+  const manualStatusFilter=Boolean(fstatus);
 
   function jCrResult(sid){
     try{return getCR(sid).result||'';}catch(e){return'';}
   }
 
-  // ── INDEPENDENT FILTER — does NOT affect apiShipments ──
+  // ── INDEPENDENT FILTER — does NOT affect apiShipments; يطابق منطق تبويب «طرود API» + نطاق متاجر جنزور ──
   let list=[...janzourShipments];
+  if(isEmployee&&!hasExplicitQuery){
+    list=list.filter(s=>String(assignments[s.tracking_code]||'')===String(myName));
+  }
+  const processedStatuses=new Set(['delivered','processed']);
+  if(!manualStatusFilter&&!hasExplicitQuery){
+    if(showProcessed){
+      const fromCurrent=list.filter(s=>processedStatuses.has(s.status));
+      const currentApiCodes=new Set(apiShipments.map(s=>s.tracking_code).filter(Boolean));
+      let apiSeenBefore=[];
+      try{apiSeenBefore=JSON.parse(localStorage.getItem('api_seen_codes')||'[]');}catch{}
+      const apiCache=_getApiProcessedSnapshotCache();
+      const disappearedShipments=apiSeenBefore
+        .filter(tc=>!currentApiCodes.has(tc))
+        .map(tc=>{
+          const c=apiCache[tc]||{};
+          return {id:'api_'+tc,tracking_code:tc,client_name:c.client||'',receiver_name:c.receiver||'',customer_phone:c.phone||'',captain:c.captain||'',current_branch:c.branch||'',government:c.gov||'',area:c.area||'',delay_days:c.delay||0,status:'processed',source:'api',_cached:true};
+        })
+        .filter(s=>isJanzourStoreClientName(s.client_name));
+      const allShownCodes=new Set([...fromCurrent.map(s=>s.tracking_code),...disappearedShipments.map(s=>s.tracking_code)]);
+      const fromContactDB=(contact_results_db||[])
+        .filter(cr=>{
+          const tc=String(cr.tracking_code||'').trim();
+          if(!tc||currentApiCodes.has(tc)||allShownCodes.has(tc))return false;
+          return cr.result==='solved'||cr.result==='contacted';
+        })
+        .map(cr=>{
+          const tc=String(cr.tracking_code||'').trim();
+          const c=apiCache[tc]||{};
+          return {id:'api_'+tc,tracking_code:tc,client_name:c.client||'',receiver_name:c.receiver||'',customer_phone:c.phone||'',captain:c.captain||'',current_branch:c.branch||'',government:c.gov||'',area:c.area||'',delay_days:c.delay||0,status:'processed',source:'api',_cached:true};
+        })
+        .filter(s=>isJanzourStoreClientName(s.client_name));
+      list=[...fromCurrent,...disappearedShipments,...fromContactDB];
+    }else{
+      list=list.filter(s=>{
+        if(s.status==='returned')return true;
+        if(processedStatuses.has(s.status))return false;
+        return true;
+      });
+    }
+  }
 
   if(janzourSeg==='critical')list=list.filter(s=>cls(s.delay_days)==='critical');
   else if(janzourSeg==='warning')list=list.filter(s=>cls(s.delay_days)==='warning');
@@ -8162,7 +8242,25 @@ function renderJanzour(){
   if(fbranch)list=list.filter(s=>String(s.current_branch||'').trim()===fbranch);
   if(fgov)list=list.filter(s=>String(s.government||'').trim()===fgov);
   if(fstatus)list=list.filter(s=>s.status===fstatus);
-  if(q)list=list.filter(s=>`${s.client_name} ${s.tracking_code} ${s.captain} ${s.current_branch} ${s.government}`.toLowerCase().includes(q));
+  if(jfd)list=list.filter(s=>cls(s.delay_days)===jfd);
+  if(fempJ)list=list.filter(s=>assignments[s.tracking_code]===fempJ);
+  if(q){
+    list=list.filter(s=>{
+      const haystack=normalizeIdentityText(`${s.tracking_code} ${s.client_name} ${s.receiver_name||''} ${s.captain||''} ${s.customer_phone||''} ${s.current_branch||''} ${s.government||''} ${s.area||''}`);
+      const codeNorm=normalizeIdentityText(s.tracking_code||'');
+      const qCompact=q.replace(/[^a-z0-9]/g,'');
+      const codeCompact=codeNorm.replace(/[^a-z0-9]/g,'');
+      const haystackCompact=haystack.replace(/[^a-z0-9]/g,'');
+      const codeMatched=Boolean(
+        codeNorm&&(
+          codeNorm.includes(q)
+          || (qCompact&&codeCompact.includes(qCompact))
+        )
+      );
+      if(!codeMatched&&!haystack.includes(q)&&!(qCompact&&haystackCompact.includes(qCompact)))return false;
+      return true;
+    });
+  }
 
   // ── CR filter ──
   if(janzourCrSeg==='none')list=list.filter(s=>!jCrResult(s.id));
@@ -8290,7 +8388,7 @@ function renderJanzour(){
           if(a==='save-j')return saveJanzourCR(sid,parseInt(actionBtn.dataset.jidx||'0',10));
           if(a==='undo-jassign'){
             const code=actionBtn.dataset.code||'';
-            const amap=getAPIAssignments();delete amap[code];saveAPIAssignments(amap);
+            const rawA=_getAssignmentsRaw();if(rawA[code]){delete rawA[code];saveAPIAssignments(rawA);}
             flashJanzourRow(sid);renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();updateJAssignLiveCounter();
             toast('تم إلغاء التعيين','s');
             return;
@@ -8961,6 +9059,7 @@ function saveUser(){
     : [...new Set([...document.querySelectorAll('.um-rbranch:checked')].map(cb=>String(cb.value||'').trim()).filter(Boolean))];
   USERS[username]={pass,role,name,phone,email,status,perms,received_branches};
   saveUsers(USERS);
+  try{sanitizeAPIAssignmentsToStore();}catch(_){}
 
   // If editing self, update session
   if(CU&&(CU.username===username||CU.username===editKey)){
@@ -9480,10 +9579,13 @@ function _getAssignmentsRaw(){
   }catch{return {};}
 }
 // Public: returns flat { CODE: "name" } — used everywhere for filtering/rendering
+// يتجاهل إسنادات لحساب معطّل/محذوف/مدير حتى لا تظهر للموظفين على أي جهاز قبل التنظيف
 function getAPIAssignments(){
   const raw=_getAssignmentsRaw();
   const flat={};
-  for(const [k,v] of Object.entries(raw))flat[k]=v.emp;
+  for(const [k,v] of Object.entries(raw)){
+    if(v&&v.emp&&isAssignableEmployeeName(v.emp))flat[k]=v.emp;
+  }
   return flat;
 }
 
@@ -9536,9 +9638,9 @@ async function loadAssignmentsFromSupabase(){
         else if(r) merged[k]=r;
       }
       localStorage.setItem('api_assignments',JSON.stringify(merged));
-      return merged;
     }
   }catch(e){console.warn('Failed to load assignments from Supabase:',e);}
+  try{sanitizeAPIAssignmentsToStore();}catch(e){console.warn('sanitizeAPIAssignments',e);}
   return getAPIAssignments();
 }
 
@@ -9576,17 +9678,22 @@ function isAssignableEmployeeName(name){
 function isManagerName(name){
   return userByDisplayName(name)?.role==='manager';
 }
-/** إزالة أي إسناد قديم لحساب مدير (لا يُسمح بإسناد الطرود للمدير) */
-function stripManagerAssignmentsFromStore(){
+/**
+ * إزالة من المخزن والمزامنة مع Supabase أي إسناد لحساب: مدير، موظف معطّل، أو اسم غير مُعرّف (مُحذوف من المستخدمين).
+ * يضمن سلوكاً موحّداً على كل الأجهزة بعد التنظيف.
+ */
+function sanitizeAPIAssignmentsToStore(){
   const a=_getAssignmentsRaw();
   let removed=0;
   for(const [code,entry] of Object.entries(a)){
-    if(entry&&entry.emp&&isManagerName(entry.emp)){
+    if(!entry||!entry.emp)continue;
+    if(!isAssignableEmployeeName(entry.emp)){
       delete a[code];
       removed++;
     }
   }
   if(removed)saveAPIAssignments(a);
+  return removed;
 }
 
 // ── AUTO ASSIGN ──
