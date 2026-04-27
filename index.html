@@ -803,8 +803,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <div class="sb-subitem" data-branch-menu="transfers">التحويلات</div>
       </div>
       <div class="sb-item" data-tab="api-shipments"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span> طرود API <span class="tbadge" id="tb-api" style="background:var(--pur)">0</span></div>
-      <div class="sb-item" data-tab="janzour"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> متابعة جنزور <span class="tbadge" id="tb-janzour" style="background:var(--grn)">0</span></div>
-      <div class="sb-item" data-tab="janzour-rates"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></span> نسب ومعدلات جنزور</div>
       <div class="sb-item" data-tab="service-kpi"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></span> أداء الخدمة</div>
       <div class="sb-item" data-tab="whatsapp"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> واتساب</div>
       <div class="sb-divider"></div>
@@ -1486,239 +1484,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
   </div>
 
   <!-- ══ WHATSAPP ══ -->
-  <!-- ══ JANZOUR STORES MONITORING ══ -->
-  <div class="page" id="tab-janzour">
-    <div class="page-hdr">
-      <div>
-        <div class="page-title"><span class="page-title-accent"></span>متابعة متاجر جنزور</div>
-        <div style="font-size:11px;color:var(--mute);margin-top:4px">🏬 نفس بيانات <strong>طرود API</strong> — معروض هنا طُرود <strong>متاجر جنزور</strong> فقط</div>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end;max-width:100%">
-        <span class="badge b-grn" id="j-cnt">0 طرد</span>
-        <button class="btn btn-pur btn-sm" onclick="fetchAPIShipments()">⬇️ جلب الآن</button>
-        <button class="btn btn-ghost btn-sm" onclick="renderJanzour();updateJanzourKPIs()" title="إعادة رسم الجدول والمؤشرات">↻ تحديث</button>
-        <button class="btn btn-wa btn-sm" onclick="bulkWA_Janzour()">💬 واتساب</button>
-        <button class="btn btn-gold btn-sm manager-only" type="button" onclick="janzourAssignPanelScroll()" title="انتقال لقسم التوزيع">👥 توزيع</button>
-        <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 نسخة</button>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('shipments');setTimeout(function(){if(typeof switchUnifiedShipmentsSource==='function')switchUnifiedShipmentsSource('api')},100)">← الطرود</button>
-      </div>
-    </div>
-
-    <div class="card manager-only" id="j-assign-full-panel" style="display:block;border-right:3px solid var(--gold);margin-bottom:14px">
-      <div class="ctitle" style="margin-bottom:8px">👥 توزيع طُرود جنزور على الموظفين</div>
-      <p style="font-size:11px;color:var(--mute);margin:0 0 10px">الإسناد موحّد مع «طرود API» (نفس التعيينات). الإحصائيات هنا = طُرود <strong>متاجر جنزور</strong> فقط.</p>
-      <div id="j-assign-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px"></div>
-      <div style="border-top:1px solid var(--rim);padding-top:12px;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--pale);margin-bottom:8px">⚡ التوزيع التلقائي (غير المسندة في جنزور فقط)</div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <button class="btn btn-pur btn-sm" onclick="autoAssignJanzour('equal')">⚖️ توزيع متساوي</button>
-          <button class="btn btn-blu btn-sm" onclick="autoAssignJanzour('branch')">🏢 حسب الفرع</button>
-          <button class="btn btn-orn btn-sm" onclick="autoAssignJanzour('workload')">📊 حسب الحمل</button>
-          <button class="btn btn-red btn-sm" onclick="clearJanzourScopeAssignments()">🗑️ مسح تعيينات جنزور</button>
-        </div>
-        <div style="margin-top:8px">
-          <label style="font-size:11px;color:var(--mute)">توزيع على:</label>
-          <div id="j-assign-emp-checks" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px"></div>
-        </div>
-      </div>
-      <div style="border-top:1px solid var(--rim);padding-top:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--pale);margin-bottom:8px">✋ التعيين اليدوي (للمحددين في جدول جنزور)</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select class="fi" id="j-manual-assign-emp" style="min-width:160px" onchange="updateJanzourManualLive()">
-            <option value="">اختر موظف...</option>
-          </select>
-          <span id="j-manual-assign-live" style="font-size:11px;color:var(--mute)">—</span>
-          <button class="btn btn-gold btn-sm" onclick="assignSelectedJanzour()">✅ تعيين المحددين</button>
-          <button class="btn btn-ghost btn-sm" onclick="unassignSelectedJanzour()">✕ إلغاء تعيين المحددين</button>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
-          <select class="fi" id="j-janzour-branch-filter" style="min-width:180px">
-            <option value="">كل الفروع (حسب فلتر الجدول)</option>
-          </select>
-          <select class="fi" id="j-janzour-branch-emp" style="min-width:160px">
-            <option value="">اختر موظف...</option>
-          </select>
-          <button class="btn btn-pur btn-sm" onclick="bulkAssignFilteredJanzourBranch()">🏢 تعيين كل طُرود الفرع (في جنزور)</button>
-          <button class="btn btn-ghost btn-sm" onclick="bulkUnassignFilteredJanzourBranch()">✕ إلغاء تعيين طُرود الفرع</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI row -->
-    <div class="kgrid" id="j-kgrid" style="margin-bottom:16px">
-      <div class="kcard grn"><div class="klbl">إجمالي جنزور</div><div class="kval" id="jk-total">0</div></div>
-      <div class="kcard red"><div class="klbl">حرج +15 يوم</div><div class="kval" id="jk-crit">0</div></div>
-      <div class="kcard gold"><div class="klbl">متأخر 2+ يوم</div><div class="kval" id="jk-warn">0</div></div>
-      <div class="kcard blu"><div class="klbl">مع المندوب</div><div class="kval" id="jk-driver">0</div></div>
-      <div class="kcard pur"><div class="klbl">مرتجع</div><div class="kval" id="jk-ret">0</div></div>
-      <div class="kcard orn"><div class="klbl">متاجر نشطة</div><div class="kval" id="jk-stores">0</div></div>
-    </div>
-
-    <!-- Segments: delay status -->
-    <div class="segs" id="j-segs" style="margin-bottom:6px">
-      <div class="seg on" data-jseg="all">الكل <span class="seg-n" id="jsn-all">0</span></div>
-      <div class="seg" data-jseg="critical">🔴 حرج <span class="seg-n" id="jsn-crit">0</span></div>
-      <div class="seg" data-jseg="warning">🟡 تحذير <span class="seg-n" id="jsn-warn">0</span></div>
-      <div class="seg" data-jseg="ok">🟢 في الموعد <span class="seg-n" id="jsn-ok">0</span></div>
-      <div class="seg" data-jseg="driver">🚗 مع المندوب <span class="seg-n" id="jsn-driver">0</span></div>
-      <div class="seg" data-jseg="returned">↩️ مرتجع <span class="seg-n" id="jsn-ret">0</span></div>
-    </div>
-
-    <!-- Segments: contact result filter -->
-    <div class="segs" id="j-cr-segs" style="margin-bottom:10px">
-      <div class="seg on" data-jcrseg="all">📋 كل المتابعات</div>
-      <div class="seg" data-jcrseg="none">⬜ لم تتم المتابعة</div>
-      <div class="seg" data-jcrseg="solved">✅ تم الحل</div>
-      <div class="seg" data-jcrseg="contacted">📞 تم التواصل</div>
-      <div class="seg" data-jcrseg="no_answer">📵 لا يرد</div>
-      <div class="seg" data-jcrseg="pending">⏳ جاري المتابعة</div>
-    </div>
-
-    <!-- Filters — isolated from API tab -->
-    <div class="fbar" style="margin-top:4px">
-      <input class="fi fi-grow" id="j-q" type="text" placeholder="🔍 بحث بالمتجر، الكود..." oninput="renderJanzour()" style="min-width:160px">
-      <select class="fi" id="j-fcap" onchange="renderJanzour()" style="min-width:130px"><option value="">👤 كل المناديب</option></select>
-      <select class="fi" id="j-fbranch" onchange="renderJanzour()" style="min-width:120px"><option value="">🏢 كل الفروع</option></select>
-      <select class="fi" id="j-fgov" onchange="renderJanzour()" style="min-width:120px"><option value="">🗺️ كل المحافظات</option></select>
-      <select class="fi" id="j-fstatus" onchange="renderJanzour()" style="min-width:130px">
-        <option value="">🔘 كل الحالات</option>
-        <option value="with_driver">🚗 مع المندوب</option>
-        <option value="in_company">🏢 في الشركة</option>
-        <option value="delivered">✅ تم التسليم</option>
-        <option value="returned">↩️ مرتجع</option>
-      </select>
-      <select class="fi" id="j-fd" onchange="renderJanzour()" style="min-width:120px" title="تطابق تبويب الطرود">
-        <option value="">كل التأخير</option>
-        <option value="critical">🔴 +15 يوم</option>
-        <option value="warning">🟡 متأخر 2+ يوم</option>
-        <option value="ok">🟢 في الموعد</option>
-      </select>
-      <select class="fi manager-only" id="j-femp" onchange="renderJanzour()" style="min-width:140px" title="تطابق تبويب الطرود"><option value="">كل الموظفين</option></select>
-      <label class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
-        <input type="checkbox" id="j-show-processed" onchange="renderJanzour()">
-        إظهار المعالَجة فقط
-      </label>
-      <button class="btn btn-ghost btn-sm" onclick="resetJanzourFilters()">✕ مسح</button>
-    </div>
-    <div style="font-size:11px;color:var(--mute);margin-bottom:8px;margin-top:4px">
-      المتاجر المرتبطة: <span id="j-store-count" style="color:var(--grn);font-weight:700">0</span> متجر من البيانات الثابتة
-    </div>
-    <p style="font-size:11px;color:var(--mute);margin:-4px 0 12px">📊 <strong>نسب ومعدلات التسليم</strong> (حسب المتجر والفرع والمندوب) متوفرة في تبويب <a href="#" onclick="gTab('janzour-rates');return false" style="color:var(--pur);font-weight:700">نسب ومعدلات جنزور</a>.</p>
-    <div class="card" style="border-right:3px solid var(--pur);margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <div id="j-api-status-dot" class="sync-dot" style="width:10px;height:10px;flex-shrink:0"></div>
-          <span id="j-api-conn-txt" style="font-size:12px;color:var(--pale)">—</span>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('shipments');setTimeout(function(){if(typeof switchUnifiedShipmentsSource==='function')switchUnifiedShipmentsSource('api')},100)">⚙️ إعدادات الربط والتوكن</button>
-      </div>
-      <div id="j-api-last-msg" style="font-size:11px;color:var(--mute);margin-top:6px">الجلب من شريط الأعلى؛ الربط يُعدّ من <strong>متابعة الطرود</strong> (نفس الرابط/التوكن)</div>
-    </div>
-
-    <!-- Table -->
-    <div class="tw">
-      <table>
-        <thead><tr>
-          <th><input type="checkbox" id="jchk-all" onchange="toggleAllJanzourFiltered(this.checked)"></th><th>#</th><th onclick="setJSort('client_name')" style="cursor:pointer;user-select:none">المتجر / العميل <span id="j-sort-client_name">↕</span></th><th onclick="setJSort('tracking_code')" style="cursor:pointer;user-select:none">الكود <span id="j-sort-tracking_code">↕</span></th>
-          <th onclick="setJSort('captain')" style="cursor:pointer;user-select:none">المندوب <span id="j-sort-captain">↕</span></th><th>المسند إلى</th><th class="mob-hide" onclick="setJSort('current_branch')" style="cursor:pointer;user-select:none">الفرع <span id="j-sort-current_branch">↕</span></th>
-          <th class="mob-hide" onclick="setJSort('government')" style="cursor:pointer;user-select:none">المحافظة <span id="j-sort-government">↕</span></th><th onclick="setJSort('status')" style="cursor:pointer;user-select:none">الحالة <span id="j-sort-status">↕</span></th><th onclick="setJSort('delay_days')" style="cursor:pointer;user-select:none">التأخير <span id="j-sort-delay_days">↓</span></th>
-          <th onclick="setJSort('cr_result')" style="cursor:pointer;user-select:none">نتيجة المتابعة <span id="j-sort-cr_result">↕</span></th><th title="إلزامي قبل الحفظ">ماذا حدث في الطلب *</th>
-          <th title="تسجيل تسليم + تم الحل + مزامنة المؤشرات">تم التسليم</th><th>حفظ</th>
-          <th>واتساب</th>
-        </tr></thead>
-        <tbody id="j-tbody"><tr><td colspan="15" style="text-align:center;padding:32px;color:var(--mute)">اضغط <strong>جلب الآن</strong> في الأعلى، أو اربط الـ API من <strong>متابعة الطرود</strong></td></tr></tbody>
-      </table>
-    </div>
-    <div style="padding:10px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-size:11px;color:var(--mute)" id="j-pginfo">—</span>
-      <div style="flex:1"></div>
-      <div class="pgn" id="j-pgn"></div>
-    </div>
-  </div>
-
-  <!-- ══ JANZOUR RATES & RATIOS (منفصل عن المتابعة) ══ -->
-  <div class="page" id="tab-janzour-rates">
-    <div class="page-hdr">
-      <div class="page-title"><span class="page-title-accent"></span>نسب ومعدلات جنزور</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <span class="badge b-grn" id="jr-cnt">0 طرد في نطاق جنزور</span>
-        <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('janzour')">← متابعة جنزور</button>
-        <button class="btn btn-ghost btn-sm" onclick="gTab('api-shipments')">طرود API</button>
-      </div>
-    </div>
-    <p style="font-size:12px;color:var(--mute);margin-bottom:14px">مؤشرات طرود <strong>متاجر جنزور</strong> — <strong>معدل النجاح</strong> = تسليم ÷ (تسليم + مرتجع). أعمدة «مع المندوب / في الشركة / متأخر / أخرى» تعكس <strong>حقل الحالة</strong> في بيانات API للطرود غير المُسدَّدة بتسليم أو مرتجع.</p>
-
-    <div class="card" style="margin-bottom:14px;border-right:3px solid var(--pur)">
-      <div class="ctitle" style="margin-bottom:8px">📊 معدلات نجاح التسليم — متاجر جنزور</div>
-      <p style="font-size:11px;color:var(--mute);margin-bottom:10px">نسبة التسليم من أصل (تسليم + مرتجع) حسب حالة كل طرد في نطاق جنزور.</p>
-      <div class="tw" style="max-height:280px;overflow:auto">
-        <table>
-          <thead><tr>
-            <th>المتجر</th><th>تسليمات</th><th>مرتجعات</th><th>المجموع</th><th>معدل النجاح %</th>
-          </tr></thead>
-          <tbody id="j-metrics-tbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--mute)">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="g2" style="margin-bottom:14px">
-      <div class="card" style="border-right:3px solid var(--grn);padding:14px">
-        <div class="ctitle" style="margin-bottom:6px">🏢 مصفوفة الفروع — تسليم متاجر جنزور</div>
-        <p style="font-size:10px;color:var(--mute);margin-bottom:8px">التسليم/المرتجع من الحالة أو ملاحظة المتابعة؛ أعمدة التشغيل من حقل الحالة في API للباقي.</p>
-        <div class="tw" style="max-height:240px;overflow:auto">
-          <table>
-            <thead><tr><th>الفرع</th><th>الطرود</th><th>تسليم</th><th>مرتجع</th><th>مع مندوب</th><th>في شركة</th><th>متأخر</th><th>أخرى</th><th>النجاح %</th></tr></thead>
-            <tbody id="jperf-br-tbody"><tr><td colspan="9" style="text-align:center;padding:16px;color:var(--mute)">—</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card" style="border-right:3px solid var(--blu);padding:14px">
-        <div class="ctitle" style="margin-bottom:6px">🚴 مصفوفة المناديب — طرود جنزور</div>
-        <p style="font-size:10px;color:var(--mute);margin-bottom:8px">حسب المندوب في API؛ نفس تفصيل حالات التشغيل كمصفوفة الفروع.</p>
-        <div class="tw" style="max-height:240px;overflow:auto">
-          <table>
-            <thead><tr><th>المندوب</th><th>الطرود</th><th>تسليم</th><th>مرتجع</th><th>مع مندوب</th><th>في شركة</th><th>متأخر</th><th>أخرى</th><th>النجاح %</th></tr></thead>
-            <tbody id="jperf-cap-tbody"><tr><td colspan="9" style="text-align:center;padding:16px;color:var(--mute)">—</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    <div class="g2" style="margin-bottom:14px">
-      <div class="card" style="padding:14px;border-right:3px solid var(--pur)">
-        <div class="ctitle" style="margin-bottom:8px">ملف الفرع — نسبة التسليم والمرتجعات</div>
-        <select class="fi" id="jperf-br-sel" style="width:100%;margin-bottom:10px" onchange="renderJanzourPerfProfiles()"></select>
-        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-          <canvas id="jperf-donut-br" width="168" height="168" style="max-width:168px"></canvas>
-          <div style="font-size:11px;color:var(--mute);line-height:1.75">
-            <div><span style="color:#22c55e">●</span> تسليم: <strong id="jperf-br-d" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#ef4444">●</span> مرتجع: <strong id="jperf-br-r" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#60a5fa">●</span> مع المندوب: <strong id="jperf-br-drv" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#fb923c">●</span> في الشركة: <strong id="jperf-br-cmp" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#fbbf24">●</span> متأخر: <strong id="jperf-br-dly" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#94a3b8">●</span> أخرى: <strong id="jperf-br-oth" style="color:var(--white)">0</strong></div>
-            <div style="margin-top:6px;font-weight:800;color:var(--gold)" id="jperf-br-rate">—</div>
-          </div>
-        </div>
-      </div>
-      <div class="card" style="padding:14px;border-right:3px solid var(--cyan, #06b6d4)">
-        <div class="ctitle" style="margin-bottom:8px">الملف الشخصي — المندوب (جنزور)</div>
-        <select class="fi" id="jperf-cap-sel" style="width:100%;margin-bottom:10px" onchange="renderJanzourPerfProfiles()"></select>
-        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-          <canvas id="jperf-donut-cap" width="168" height="168" style="max-width:168px"></canvas>
-          <div style="font-size:11px;color:var(--mute);line-height:1.75">
-            <div><span style="color:#22c55e">●</span> تسليم: <strong id="jperf-cap-d" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#ef4444">●</span> مرتجع: <strong id="jperf-cap-r" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#60a5fa">●</span> مع المندوب: <strong id="jperf-cap-drv" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#fb923c">●</span> في الشركة: <strong id="jperf-cap-cmp" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#fbbf24">●</span> متأخر: <strong id="jperf-cap-dly" style="color:var(--white)">0</strong></div>
-            <div><span style="color:#94a3b8">●</span> أخرى: <strong id="jperf-cap-oth" style="color:var(--white)">0</strong></div>
-            <div style="margin-top:6px;font-weight:800;color:var(--gold)" id="jperf-cap-rate">—</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- ══ SERVICE PERFORMANCE (KPI) ══ -->
   <div class="page" id="tab-service-kpi">
@@ -1726,7 +1491,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="page-title"><span class="page-title-accent"></span>أداء الخدمة</div>
       <button class="btn btn-pur btn-sm" onclick="refreshAppVersion()">🔄 تحديث النسخة</button>
     </div>
-    <p style="font-size:12px;color:var(--mute);margin-bottom:14px">مؤشرات طرود <strong>متابعة جنزور</strong> المسندة للموظف — عمولة المندوب المحفوظة على الطرد.</p>
+    <p style="font-size:12px;color:var(--mute);margin-bottom:14px">مؤشرات الطرود <strong>المسندة للموظف</strong> من «طرود API» — حسب العمولات المحسوبة على الطرد.</p>
     <div id="skpi-manager-picker" class="manager-only card" style="padding:12px;margin-bottom:14px;display:none">
       <label class="fl">عرض بيانات موظف</label>
       <select class="fi" id="skpi-emp" style="max-width:320px" onchange="renderServiceKpiPage()"><option value="">— أنا —</option></select>
@@ -2208,12 +1973,6 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
             <input type="checkbox" class="um-perm" value="api-shipments"> 🔗 طرود API
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
-            <input type="checkbox" class="um-perm" value="janzour"> 🟢 متابعة جنزور
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
-            <input type="checkbox" class="um-perm" value="janzour-rates"> 📊 نسب ومعدلات جنزور
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="service-kpi"> 📈 أداء الخدمة
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
@@ -2345,7 +2104,7 @@ const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/
 const LOG_API_BASE = 'api';
 const MANUAL_EXCEL_SHIPMENTS_ONLY = true; // keep main shipments table sourced only from manual Excel upload
 
-/** إعدادات عمولات جنزور (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
+/** إعدادات عمولات الطرود (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
 let CommissionCfg = { unitBase: 100, repPercent: 5, branchPercent: 2, ratioMin: 0.25, ratioMax: 1 };
 function loadCommissionCfg(){
   try{
@@ -2367,8 +2126,6 @@ const ALL_TABS = [
   {id:'returns',label:'↩️ المرتجعات'},
   {id:'transfers',label:'🔄 التحويلات'},
   {id:'api-shipments',label:'🔗 طرود API'},
-  {id:'janzour',label:'🟢 متابعة جنزور'},
-  {id:'janzour-rates',label:'📊 نسب ومعدلات جنزور'},
   {id:'service-kpi',label:'📈 أداء الخدمة'},
   {id:'whatsapp',label:'💬 واتساب'},
   {id:'reports',label:'📊 التقارير'},
@@ -2384,8 +2141,8 @@ const MANAGER_TABS = ALL_TAB_IDS; // managers get all
 // Default users (seed)
 const DEFAULT_USERS = {
   'mohamed': {pass:'admin123',role:'manager',name:'محمد سعد',phone:'',email:'',status:'active',perms:ALL_TAB_IDS},
-  'ahmed':   {pass:'emp123',role:'employee',name:'أحمد علي',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','janzour','janzour-rates','service-kpi']},
-  'fatima':  {pass:'emp123',role:'employee',name:'فاطمة محمد',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','janzour','janzour-rates','service-kpi']},
+  'ahmed':   {pass:'emp123',role:'employee',name:'أحمد علي',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','service-kpi']},
+  'fatima':  {pass:'emp123',role:'employee',name:'فاطمة محمد',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','service-kpi']},
 };
 
 // Load users from localStorage, falling back to defaults
@@ -2399,9 +2156,10 @@ function loadUsers(){
       Object.keys(parsed).forEach(k=>{
         if(!parsed[k].perms) parsed[k].perms=parsed[k].role==='manager'?ALL_TAB_IDS:['home','shipments','api-shipments'];
         if(!parsed[k].status) parsed[k].status='active';
-        const p=parsed[k].perms;
-        if(Array.isArray(p)&&p.includes('janzour')&&!p.includes('janzour-rates')){
-          p.push('janzour-rates');
+        let p=parsed[k].perms;
+        if(Array.isArray(p)&&(p.includes('janzour')||p.includes('janzour-rates'))){
+          p=p.filter(x=>x!=='janzour'&&x!=='janzour-rates');
+          parsed[k].perms=p;
           migrated=true;
         }
         const rbRaw=parsed[k].received_branches??parsed[k].received_branch??parsed[k]?.['received-branch']??[];
@@ -2827,11 +2585,9 @@ async function loadAll(){
     loadAssignmentsFromSupabase().then(()=>{
       renderAPIShipments();
       renderAssignStats();
-      try{renderJanzour();}catch(_){}
     }).catch(()=>{});
     _loadProcessedFromSupabase().then(()=>{try{renderReturns();renderTransfers();}catch(_){}}).catch(()=>{});
     loadReturns();loadTransfers();loadDbStats();
-    buildJanzourSet(); // Sync Janzour store set from Supabase stores table
   }catch(e){setSyncState('err','خطأ');toast('خطأ في التحميل: '+e.message,'e');}
 }
 
@@ -5900,7 +5656,6 @@ function gTab(id){
     drivers:renderDrivers,
     returns:renderReturns,
     transfers:renderTransfers,
-    janzour:()=>{buildJanzourSet();renderJanzour();},
     whatsapp:renderWA,
     reports:genDaily,
     staff:()=>{sfPage=1;renderStaff();},
@@ -6878,96 +6633,8 @@ let apiFilteredData=[], apiFilteredIds=[], apiLastSelectedSid='';
 let apiProcessedCodes=new Set();
 try{apiProcessedCodes=new Set(JSON.parse(sessionStorage.getItem('api_processed_codes')||'[]'));}catch(_){apiProcessedCodes=new Set();}
 
-// ══════════════════════════════════════════
-// JANZOUR STORES — Isolated view
-// ══════════════════════════════════════════
-// Populated dynamically from Supabase `stores` table (uploaded by user)
-// Falls back to a hardcoded seed list that can be updated anytime
-let JANZOUR_STORES_SEED=[
-  'nawris client','cmd delivery','سوق ليبيا','شركة مكنون','دارك هاوس',
-  'لطفي للساعات','متجر 125','featured store','samara','طلبيات شي ان','القمة'
-];
-let janzourStoreSet=new Set(); // lowercase+trimmed for fast O(1) lookup
-let janzourShipments=[];       // filtered subset — NEVER modified by API tab
-let janzourSeg='all', janzourCrSeg='all', jPage=1, jPER=25;
-let jSortKey='delay_days', jSortDir='desc';
-let jChecked=new Set(), jFilteredData=[], jFilteredIds=[], jLastSelectedSid='';
-let jperfLastBr='', jperfLastCap=''; // حفظ اختيار بطاقات أداء الفرع/المندوب
-let sfPage=1; // Staff shipments table page
+let sfPage=1;
 let sfSortKey='delay', sfSortDir='desc';
-
-/** Janzour tab: mandatory dropdown — what happened with the order (saved to contact_results.note) */
-const JANZOUR_ORDER_NOTE_OPTIONS=[
-  'تم تسليم الطرد للعميل',
-  'في الطريق للزبون',
-  'تم تغيير الحالة: إلغاء',
-  'تم التسليم',
-  'الزبون بيحوّل فلوس (تحويل)',
-  'الزبون يبي يخلص ببطاقة',
-  'الزبون أجّل الطلب',
-  'المندوب لا يرد',
-  'رفض العميل استلام الطرد',
-  'العميل غير متواجد',
-  'عنوان خاطئ أو ناقص',
-  'تأجيل التسليم بطلب العميل',
-  'تأجيل التسليم بطلب المتجر',
-  'لا يجيب على الهاتف',
-  'هاتف مغلق أو غير صحيح',
-  'مشكلة في محتويات الطرد',
-  'الطرد في الشركة — بانتظار إجراء',
-  'جاري التواصل — بانتظار رد العميل أو المتجر',
-  'تم الإرجاع للفرع',
-  'تم الحل — تأكيد تسليم لاحقاً',
-  'لا يوجد رد من المتجر أو العميل',
-  'طلب إلغاء من المتجر',
-  'طرد مكرر / خطأ في البيانات'
-];
-function janzourNoteSelectHtml(selectedNote){
-  const esc=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  const safeTxt=t=>String(t).replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  let h='<option value="">— اختر ماذا حدث في الطلب —</option>';
-  JANZOUR_ORDER_NOTE_OPTIONS.forEach(t=>{
-    const sel=t===selectedNote?' selected':'';
-    h+=`<option value="${esc(t)}"${sel}>${safeTxt(t)}</option>`;
-  });
-  if(selectedNote&&!JANZOUR_ORDER_NOTE_OPTIONS.includes(selectedNote)){
-    h+=`<option value="${esc(selectedNote)}" selected>📝 ${safeTxt(selectedNote)}</option>`;
-  }
-  return h;
-}
-
-function buildJanzourSet(){
-  // Prefer live Supabase stores list over seed
-  const sourceNames= (typeof stores!=='undefined'&&stores.length)
-    ? stores.map(s=>(s.name||'').trim().toLowerCase()).filter(Boolean)
-    : JANZOUR_STORES_SEED.map(n=>n.trim().toLowerCase());
-  janzourStoreSet=new Set(sourceNames);
-  rebuildJanzourShipments();
-}
-function rebuildJanzourShipments(){
-  janzourShipments=apiShipments.filter(s=>{
-    const name=(s.client_name||'').trim().toLowerCase();
-    // Exact match OR partial match (store name is contained in client name)
-    if(janzourStoreSet.has(name))return true;
-    for(const sn of janzourStoreSet){if(name.includes(sn)||sn.includes(name))return true;}
-    return false;
-  });
-}
-/** نفس منطق تطابق متاجر جنزور — للفلترة عند «إظهار المعالجة فقط» والطرود المختفية من API */
-function isJanzourStoreClientName(clientName){
-  const name=(clientName||'').trim().toLowerCase();
-  if(!name)return false;
-  if(janzourStoreSet.has(name))return true;
-  for(const sn of janzourStoreSet){if(name.includes(sn)||sn.includes(name))return true;}
-  return false;
-}
-/** طرود جنزور الظاهرة للموظف (مرتبطة بمنطق تبويب الطرود) */
-function getJanzourScopeList(){
-  const assignments=getAPIAssignments();
-  const myName=CU?.name||'';
-  if(CU?.role!=='employee')return janzourShipments.slice();
-  return janzourShipments.filter(s=>String(assignments[s.tracking_code]||'')===String(myName));
-}
 
 function resetAPIFilters(){
   ['a-q','a-fd','a-fst','a-fdays','a-fcap','a-fbr','a-fgov','a-femp'].forEach(id=>{
@@ -7677,11 +7344,7 @@ async function fetchAPIShipments(){
     updateKPIs();
     renderHome();
     renderStaff();
-    // ── Janzour: rebuild filtered subset (isolated, never touches main api tab) ──
-    buildJanzourSet();
-    refreshJanzourRatesPanels();
-    if(document.getElementById('tab-janzour')?.classList.contains('on'))renderJanzour();
-    toast(`✅ ${apiShipments.length} طرد من API — جنزور: ${janzourShipments.length} طرد`,'s');
+    toast(`✅ ${apiShipments.length} طرد من API`,'s');
 
   }catch(e){
     if(el)el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
@@ -8107,695 +7770,6 @@ function setAPISort(key){
   renderAPIShipments();
 }
 
-// ══════════════════════════════════════════
-// JANZOUR STORES — Render (fully isolated)
-// ══════════════════════════════════════════
-function setJSeg(s){
-  janzourSeg=s;jPage=1;
-  document.querySelectorAll('[data-jseg]').forEach(el=>el.classList.toggle('on',el.dataset.jseg===s));
-  renderJanzour();
-}
-function setJCrSeg(s){
-  janzourCrSeg=s;jPage=1;
-  document.querySelectorAll('[data-jcrseg]').forEach(el=>el.classList.toggle('on',el.dataset.jcrseg===s));
-  renderJanzour();
-}
-document.addEventListener('click',e=>{
-  const jseg=e.target.closest('[data-jseg]');
-  if(jseg){setJSeg(jseg.dataset.jseg);return;}
-  const jcrseg=e.target.closest('[data-jcrseg]');
-  if(jcrseg)setJCrSeg(jcrseg.dataset.jcrseg);
-});
-function resetJanzourFilters(){
-  ['j-q','j-fcap','j-fbranch','j-fgov','j-fstatus','j-fd','j-femp'].forEach(id=>{const el=document.getElementById(id);if(el){if(el.tagName==='INPUT'&&el.type==='checkbox')el.checked=false;else if(el.tagName==='INPUT')el.value='';else el.selectedIndex=0;}});
-  const jsp=document.getElementById('j-show-processed');if(jsp)jsp.checked=false;
-  janzourCrSeg='all';
-  document.querySelectorAll('[data-jcrseg]').forEach(el=>el.classList.toggle('on',el.dataset.jcrseg==='all'));
-  setJSeg('all');
-}
-function setJSort(key){
-  if(jSortKey===key)jSortDir=jSortDir==='asc'?'desc':'asc';
-  else{jSortKey=key;jSortDir='asc';}
-  jPage=1;
-  renderJanzour();
-}
-function updateJSortHeaderIcons(){
-  const keys=['client_name','tracking_code','captain','current_branch','government','status','delay_days','cr_result'];
-  keys.forEach(k=>{
-    const el=document.getElementById('j-sort-'+k);
-    if(!el)return;
-    el.textContent=jSortKey===k?(jSortDir==='asc'?'↑':'↓'):'↕';
-  });
-}
-function flashJanzourRow(sid){
-  const row=document.querySelector(`#j-tbody tr[data-jsid="${String(sid).replace(/"/g,'\\"')}"]`);
-  if(!row)return;
-  row.style.outline='2px solid rgba(58,201,120,.7)';
-  row.style.outlineOffset='-2px';
-  setTimeout(()=>{row.style.outline='';row.style.outlineOffset='';},900);
-}
-function toggleJSelection(sid,checked,shiftKey){
-  const id=String(sid);
-  if(shiftKey&&jLastSelectedSid&&jFilteredIds.length){
-    const a=jFilteredIds.indexOf(String(jLastSelectedSid));
-    const b=jFilteredIds.indexOf(id);
-    if(a>=0&&b>=0){
-      const [s,e]=a<b?[a,b]:[b,a];
-      for(let i=s;i<=e;i++){
-        const rid=jFilteredIds[i];
-        if(checked)jChecked.add(rid);else jChecked.delete(rid);
-      }
-    }else{
-      if(checked)jChecked.add(id);else jChecked.delete(id);
-    }
-  }else{
-    if(checked)jChecked.add(id);else jChecked.delete(id);
-  }
-  jLastSelectedSid=id;
-  renderJanzour();
-}
-function toggleAllJanzourFiltered(checked){
-  if(!jFilteredIds.length){jChecked.clear();renderJanzour();return;}
-  jFilteredIds.forEach(id=>{if(checked)jChecked.add(id);else jChecked.delete(id);});
-  renderJanzour();
-}
-function getJanzourAssignCounts(){
-  const a=getAPIAssignments();
-  const counts={};
-  janzourShipments.forEach(s=>{
-    const emp=a[s.tracking_code];
-    if(!emp)return;
-    counts[emp]=(counts[emp]||0)+1;
-  });
-  return counts;
-}
-function updateJanzourManualLive(){
-  const el=document.getElementById('j-manual-assign-live');
-  if(!el)return;
-  const emp=document.getElementById('j-manual-assign-emp')?.value||'';
-  if(!emp){el.textContent='—';return;}
-  const c=getJanzourAssignCounts();
-  el.textContent=`${emp} (${c[emp]||0} طرد في جنزور)`;
-}
-function janzourAssignPanelScroll(){
-  const p=document.getElementById('j-assign-full-panel');
-  if(p)p.scrollIntoView({behavior:'smooth',block:'start'});
-}
-function updateJanzourConnectionMirror(){
-  const st=document.getElementById('api-conn-status');
-  const dot=document.getElementById('api-conn-dot');
-  const st2=document.getElementById('j-api-conn-txt');
-  const d2=document.getElementById('j-api-status-dot');
-  const m=document.getElementById('j-api-last-msg');
-  const api2=document.getElementById('api2-status');
-  if(st2&&st)st2.textContent=st.textContent||'—';
-  if(d2&&dot)d2.className=dot.className;
-  if(m&&api2){
-    const t=(api2.textContent||'').trim();
-    if(t)m.textContent=t;
-  }
-}
-function updateJanzourAssignControls(){
-  updateJanzourConnectionMirror();
-  renderJanzourAssignStats();
-  refreshJanzourAssignPanelEmps();
-}
-function renderJanzourAssignStats(){
-  const statsEl=document.getElementById('j-assign-stats');
-  if(!statsEl||CU?.role!=='manager')return;
-  const a=getAPIAssignments();
-  const jList=janzourShipments||[];
-  const empMap={};
-  Object.entries(USERS).forEach(([,u])=>{
-    if(u.role==='manager')return;
-    empMap[u.name]={name:u.name,total:0,crit:0,done:0};
-  });
-  jList.forEach(s=>{
-    const emp=a[s.tracking_code];
-    if(!emp||!isAssignableEmployeeName(emp))return;
-    if(!empMap[emp])empMap[emp]={name:emp,total:0,crit:0,done:0};
-    empMap[emp].total++;
-    if(cls(s.delay_days)==='critical')empMap[emp].crit++;
-    const cr=getCR(s.id);
-    if(cr.result==='solved'||cr.result==='contacted')empMap[emp].done++;
-  });
-  const unassigned=jList.filter(s=>!a[s.tracking_code]).length;
-  const rows=Object.values(empMap).filter(e=>e.total>0&&isAssignableEmployeeName(e.name)).sort((a,b)=>b.total-a.total);
-  statsEl.innerHTML=`
-    <div style="background:var(--bg4);border-radius:var(--r2);padding:10px;text-align:center;border:1px solid var(--rim)">
-      <div style="font-size:18px;font-weight:900;color:var(--mute);font-family:var(--mono)">${unassigned}</div>
-      <div style="font-size:10px;color:var(--dim)">⚠️ غير مسندة (جنزور)</div>
-    </div>
-    ${rows.map(e=>{
-      const pct=e.total?Math.round(e.done/e.total*100):0;
-      return`<div style="background:var(--bg4);border-radius:var(--r2);padding:10px;border:1px solid var(--rim)">
-        <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:5px">${e.name}</div>
-        <div style="font-size:18px;font-weight:900;color:var(--pur);font-family:var(--mono)">${e.total}</div>
-        <div style="font-size:10px;color:var(--mute);margin-bottom:4px">${e.crit>0?`<span style="color:var(--red)">🔴 ${e.crit} حرج</span> · `:''} ${pct}% منجز</div>
-        <div style="background:var(--bg5);border-radius:99px;height:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--grn);border-radius:99px"></div></div>
-      </div>`;
-    }).join('')}`;
-}
-function getJanzourSelectedParcelsFromCheckbox(){
-  const out=[];
-  jChecked.forEach(sid=>{
-    const s=apiShipments.find(x=>String(x.id)===String(sid));
-    if(s&&janzourShipments&&janzourShipments.some(j=>String(j.id)===String(sid)||j.tracking_code===s.tracking_code))out.push(s);
-  });
-  return out;
-}
-function refreshJanzourAssignPanelEmps(){
-  if(CU?.role!=='manager')return;
-  const jList=janzourShipments||[];
-  const emps=Object.values(USERS).filter(u=>u.status!=='inactive'&&u.role!=='manager'&&u.name);
-  if(!emps.length){
-    const checksEl=document.getElementById('j-assign-emp-checks');
-    if(checksEl)checksEl.innerHTML='<span style="color:var(--mute);font-size:11px">لا يوجد موظفون</span>';
-    return;
-  }
-  const counts=getJanzourAssignCounts();
-  const selectedParcels=getJanzourSelectedParcelsFromCheckbox().length
-    ?getJanzourSelectedParcelsFromCheckbox()
-    :[...(jFilteredData||[])].filter(s=>jList.some(j=>j.tracking_code===s.tracking_code));
-  const selectableEmps=emps.filter(u=>selectedParcels.length===0||selectedParcels.every(p=>canAssignParcelToEmployee(p,u.name)));
-  const isMob=window.innerWidth<=640;
-  const checksEl=document.getElementById('j-assign-emp-checks');
-  if(checksEl)checksEl.innerHTML=emps.map(u=>{
-    const disabled=!selectableEmps.some(se=>se.name===u.name);
-    return`
-    <label style="display:flex;align-items:center;gap:8px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r2);padding:${isMob?'12px 14px':'7px 12px'};cursor:pointer;min-height:${isMob?'48px':'auto'}">
-      <input type="checkbox" value="${u.name}" ${disabled?'disabled':''} style="accent-color:var(--pur);width:${isMob?'18px':'13px'};height:${isMob?'18px':'13px'};flex-shrink:0">
-      <span style="font-size:${isMob?'14px':'12px'};font-weight:700;color:var(--white)">${u.name}</span>
-      <span style="font-size:11px;font-family:var(--mono);color:${disabled?'var(--red)':'var(--pur)'};margin-right:auto">${disabled?'غير متاح':(' '+(counts[u.name]||0)+' طرد')}</span>
-    </label>`;
-  }).join('');
-  const manEl=document.getElementById('j-manual-assign-emp');
-  if(manEl)manEl.innerHTML='<option value="">اختر موظف...</option>'+selectableEmps.map(u=>`<option value="${u.name}">${u.name} (${counts[u.name]||0})</option>`).join('');
-  const brEmpEl=document.getElementById('j-janzour-branch-emp');
-  if(brEmpEl)brEmpEl.innerHTML='<option value="">اختر موظف...</option>'+selectableEmps.map(u=>`<option value="${u.name}">${u.name} (${counts[u.name]||0})</option>`).join('');
-  const brEl=document.getElementById('j-janzour-branch-filter');
-  if(brEl){
-    const prev=brEl.value;
-    const branches=[...new Set((jFilteredData||[]).map(s=>String(s.current_branch||'').trim()).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'ar'));
-    brEl.innerHTML='<option value="">كل الفروع (حسب فلتر الجدول)</option>'+branches.map(b=>`<option value="${b.replace(/"/g,'&quot;')}">${b}</option>`).join('');
-    if(prev&&branches.includes(prev))brEl.value=prev;
-  }
-  updateJanzourManualLive();
-}
-function autoAssignJanzour(method){
-  if(CU?.role!=='manager'){toast('التوزيع التلقائي للمدير فقط','w');return;}
-  const empChecks=document.querySelectorAll('#j-assign-emp-checks input:checked');
-  let emps=empChecks.length>0
-    ?[...empChecks].map(c=>c.value).filter(n=>isAssignableEmployeeName(n))
-    :getActiveEmployees();
-  if(!emps.length){toast('حدد موظفاً في خانات التوزيع أو أضف موظفين','w');return;}
-  const a=_getAssignmentsRaw();
-  const flat=getAPIAssignments();
-  const jSet=new Set((janzourShipments||[]).map(s=>s.tracking_code).filter(Boolean));
-  const unassigned=(janzourShipments||[]).filter(s=>jSet.has(s.tracking_code)&&!flat[s.tracking_code]);
-  if(!unassigned.length){toast('لا توجد طُرود جنزور غير مسندة','w');return;}
-  const now=Date.now();
-  if(method==='equal'){
-    unassigned.forEach((s,i)=>{a[s.tracking_code]={emp:emps[i%emps.length],at:now};});
-  }else if(method==='branch'){
-    const branchMap={};
-    (janzourShipments||[]).forEach(s=>{
-      if(!jSet.has(s.tracking_code))return;
-      const br=s.current_branch||'أخرى';
-      if(!branchMap[br])branchMap[br]=[];
-      branchMap[br].push(s);
-    });
-    const branches=Object.keys(branchMap);
-    branches.forEach((br,bi)=>{
-      const emp=emps[bi%emps.length];
-      branchMap[br].forEach(s=>{if(!flat[s.tracking_code])a[s.tracking_code]={emp,at:now};});
-    });
-  }else if(method==='workload'){
-    const counts={};
-    emps.forEach(e=>{counts[e]=0;});
-    janzourShipments.forEach(s=>{
-      if(!jSet.has(s.tracking_code))return;
-      const e=flat[s.tracking_code];
-      if(e&&counts[e]!==undefined)counts[e]++;
-    });
-    unassigned.forEach(s=>{
-      const emp=emps.reduce((x,y)=>counts[x]<=counts[y]?x:y);
-      a[s.tracking_code]={emp,at:now};
-      counts[emp]++;
-    });
-  }
-  saveAPIAssignments(a);
-  renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();refreshJanzourAssignPanelEmps();
-  toast(`✅ تم توزيع ${unassigned.length} طرد (جنزور)`,`s`);
-}
-function clearJanzourScopeAssignments(){
-  if(CU?.role!=='manager'){toast('للمدير فقط','w');return;}
-  if(!confirm('مسح كل التعيينات لطُرود جنزور فقط؟ (لن تُؤثر على طُرود خارج نطاق جنزور)'))return;
-  const a=_getAssignmentsRaw();
-  const jCodes=new Set((janzourShipments||[]).map(s=>s.tracking_code).filter(Boolean));
-  let n=0;
-  for(const code of[...jCodes]){
-    if(a[code]){delete a[code];n++;}
-  }
-  saveAPIAssignments(a);
-  renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();refreshJanzourAssignPanelEmps();
-  toast(`🗑️ أُلغي ${n} تعيين (نطاق جنزور)`,`s`);
-}
-async function bulkWA_Janzour(){
-  if(!jChecked.size){toast('حدد طروداً في جدول جنزور','w');return;}
-  const selected=[...jChecked]
-    .map(sid=>apiShipments.find(s=>String(s.id)===String(sid)))
-    .filter(s=>s&&(janzourShipments||[]).some(j=>String(j.id)===String(s?.id)));
-  if(!selected.length){toast('لا توجد طرود','w');return;}
-  const captains=[...new Set(selected.map(s=>normalizeIdentityText(s.captain||'')).filter(Boolean))];
-  if(captains.length!==1){
-    toast('لازم يكون التحديد لنفس المندوب','e');
-    return;
-  }
-  const captainKey=captains[0];
-  const captainLabel=String(selected.find(s=>normalizeIdentityText(s.captain||'')===captainKey)?.captain||selected[0].captain||'').trim()||'المندوب';
-  const phoneFromSelected=selected.filter(s=>normalizeIdentityText(s.captain||'')===captainKey).map(s=>normPhone(s.captain_phone||s.driver_phone||'')).find(Boolean)||'';
-  const phoneFromDrivers=(drivers_db||[]).filter(d=>normalizeIdentityText(d?.name||'')===captainKey).map(d=>normPhone(d?.phone||'')).find(Boolean)||'';
-  const captainPhone=phoneFromSelected||phoneFromDrivers||'';
-  if(!captainPhone){
-    toast(`لا يوجد رقم للمندوب: ${captainLabel}`,`e`);
-    return;
-  }
-  const msg=buildSelectedStatusMessage(captainLabel,selected);
-  openWAUrl(captainPhone,msg);
-  let updated=0;
-  for(const s of selected){
-    const prevNote=getCR(s.id).note||'';
-    if(await saveCR(s.id,'contacted',prevNote))updated++;
-  }
-  renderJanzour();
-  if(typeof renderAPIShipments==='function')renderAPIShipments();
-  toast(`تم فتح واتساب + تحديث ${updated} سجل`,'s');
-}
-function assignSelectedJanzour(){
-  const emp=document.getElementById('j-manual-assign-emp')?.value||'';
-  if(!emp){toast('اختر موظفاً أولاً','w');return;}
-  if(isManagerName(emp)){toast('لا يُسمح بإسناد الطرود إلى المدير','e');return;}
-  const a=_getAssignmentsRaw();const now=Date.now();let count=0,blocked=0;
-  jChecked.forEach(id=>{
-    const s=apiShipments.find(x=>String(x.id)===String(id));
-    if(s){
-      if(!canAssignParcelToEmployee(s,emp)){blocked++;return;}
-      a[s.tracking_code]={emp,at:now};count++;
-    }
-  });
-  saveAPIAssignments(a);
-  renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();refreshJanzourAssignPanelEmps();
-  if(blocked>0)toast(`⚠️ تم منع ${blocked} طرد (فرع الموظف)`,'w');
-  toast(`✅ تم تعيين ${count} طرد في جنزور إلى ${emp}`,'s');
-}
-function unassignSelectedJanzour(){
-  const a=_getAssignmentsRaw();let count=0;
-  jChecked.forEach(id=>{
-    const s=apiShipments.find(x=>String(x.id)===String(id));
-    if(s&&a[s.tracking_code]){delete a[s.tracking_code];count++;}
-  });
-  saveAPIAssignments(a);
-  renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();refreshJanzourAssignPanelEmps();
-  toast(`تم إلغاء تعيين ${count} طرد`,'s');
-}
-function bulkAssignFilteredJanzourBranch(){
-  const branch=document.getElementById('j-janzour-branch-filter')?.value||'';
-  const emp=document.getElementById('j-janzour-branch-emp')?.value||'';
-  if(!emp){toast('اختر موظفاً أولاً','w');return;}
-  if(isManagerName(emp)){toast('لا يُسمح بإسناد الطرود إلى المدير','e');return;}
-  const targets=jFilteredData.filter(s=>!branch||String(s.current_branch||'').trim()===branch);
-  if(!targets.length){toast('لا توجد طرود مطابقة','w');return;}
-  const a=_getAssignmentsRaw();const now=Date.now();
-  let ok=0,blocked=0;
-  targets.forEach(s=>{
-    if(!canAssignParcelToEmployee(s,emp)){blocked++;return;}
-    a[s.tracking_code]={emp,at:now};ok++;
-  });
-  saveAPIAssignments(a);
-  renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();refreshJanzourAssignPanelEmps();
-  if(blocked>0)toast(`⚠️ رُفض ${blocked} طرد (فرع الموظف)`,'w');
-  toast(`✅ تم تعيين ${ok} طرد من ${branch||'كل الفروع'} إلى ${emp}`,'s');
-}
-function bulkUnassignFilteredJanzourBranch(){
-  const branch=document.getElementById('j-janzour-branch-filter')?.value||'';
-  const targets=jFilteredData.filter(s=>!branch||String(s.current_branch||'').trim()===branch);
-  if(!targets.length){toast('لا توجد طرود مطابقة','w');return;}
-  const a=_getAssignmentsRaw();let count=0;
-  targets.forEach(s=>{
-    if(a[s.tracking_code]){
-      delete a[s.tracking_code];
-      count++;
-    }
-  });
-  if(!count){toast('لا توجد تعيينات لإلغائها','w');return;}
-  saveAPIAssignments(a);
-  renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();refreshJanzourAssignPanelEmps();
-  toast(`✕ تم إلغاء تعيين ${count} طرد من ${branch||'كل الفروع'}`,'s');
-}
-
-function updateJanzourKPIs(){
-  const scope=getJanzourScopeList();
-  const total=scope.length;
-  const crit=scope.filter(s=>cls(s.delay_days)==='critical').length;
-  const warn=scope.filter(s=>cls(s.delay_days)==='warning').length;
-  const driver=scope.filter(s=>s.status==='with_driver').length;
-  const ret=scope.filter(s=>s.status==='returned').length;
-  const activeStores=new Set(scope.map(s=>s.client_name)).size;
-  const el=id=>document.getElementById(id);
-  if(el('jk-total'))el('jk-total').textContent=total;
-  if(el('jk-crit'))el('jk-crit').textContent=crit;
-  if(el('jk-warn'))el('jk-warn').textContent=warn;
-  if(el('jk-driver'))el('jk-driver').textContent=driver;
-  if(el('jk-ret'))el('jk-ret').textContent=ret;
-  if(el('jk-stores'))el('jk-stores').textContent=activeStores;
-  if(el('tb-janzour'))el('tb-janzour').textContent=total;
-  if(el('j-store-count'))el('j-store-count').textContent=janzourStoreSet.size;
-  if(el('jsn-all'))el('jsn-all').textContent=total;
-  if(el('jsn-crit'))el('jsn-crit').textContent=crit;
-  if(el('jsn-warn'))el('jsn-warn').textContent=warn;
-  if(el('jsn-ok'))el('jsn-ok').textContent=scope.filter(s=>cls(s.delay_days)==='ok').length;
-  if(el('jsn-driver'))el('jsn-driver').textContent=driver;
-  if(el('jsn-ret'))el('jsn-ret').textContent=ret;
-}
-
-function renderJanzour(){
-  if(!document.getElementById('j-tbody'))return;
-  // Rebuild filtered set in case stores were updated
-  rebuildJanzourShipments();
-  updateJanzourKPIs();
-  const assignments=getAPIAssignments();
-  const myName=CU?.name||'';
-  const isEmployee=CU?.role==='employee';
-
-  const q=normalizeIdentityText(document.getElementById('j-q')?.value||'');
-  const showProcessed=!!document.getElementById('j-show-processed')?.checked;
-  const hasExplicitQuery=Boolean(q&&String(q).trim());
-
-  // Escape option value/label so names with ", <, & cannot break the DOM or leave a stale filter that zeroes the table
-  function jEscOpt(v){
-    return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-  }
-  function rebuildSelect(elId,prefix,vals){
-    const el=document.getElementById(elId);if(!el)return;
-    const prev=el.value;
-    const arr=[...new Set([...vals].map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
-    el.innerHTML='<option value="">'+jEscOpt(prefix)+'</option>'+arr.map(v=>`<option value="${jEscOpt(v)}">${jEscOpt(v)}</option>`).join('');
-    if(prev&&arr.includes(prev))el.value=prev;
-    else el.selectedIndex=0;
-  }
-  rebuildSelect('j-fcap','👤 كل المناديب',new Set(janzourShipments.map(s=>s.captain).filter(Boolean)));
-  rebuildSelect('j-fbranch','🏢 كل الفروع',new Set(janzourShipments.map(s=>s.current_branch).filter(Boolean)));
-  rebuildSelect('j-fgov','🗺️ كل المحافظات',new Set(janzourShipments.map(s=>s.government).filter(Boolean)));
-  const empJEl=document.getElementById('j-femp');
-  const fempJPre=(empJEl?.value||'').trim();
-  if(empJEl&&!fempJPre){
-    const emps=Object.entries(USERS).filter(([,u])=>u.status!=='inactive').map(([,u])=>u.name);
-    empJEl.innerHTML='<option value="">كل الموظفين</option>'+emps.map(e=>`<option>${e}</option>`).join('');
-  }
-  const jfd=(document.getElementById('j-fd')?.value||'').trim();
-  const fcap=(document.getElementById('j-fcap')?.value||'').trim();
-  const fbranch=(document.getElementById('j-fbranch')?.value||'').trim();
-  const fgov=(document.getElementById('j-fgov')?.value||'').trim();
-  const fstatus=(document.getElementById('j-fstatus')?.value||'').trim();
-  const fempJ=(document.getElementById('j-femp')?.value||'').trim();
-  const manualStatusFilter=Boolean(fstatus);
-
-  function jCrResult(sid){
-    try{return getCR(sid).result||'';}catch(e){return'';}
-  }
-
-  // ── INDEPENDENT FILTER — does NOT affect apiShipments; يطابق منطق تبويب «طرود API» + نطاق متاجر جنزور ──
-  let list=[...janzourShipments];
-  if(isEmployee&&!hasExplicitQuery){
-    list=list.filter(s=>String(assignments[s.tracking_code]||'')===String(myName));
-  }
-  const processedStatuses=new Set(['delivered','processed']);
-  if(!manualStatusFilter&&!hasExplicitQuery){
-    if(showProcessed){
-      const fromCurrent=list.filter(s=>processedStatuses.has(s.status));
-      const currentApiCodes=new Set(apiShipments.map(s=>s.tracking_code).filter(Boolean));
-      let apiSeenBefore=[];
-      try{apiSeenBefore=JSON.parse(localStorage.getItem('api_seen_codes')||'[]');}catch{}
-      const apiCache=_getApiProcessedSnapshotCache();
-      const disappearedShipments=apiSeenBefore
-        .filter(tc=>!currentApiCodes.has(tc))
-        .map(tc=>{
-          const r=_apiRowFromCacheEntry(apiCache[tc]||{});
-          return {id:'api_'+tc,tracking_code:tc,client_name:r.client_name,receiver_name:r.receiver_name,customer_phone:r.customer_phone,captain:r.captain,current_branch:r.current_branch,government:r.government,area:r.area,delay_days:r.delay_days,status:'processed',source:'api',_cached:true};
-        })
-        .filter(s=>isJanzourStoreClientName(s.client_name));
-      const allShownCodes=new Set([...fromCurrent.map(s=>s.tracking_code),...disappearedShipments.map(s=>s.tracking_code)]);
-      const fromContactDB=(contact_results_db||[])
-        .filter(cr=>{
-          const tc=String(cr.tracking_code||'').trim();
-          if(!tc||currentApiCodes.has(tc)||allShownCodes.has(tc))return false;
-          return cr.result==='solved'||cr.result==='contacted';
-        })
-        .map(cr=>{
-          const tc=String(cr.tracking_code||'').trim();
-          const r=_apiRowFromCacheEntry(apiCache[tc]||{});
-          return {id:'api_'+tc,tracking_code:tc,client_name:r.client_name,receiver_name:r.receiver_name,customer_phone:r.customer_phone,captain:r.captain,current_branch:r.current_branch,government:r.government,area:r.area,delay_days:r.delay_days,status:'processed',source:'api',_cached:true};
-        })
-        .filter(s=>isJanzourStoreClientName(s.client_name));
-      list=[...fromCurrent,...disappearedShipments,...fromContactDB];
-    }else{
-      list=list.filter(s=>{
-        if(s.status==='returned')return true;
-        if(processedStatuses.has(s.status))return false;
-        return true;
-      });
-    }
-  }
-
-  if(janzourSeg==='critical')list=list.filter(s=>cls(s.delay_days)==='critical');
-  else if(janzourSeg==='warning')list=list.filter(s=>cls(s.delay_days)==='warning');
-  else if(janzourSeg==='ok')list=list.filter(s=>cls(s.delay_days)==='ok');
-  else if(janzourSeg==='driver')list=list.filter(s=>s.status==='with_driver');
-  else if(janzourSeg==='company')list=list.filter(s=>s.status==='in_company');
-  else if(janzourSeg==='returned')list=list.filter(s=>s.status==='returned');
-
-  if(fcap)list=list.filter(s=>String(s.captain||'').trim()===fcap);
-  if(fbranch)list=list.filter(s=>String(s.current_branch||'').trim()===fbranch);
-  if(fgov)list=list.filter(s=>String(s.government||'').trim()===fgov);
-  if(fstatus)list=list.filter(s=>s.status===fstatus);
-  if(jfd)list=list.filter(s=>cls(s.delay_days)===jfd);
-  if(fempJ)list=list.filter(s=>assignments[s.tracking_code]===fempJ);
-  if(q){
-    list=list.filter(s=>{
-      const haystack=normalizeIdentityText(`${s.tracking_code} ${s.client_name} ${s.receiver_name||''} ${s.captain||''} ${s.customer_phone||''} ${s.current_branch||''} ${s.government||''} ${s.area||''}`);
-      const codeNorm=normalizeIdentityText(s.tracking_code||'');
-      const qCompact=q.replace(/[^a-z0-9]/g,'');
-      const codeCompact=codeNorm.replace(/[^a-z0-9]/g,'');
-      const haystackCompact=haystack.replace(/[^a-z0-9]/g,'');
-      const codeMatched=Boolean(
-        codeNorm&&(
-          codeNorm.includes(q)
-          || (qCompact&&codeCompact.includes(qCompact))
-        )
-      );
-      if(!codeMatched&&!haystack.includes(q)&&!(qCompact&&haystackCompact.includes(qCompact)))return false;
-      return true;
-    });
-  }
-
-  // ── CR filter ──
-  if(janzourCrSeg==='none')list=list.filter(s=>!jCrResult(s.id));
-  else if(janzourCrSeg==='solved')list=list.filter(s=>jCrResult(s.id)==='solved');
-  else if(janzourCrSeg==='contacted')list=list.filter(s=>jCrResult(s.id)==='contacted');
-  else if(janzourCrSeg==='no_answer')list=list.filter(s=>jCrResult(s.id)==='no_answer');
-  else if(janzourCrSeg==='pending')list=list.filter(s=>jCrResult(s.id)==='pending');
-
-  list.sort((a,b)=>{
-    const aCr=jCrResult(a.id);
-    const bCr=jCrResult(b.id);
-    const av=(()=>{
-      if(jSortKey==='delay_days')return Number(a.delay_days||0);
-      if(jSortKey==='client_name')return String(a.client_name||'');
-      if(jSortKey==='tracking_code')return String(a.tracking_code||'');
-      if(jSortKey==='captain')return String(a.captain||'');
-      if(jSortKey==='current_branch')return String(a.current_branch||'');
-      if(jSortKey==='government')return String(a.government||'');
-      if(jSortKey==='status')return String(a.status||'');
-      if(jSortKey==='cr_result')return String(aCr||'');
-      return Number(a.delay_days||0);
-    })();
-    const bv=(()=>{
-      if(jSortKey==='delay_days')return Number(b.delay_days||0);
-      if(jSortKey==='client_name')return String(b.client_name||'');
-      if(jSortKey==='tracking_code')return String(b.tracking_code||'');
-      if(jSortKey==='captain')return String(b.captain||'');
-      if(jSortKey==='current_branch')return String(b.current_branch||'');
-      if(jSortKey==='government')return String(b.government||'');
-      if(jSortKey==='status')return String(b.status||'');
-      if(jSortKey==='cr_result')return String(bCr||'');
-      return Number(b.delay_days||0);
-    })();
-    let cmp=0;
-    if(typeof av==='number'&&typeof bv==='number')cmp=av-bv;
-    else cmp=String(av).localeCompare(String(bv),'ar',{numeric:true,sensitivity:'base'});
-    return jSortDir==='asc'?cmp:-cmp;
-  });
-  updateJSortHeaderIcons();
-  jFilteredData=list.slice();
-  jFilteredIds=jFilteredData.map(s=>String(s.id));
-  updateJanzourAssignControls();
-
-  const per=Math.max(1,jPER||25);
-  const total=list.length;
-  const totalP=Math.max(1,Math.ceil(total/per));
-  if(!Number.isFinite(jPage)||jPage<1)jPage=1;
-  if(jPage>totalP)jPage=1;
-  const page=list.slice((jPage-1)*per,jPage*per);
-
-  const el=id=>document.getElementById(id);
-  if(el('j-cnt'))el('j-cnt').textContent=total+' طرد';
-
-  const crOpts=`<option value="">— نتيجة —</option><option value="delivered">✅ تم التسليم</option><option value="solved">✅ تم الحل</option><option value="contacted">📞 تم التواصل</option><option value="no_answer">📵 لا يرد</option><option value="pending">⏳ جاري المتابعة</option>`;
-
-  const tbody=el('j-tbody');
-  if(!page.length){
-    tbody.innerHTML=`<tr><td colspan="15" style="text-align:center;padding:32px;color:var(--mute)">${janzourShipments.length?'🔍 لا نتائج مطابقة':'🔌 اضغط "جلب الآن" في طرود API لتحميل البيانات'}</td></tr>`;
-    const allEl=document.getElementById('jchk-all');if(allEl)allEl.checked=false;
-  } else {
-    tbody.innerHTML=page.map((s,i)=>{
-      const ph=s.customer_phone&&s.customer_phone!=='—'&&s.customer_phone!=='undefined';
-      const waBtn=ph?`<button class="btn btn-wa btn-sm" data-a="wa-j" style="font-size:10px;padding:3px 6px">📱</button>`:'';
-      const crData=getCR(s.id);
-      const crColor=crData.result==='solved'?'var(--grn)':crData.result==='contacted'?'var(--blu)':crData.result==='no_answer'?'var(--red)':crData.result==='pending'?'var(--gold)':'';
-      const sidRaw=String(s.id);
-      const sid=sidRaw.replace(/'/g,"\\'");
-      const assigned=(assignments[s.tracking_code]||'').trim();
-      const assignCell=assigned
-        ?`<span class="badge b-grn" style="font-size:10px">${assigned}</span><button class="btn btn-ghost btn-sm" data-a="undo-jassign" data-code="${String(s.tracking_code||'').replace(/"/g,'&quot;')}" style="font-size:10px;padding:2px 6px;margin-inline-start:4px">↩</button>`
-        :`<span class="badge b-dim" style="font-size:10px">⏳ غير مسند</span>`;
-      return`<tr class="pr" data-jsid="${sidRaw.replace(/"/g,'&quot;')}" style="${assigned?'background:rgba(58,201,120,.08);':''}${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
-        <td><input type="checkbox" data-jsid="${sidRaw.replace(/"/g,'&quot;')}" ${jChecked.has(sidRaw)?'checked':''} style="width:16px;height:16px"></td>
-        <td style="color:var(--dim);font-size:10px">${(jPage-1)*per+i+1}</td>
-        <td style="font-weight:700;color:var(--white);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.client_name}">${s.client_name||'—'}</td>
-        <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
-        <td style="font-size:11px">${s.captain||'—'}</td>
-        <td>${assignCell}</td>
-        <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
-        <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
-        <td>${stBadge(s.status)}</td>
-        <td>${dBadge(s.delay_days)}</td>
-        <td style="min-width:130px">
-          <select class="fi" id="jcr-${i}" style="font-size:11px;padding:3px 6px;min-width:128px;border-color:${crColor||'var(--rim)'};color:${crColor||'inherit'}" onchange="document.getElementById('jcr-${i}').style.color=this.value?'':'inherit'">
-            ${crOpts}
-          </select>
-        </td>
-        <td style="min-width:160px">
-          <select class="fi jnote-sel" id="jnote-${i}" style="font-size:11px;padding:3px 6px;min-width:140px;width:100%;max-width:280px">
-            ${janzourNoteSelectHtml(crData.note||'')}
-          </select>
-        </td>
-        <td>
-          <button type="button" class="btn btn-grn btn-sm" data-a="quick-delivered" title="تم التسليم — تحديث الحالة ومؤشرات الفرع والمندوب" style="font-size:10px;padding:4px 8px;white-space:nowrap">✓ تسليم</button>
-        </td>
-        <td>
-          <button type="button" class="btn btn-pur btn-sm" id="jsave-${i}" data-a="save-j" data-jidx="${i}" style="font-size:10px;padding:4px 8px;white-space:nowrap">💾 حفظ</button>
-        </td>
-        <td>${waBtn}</td>
-      </tr>`;
-    }).join('');
-    // Set selected CR values after rendering
-    page.forEach((s,i)=>{
-      const sel=document.getElementById('jcr-'+i);
-      if(sel){
-        const cr=getCR(s.id);
-        sel.value=cr.result||'';
-        const c=cr.result==='solved'?'var(--grn)':cr.result==='contacted'?'var(--blu)':cr.result==='no_answer'?'var(--red)':cr.result==='pending'?'var(--gold)':'';
-        sel.style.color=c;
-        sel.style.borderColor=c||'var(--rim)';
-      }
-    });
-    const allEl=document.getElementById('jchk-all');
-    if(allEl)allEl.checked=jFilteredIds.length>0&&jFilteredIds.every(id=>jChecked.has(id));
-    if(!tbody._jDelegated){
-      tbody._jDelegated=true;
-      tbody.addEventListener('click',async e=>{
-        const row=e.target.closest('.pr'); if(!row)return;
-        const sid=row.dataset.jsid;
-        const actionBtn=e.target.closest('[data-a]');
-        if(actionBtn){
-          const a=actionBtn.dataset.a;
-          if(a==='wa-j')return apiWA(sid,'receiver');
-          if(a==='quick-delivered')return janzourQuickDelivered(sid);
-          if(a==='save-j')return saveJanzourCR(sid,parseInt(actionBtn.dataset.jidx||'0',10));
-          if(a==='undo-jassign'){
-            const code=actionBtn.dataset.code||'';
-            const rawA=_getAssignmentsRaw();if(rawA[code]){delete rawA[code];saveAPIAssignments(rawA);}
-            flashJanzourRow(sid);renderJanzour();renderAPIShipments();renderAssignStats();refreshAssignPanelEmps();updateJAssignLiveCounter();
-            toast('تم إلغاء التعيين','s');
-            return;
-          }
-        }
-        const cb=e.target.closest('input[type="checkbox"][data-jsid]');
-        if(cb){toggleJSelection(sid,cb.checked,e.shiftKey);return;}
-        const isControl=!!e.target.closest('button,select,input,textarea,a');
-        if(!isControl){
-          if(e.shiftKey){
-            const next=!jChecked.has(String(sid));
-            toggleJSelection(sid,next,true);
-          }else{
-            openAPIDetail(sid);
-          }
-        }
-      });
-    }
-  }
-
-  // Build pagination
-  const info=el('j-pginfo'),pgn=el('j-pgn');
-  if(total>0&&info){const s=(jPage-1)*per+1,e=Math.min(jPage*per,total);info.textContent=`${s}–${e} من ${total} طرد`;}
-  else if(info)info.textContent='لا نتائج';
-  if(pgn){
-    pgn.innerHTML='';
-    for(let i=Math.max(1,jPage-2);i<=Math.min(totalP,jPage+2);i++){
-      const b=document.createElement('button');
-      b.className='pgbtn'+(i===jPage?' on':'');b.textContent=i;
-      b.onclick=()=>{jPage=i;renderJanzour();};pgn.appendChild(b);
-    }
-  }
-}
-
-async function saveJanzourCR(sid,rowIdx){
-  const sel=document.getElementById('jcr-'+rowIdx);
-  const noteEl=document.getElementById('jnote-'+rowIdx);
-  const result=sel?sel.value:'';
-  const note=noteEl?noteEl.value.trim():'';
-  const btn=document.getElementById('jsave-'+rowIdx);
-  if(!note){
-    toast('اختر «ماذا حدث في الطلب» من القائمة قبل الحفظ','w');
-    if(noteEl){noteEl.style.borderColor='var(--red)';noteEl.focus();setTimeout(()=>{noteEl.style.borderColor='';},2000);}
-    return;
-  }
-  if(btn){btn.textContent='⏳';btn.disabled=true;}
-  const ok=await saveCR(sid,result,note);
-  if(ok===true){
-    const s=apiShipments.find(x=>String(x.id)===String(sid)||String(x.tracking_code)===String(sid));
-    if(s){
-      const inferred=janzourOutcomeFromNote(note);
-      if(inferred==='delivered'){
-        s.status='delivered';
-        s.raw_status='تم التسليم';
-      }else if(inferred==='returned'){
-        s.status='returned';
-        s.raw_status='تم الإلغاء/المرتجع';
-      }
-      persistAPIShipmentsCache();
-    }
-    refreshJanzourRatesPanels();
-    renderJanzour();
-  }
-  if(btn){btn.textContent='✅';setTimeout(()=>{btn.textContent='💾 حفظ';btn.disabled=false;},1200);}
-  if(sel){
-    const c=result==='solved'?'var(--grn)':result==='contacted'?'var(--blu)':result==='no_answer'?'var(--red)':result==='pending'?'var(--gold)':'';
-    sel.style.color=c;sel.style.borderColor=c||'var(--rim)';
-  }
-}
-
 function buildAPIPgn(total,totalP){
   const info=document.getElementById('a-pginfo'),pgn=document.getElementById('a-pgn');
   if(total>0){const s=(aPage-1)*aPER+1,e=Math.min(aPage*aPER,total);info.textContent=`${s}–${e} من ${total} طرد`;}
@@ -9021,7 +7995,6 @@ async function bulkWA_API(){
     if(ok)updated++;
   }
   renderAPIShipments();
-  renderJanzour();
   renderAssignStats();
   toast(`💬 تم إرسال ${codes.length} كود إلى ${captainLabel} وتحديث ${updated} إلى "تم التواصل"`,'s');
 }
@@ -9214,10 +8187,6 @@ function loadCachedAPIShipments(){
         if(typeof renderAPIShipments==='function')renderAPIShipments();
       }catch(e2){console.warn('cached API UI refresh',e2);}
     }
-    // loadAll() runs buildJanzourSet() before apiShipments is filled from cache — refresh subset now
-    buildJanzourSet();
-    refreshJanzourRatesPanels();
-    if(document.getElementById('tab-janzour')?.classList.contains('on'))renderJanzour();
     const logCached=localStorage.getItem('api_fetch_log');
     if(logCached)apiFetchLog=JSON.parse(logCached);
   }catch(e){}
@@ -9443,13 +8412,6 @@ function deleteUser(k){
 // ══════════════════════════════════════════
 // COMMISSION ENGINE + KPI (منظومة index — بدون Laravel)
 // ══════════════════════════════════════════
-function janzourOutcomeFromNote(note){
-  const n=String(note||'').trim();
-  if(!n)return '';
-  if(n.includes('تم تسليم')||n==='تم التسليم') return 'delivered';
-  if(n.includes('إلغاء')||n.includes('الغاء')||n.includes('رفض العميل')||n.includes('تم الإرجاع')) return 'returned';
-  return '';
-}
 function resolveJanzourOutcome(sh){
   if(!sh) return '';
   const st=(typeof sh==='string')?sh:String(sh.status||'').trim();
@@ -9463,297 +8425,10 @@ function commissionClassifyDR(shipmentOrStatus){
   return 'o';
 }
 function commissionRound2(x){return Math.round(Number(x)*100)/100;}
-function isJanzourClientName(name){
-  const n=String(name||'').trim().toLowerCase();
-  if(!n)return false;
-  if(janzourStoreSet.has(n))return true;
-  for(const sn of janzourStoreSet){if(n.includes(sn)||sn.includes(n))return true;}
-  return false;
-}
-function resolveOutcomeFromCR(cr){
-  if(!cr)return '';
-  // Strict rule: CR data alone must not affect Janzour delivery rates.
-  // Only explicit shipment status (delivered/returned) is counted.
-  const res=String(cr.result||'').trim();
-  if(res==='delivered')return 'delivered';
-  if(res==='returned')return 'returned';
-  return '';
-}
-function getJanzourAnalyticsPool(){
-  buildJanzourSet();
-  const byKey=new Map();
-  const keyOf=s=>String(s.tracking_code||s.id||'').trim();
-
-  // 1) Current Janzour API shipments
-  for(const s of janzourShipments){
-    const k=keyOf(s); if(!k)continue;
-    byKey.set(k,{
-      ...s,
-      _metricStatus: resolveJanzourOutcome(s)
-    });
-  }
-
-  // 2) Historical contact results (even if shipment dropped from API)
-  for(const cr of contact_results_db||[]){
-    const sid=String(cr.shipment_id||'').trim();
-    const tc=String(cr.tracking_code||'').trim();
-    const key=tc||sid;
-    if(!key)continue;
-    const api=apiShipments.find(x=>String(x.id)===sid || (tc && String(x.tracking_code)===tc));
-    const snap=readCrSnapMulti(sid,tc);
-    const clientName=String(api?.client_name||api?.customer_name||snap?.client_name||'').trim();
-    if(!isJanzourClientName(clientName))continue;
-    const metricStatus=resolveOutcomeFromCR(cr) || resolveJanzourOutcome(api||'');
-    const existing=byKey.get(key);
-    if(existing){
-      if(metricStatus) existing._metricStatus=metricStatus;
-      continue;
-    }
-    byKey.set(key,{
-      id: sid||key,
-      tracking_code: tc||key,
-      client_name: clientName||'—',
-      captain: String(api?.captain||api?.driver_name||snap?.captain_name||'').trim(),
-      current_branch: String(api?.current_branch||snap?.branch_name||'').trim(),
-      _metricStatus: metricStatus || ''
-    });
-  }
-  return Array.from(byKey.values());
-}
-/** تحديث لوحة «نسب ومعدلات جنزور» (يُستدعى عند فتح التبويب أو بعد تغيير بيانات API) */
-function refreshJanzourRatesPanels(){
-  buildJanzourSet();
-  const pool=getJanzourAnalyticsPool();
-  const el=document.getElementById('jr-cnt');
-  if(el)el.textContent=pool.length.toLocaleString('ar-LY')+' طرد في نطاق جنزور';
-  renderJanzourMetricsTable();
-  renderJanzourPerformanceOverview();
-}
-function renderJanzourRatesPage(){
-  refreshJanzourRatesPanels();
-}
-function renderJanzourMetricsTable(){
-  const tb=document.getElementById('j-metrics-tbody');
-  if(!tb)return;
-  const pool=getJanzourAnalyticsPool();
-  if(!pool.length){
-    tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--mute)">لا طرود في نطاق جنزور — جرّب الجلب أو تعريف المتاجر</td></tr>';
-    return;
-  }
-  const buckets={};
-  for(const s of pool){
-    const key=(s.client_name||'—').trim()||'—';
-    if(!buckets[key])buckets[key]={d:0,r:0};
-    const t=commissionClassifyDR(s._metricStatus||s);
-    if(t==='d')buckets[key].d++;
-    else if(t==='r')buckets[key].r++;
-  }
-  const rows=Object.entries(buckets).map(([name,v])=>{
-    const t=v.d+v.r;
-    const rate=t>0?Math.round(1000*v.d/t)/10:0;
-    return {name,d:v.d,r:v.r,t,rate};
-  }).sort((a,b)=>b.t-a.t);
-  tb.innerHTML=rows.map(r=>`<tr>
-    <td style="font-weight:700">${String(r.name).replace(/</g,'&lt;')}</td>
-    <td>${r.d}</td><td>${r.r}</td><td>${r.t}</td>
-    <td><span class="badge ${r.rate>=70?'b-grn':r.rate>=40?'b-gold':'b-red'}">${r.rate}%</span></td>
-  </tr>`).join('');
-}
-
-// ── لوحة أداء الفروع والمناديب (متاجر جنزور) ─────────────────
-/** بعد حل تسليم/مرتجع: صنّف الباقي حسب status في API (مع مندوب / شركة / متأخر / أخرى) */
-function jperfOpsBucket(s){
-  const ms=String(s&&s._metricStatus||'').trim();
-  if(ms==='delivered')return 'd';
-  if(ms==='returned')return 'r';
-  const raw=String(s&&s.status||'').trim()||ms;
-  if(raw==='delivered')return 'd';
-  if(raw==='returned')return 'r';
-  if(raw==='with_driver')return 'drv';
-  if(raw==='in_company')return 'cmp';
-  if(raw==='delayed')return 'dly';
-  return 'oth';
-}
-function jperfRestSum(m){
-  return (m.drv||0)+(m.cmp||0)+(m.dly||0)+(m.oth||0);
-}
-function jperfAggregateByKey(list,keyFn){
-  const map={};
-  for(const s of list){
-    const k=String(keyFn(s)||'').trim()||'—';
-    if(!map[k])map[k]={d:0,r:0,drv:0,cmp:0,dly:0,oth:0,t:0};
-    map[k].t++;
-    const b=jperfOpsBucket(s);
-    if(b==='d')map[k].d++;
-    else if(b==='r')map[k].r++;
-    else if(b==='drv')map[k].drv++;
-    else if(b==='cmp')map[k].cmp++;
-    else if(b==='dly')map[k].dly++;
-    else map[k].oth++;
-  }
-  return map;
-}
-function jperfRate4(m){
-  const c=m.d+m.r;
-  if(c<=0)return 0;
-  return Math.round(10000*m.d/c)/10000;
-}
-function drawJperfDonut(canvasId,d,r,p){
-  const canvas=document.getElementById(canvasId);
-  if(!canvas)return;
-  const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,rad=Math.min(W,H)/2-10;
-  ctx.clearRect(0,0,W,H);
-  const sum=d+r+p;
-  if(sum<=0){
-    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);
-    ctx.fillStyle='#1a2235';ctx.fill();
-    ctx.fillStyle='#64748b';ctx.font='11px Tahoma,Arial';ctx.textAlign='center';
-    ctx.fillText('لا بيانات',cx,cy);
-    return;
-  }
-  let a=-Math.PI/2;
-  [[d,'#22c55e'],[r,'#ef4444'],[p,'#475569']].forEach(([v,c])=>{
-    if(!v)return;
-    const sl=(v/sum)*Math.PI*2;
-    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,rad,a,a+sl);ctx.closePath();
-    ctx.fillStyle=c;ctx.fill();
-    a+=sl;
-  });
-  ctx.beginPath();ctx.arc(cx,cy,rad*0.58,0,Math.PI*2);
-  ctx.fillStyle='#0f1419';ctx.fill();
-  ctx.fillStyle='#e2e8f0';ctx.font='bold 12px Tahoma,Arial';ctx.textAlign='center';
-  const inner=d+r>0?((100*d)/(d+r)).toFixed(2)+'%':'—';
-  ctx.fillText('نسبة العمليات',cx,cy-6);
-  ctx.font='10px Tahoma,Arial';ctx.fillStyle='#94a3b8';
-  ctx.fillText(inner,cx,cy+8);
-}
-function renderJanzourPerformanceOverview(){
-  const list=getJanzourAnalyticsPool();
-  const tBr=document.getElementById('jperf-br-tbody');
-  const tCap=document.getElementById('jperf-cap-tbody');
-  if(!tBr||!tCap)return;
-  if(!list.length){
-    tBr.innerHTML='<tr><td colspan="9" style="text-align:center;padding:16px;color:var(--mute)">لا طرود جنزور</td></tr>';
-    tCap.innerHTML='<tr><td colspan="9" style="text-align:center;padding:16px;color:var(--mute)">لا طرود جنزور</td></tr>';
-    const sb=document.getElementById('jperf-br-sel');
-    const sc=document.getElementById('jperf-cap-sel');
-    if(sb)sb.innerHTML='';
-    if(sc)sc.innerHTML='';
-    drawJperfDonut('jperf-donut-br',0,0,0);
-    drawJperfDonut('jperf-donut-cap',0,0,0);
-    return;
-  }
-  const brMap=jperfAggregateByKey(list,s=>s.current_branch||'');
-  const capMap=jperfAggregateByKey(list,s=>s.captain||'');
-  const brRows=Object.entries(brMap).sort((a,b)=>b[1].t-a[1].t);
-  const capRows=Object.entries(capMap).sort((a,b)=>b[1].t-a[1].t);
-  function rowHtml(name,m){
-    const rate=jperfRate4(m);
-    const pct=(m.d+m.r)>0?(100*rate).toFixed(2):'—';
-    const cls=rate>=0.7?'b-grn':rate>=0.4?'b-gold':'b-red';
-    const esc=String(name).replace(/</g,'&lt;');
-    return`<tr><td style="font-weight:700">${esc}</td><td>${m.t}</td><td style="color:var(--grn)">${m.d}</td><td style="color:var(--red)">${m.r}</td><td style="color:var(--blu)">${m.drv}</td><td style="color:var(--orn)">${m.cmp}</td><td style="color:var(--gold)">${m.dly}</td><td style="color:var(--mute)">${m.oth}</td><td><span class="badge ${pct==='—'?'b-dim':cls}">${pct==='—'?pct:pct+'%'}</span></td></tr>`;
-  }
-  tBr.innerHTML=brRows.map(([k,v])=>rowHtml(k,v)).join('');
-  tCap.innerHTML=capRows.map(([k,v])=>rowHtml(k,v)).join('');
-  const sb=document.getElementById('jperf-br-sel');
-  const sc=document.getElementById('jperf-cap-sel');
-  function fillSel(el,rows,last){
-    if(!el)return;
-    const keys=rows.map(([k])=>k);
-    const jEsc=v=>String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-    el.innerHTML=keys.map(k=>`<option value="${jEsc(k)}">${jEsc(k)}</option>`).join('');
-    const pick=last&&keys.includes(last)?last:keys[0];
-    if(pick)el.value=pick;
-  }
-  fillSel(sb,brRows,jperfLastBr);
-  fillSel(sc,capRows,jperfLastCap);
-  if(sb&&sb.value)jperfLastBr=sb.value;
-  if(sc&&sc.value)jperfLastCap=sc.value;
-  renderJanzourPerfProfiles();
-}
-function renderJanzourPerfProfiles(){
-  const list=getJanzourAnalyticsPool();
-  const brMap=jperfAggregateByKey(list,s=>s.current_branch||'');
-  const capMap=jperfAggregateByKey(list,s=>s.captain||'');
-  const sb=document.getElementById('jperf-br-sel');
-  const sc=document.getElementById('jperf-cap-sel');
-  if(sb&&sb.value)jperfLastBr=sb.value;
-  if(sc&&sc.value)jperfLastCap=sc.value;
-  const bm=sb&&sb.value?brMap[sb.value]:null;
-  const cm=sc&&sc.value?capMap[sc.value]:null;
-  const el=id=>document.getElementById(id);
-  if(bm){
-    const rate=jperfRate4(bm);
-    if(el('jperf-br-d'))el('jperf-br-d').textContent=bm.d;
-    if(el('jperf-br-r'))el('jperf-br-r').textContent=bm.r;
-    if(el('jperf-br-drv'))el('jperf-br-drv').textContent=bm.drv;
-    if(el('jperf-br-cmp'))el('jperf-br-cmp').textContent=bm.cmp;
-    if(el('jperf-br-dly'))el('jperf-br-dly').textContent=bm.dly;
-    if(el('jperf-br-oth'))el('jperf-br-oth').textContent=bm.oth;
-    if(el('jperf-br-rate'))el('jperf-br-rate').textContent=(bm.d+bm.r)>0?`معدل النجاح: ${(100*rate).toFixed(2)}%`:'لا توجد حالات مغلقة (تسليم/مرتجع)';
-    drawJperfDonut('jperf-donut-br',bm.d,bm.r,jperfRestSum(bm));
-  }else{
-    if(el('jperf-br-d'))el('jperf-br-d').textContent='0';
-    if(el('jperf-br-r'))el('jperf-br-r').textContent='0';
-    if(el('jperf-br-drv'))el('jperf-br-drv').textContent='0';
-    if(el('jperf-br-cmp'))el('jperf-br-cmp').textContent='0';
-    if(el('jperf-br-dly'))el('jperf-br-dly').textContent='0';
-    if(el('jperf-br-oth'))el('jperf-br-oth').textContent='0';
-    if(el('jperf-br-rate'))el('jperf-br-rate').textContent='—';
-    drawJperfDonut('jperf-donut-br',0,0,0);
-  }
-  if(cm){
-    const rate=jperfRate4(cm);
-    if(el('jperf-cap-d'))el('jperf-cap-d').textContent=cm.d;
-    if(el('jperf-cap-r'))el('jperf-cap-r').textContent=cm.r;
-    if(el('jperf-cap-drv'))el('jperf-cap-drv').textContent=cm.drv;
-    if(el('jperf-cap-cmp'))el('jperf-cap-cmp').textContent=cm.cmp;
-    if(el('jperf-cap-dly'))el('jperf-cap-dly').textContent=cm.dly;
-    if(el('jperf-cap-oth'))el('jperf-cap-oth').textContent=cm.oth;
-    if(el('jperf-cap-rate'))el('jperf-cap-rate').textContent=(cm.d+cm.r)>0?`معدل النجاح: ${(100*rate).toFixed(2)}%`:'لا توجد حالات مغلقة';
-    drawJperfDonut('jperf-donut-cap',cm.d,cm.r,jperfRestSum(cm));
-  }else{
-    if(el('jperf-cap-d'))el('jperf-cap-d').textContent='0';
-    if(el('jperf-cap-r'))el('jperf-cap-r').textContent='0';
-    if(el('jperf-cap-drv'))el('jperf-cap-drv').textContent='0';
-    if(el('jperf-cap-cmp'))el('jperf-cap-cmp').textContent='0';
-    if(el('jperf-cap-dly'))el('jperf-cap-dly').textContent='0';
-    if(el('jperf-cap-oth'))el('jperf-cap-oth').textContent='0';
-    if(el('jperf-cap-rate'))el('jperf-cap-rate').textContent='—';
-    drawJperfDonut('jperf-donut-cap',0,0,0);
-  }
-}
-async function janzourQuickDelivered(sid){
-  const NOTE='تم تسليم الطرد للعميل';
-  const s=apiShipments.find(x=>String(x.id)===String(sid));
-  if(!s){toast('الطرد غير موجود في بيانات API','e');return;}
-  const prev={status:s.status,raw:s.raw_status};
-  s.status='delivered';
-  s.raw_status='تم التسليم';
-  persistAPIShipmentsCache();
-  const ok=await saveCR(sid,'delivered',NOTE);
-  if(ok!==true){
-    s.status=prev.status;
-    s.raw_status=prev.raw;
-    persistAPIShipmentsCache();
-    return;
-  }
-  rebuildJanzourShipments();
-  updateAPIKPIs();
-  renderAPIShipments();
-  renderHome();
-  toast('✅ تم التسليم — تم تحديث مؤشرات الفروع والمناديب','s');
-  refreshJanzourRatesPanels();
-  renderJanzour();
-}
-
 function runJanzourCommissionSync(){
   loadCommissionCfg();
-  buildJanzourSet();
   const a=getAPIAssignments();
-  const list=janzourShipments;
+  const list=apiShipments;
   const byEmp={};
   const seen=new Set();
   for(const s of list){
@@ -9777,9 +8452,7 @@ function runJanzourCommissionSync(){
   const base=CommissionCfg.unitBase;
   const bc=commissionRound2(base*(CommissionCfg.branchPercent/100));
   let n=0;
-  const jCodes=new Set(list.map(s=>s.tracking_code));
-  for(const s of apiShipments){
-    if(!jCodes.has(s.tracking_code))continue;
+  for(const s of list){
     const emp=(a[s.tracking_code]||'').trim();
     const pack=emp?byEmp[emp]:null;
     const w=pack?pack.w:CommissionCfg.ratioMax;
@@ -9790,14 +8463,11 @@ function runJanzourCommissionSync(){
     n++;
   }
   persistAPIShipmentsCache();
-  buildJanzourSet();
-  refreshJanzourRatesPanels();
-  toast('✅ تم تحديث عمولات '+n+' طرداً في نطاق جنزور','s');
+  toast('✅ تم تحديث عمولات '+n+' طرداً (طرود API)','s');
 }
 function computeServiceKpiForTarget(displayName){
-  buildJanzourSet();
   const a=getAPIAssignments();
-  const list=janzourShipments.filter(s=>(a[s.tracking_code]||'').trim()===displayName);
+  const list=apiShipments.filter(s=>(a[s.tracking_code]||'').trim()===displayName);
   let d=0,r=0,o=0;
   for(const s of list){
     const t=commissionClassifyDR(s);
@@ -9863,7 +8533,7 @@ function renderCommissionAdminPage(){
     const v=u.janzour_commission_pct!=null&&u.janzour_commission_pct!==''?u.janzour_commission_pct:'';
     return`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--rim)">
       <div style="flex:1;min-width:160px"><strong>${String(u.name).replace(/</g,'&lt;')}</strong><div style="font-size:10px;color:var(--mute);font-family:var(--mono)">${k}</div></div>
-      <div><label style="font-size:11px;color:var(--mute)">عمولة جنزور %</label><br><input type="number" class="fi ca-ov" data-u="${k}" value="${v}" step="0.01" min="0" max="100" style="width:100px;margin-top:4px"></div>
+      <div><label style="font-size:11px;color:var(--mute)">عمولة مندوب % (API)</label><br><input type="number" class="fi ca-ov" data-u="${k}" value="${v}" step="0.01" min="0" max="100" style="width:100px;margin-top:4px"></div>
     </div>`;
   }).join('');
   box.innerHTML=rows||'<p style="color:var(--mute)">لا يوجد موظفون</p>';
