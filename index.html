@@ -2141,9 +2141,11 @@ const MANAGER_TABS = ALL_TAB_IDS; // managers get all
 // Default users (seed)
 const DEFAULT_USERS = {
   'mohamed': {pass:'admin123',role:'manager',name:'محمد سعد',phone:'',email:'',status:'active',perms:ALL_TAB_IDS},
-  'ahmed':   {pass:'emp123',role:'employee',name:'أحمد علي',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','service-kpi']},
-  'fatima':  {pass:'emp123',role:'employee',name:'فاطمة محمد',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','service-kpi']},
 };
+
+// قائمة المستخدمين المسموح بهم — تنظيف لمرة واحدة يحذف أي مستخدم اسمه ليس هنا
+const ALLOWED_USER_NAMES = ['محمد سعد','عبد الله الفرجاني','حسن القبالي','حمزة المقرحي'];
+const USERS_CLEANUP_KEY = 'nawris_users_cleanup_v1';
 
 // Load users from localStorage, falling back to defaults
 function loadUsers(){
@@ -2169,6 +2171,23 @@ function loadUsers(){
           migrated=true;
         }
       });
+      // تنظيف لمرة واحدة: إبقاء المستخدمين المسموح بهم فقط حسب الاسم
+      if(localStorage.getItem(USERS_CLEANUP_KEY)!=='1'){
+        const allowed=new Set(ALLOWED_USER_NAMES.map(n=>String(n||'').trim()));
+        const removed=[];
+        Object.keys(parsed).forEach(k=>{
+          const nm=String(parsed[k]?.name||'').trim();
+          if(!allowed.has(nm)){
+            removed.push(`${k} (${nm||'بدون اسم'})`);
+            delete parsed[k];
+          }
+        });
+        localStorage.setItem(USERS_CLEANUP_KEY,'1');
+        if(removed.length){
+          migrated=true;
+          console.log('🧹 تم حذف المستخدمين غير المسموح بهم:',removed);
+        }
+      }
       if(migrated) saveUsers(parsed);
       return parsed;
     }
