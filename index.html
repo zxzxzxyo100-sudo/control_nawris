@@ -1907,12 +1907,12 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="ct-grid">
         <div class="ct-card" id="ct-card-0">
           <div class="ct-card-top">
-            <div class="ct-card-title">معدل ركود المناديب</div>
-            <div class="ct-trend" id="ct-tr-0" title="اتجاه المؤشر"></div>
+            <div class="ct-card-title">معدل الركود (&gt; 4 أيام)</div>
+            <div class="ct-trend" id="ct-tr-0" title="اتجاه المؤشر — الركود: طلبات مع المندوب أكثر من ٤ أيام (٩٦ ساعة) ÷ إجمالي الطلبات مع مندوب"></div>
           </div>
-          <div class="ct-desc">طلبات مع المندوب أكثر من يومين تقريباً ÷ إجمالي الطلبات مع مندوب × ١٠٠ — الهدف أقل من ٥٪</div>
+          <div class="ct-desc" title="طلبات مع المندوب أكثر من ٤ أيام (٩٦ ساعة) ÷ إجمالي الطلبات مع مندوب × ١٠٠. أخضر: أقل من ١٠٪ (طبيعي مع نافذة ٤ أيام). كهرماني: ١٠٪–٢٠٪. أحمر: أكثر من ٢٠٪ (ركود حرج).">طلبات مع المندوب أكثر من ٤ أيام (٩٦ ساعة) ÷ إجمالي الطلبات مع مندوب × ١٠٠ — مناطق اللون حسب النسبة أدناه</div>
           <div class="ct-val" id="ct-v-0">—</div>
-          <div class="ct-target">الهدف: أقل من ٥٪</div>
+          <div class="ct-target">أخضر &lt; ١٠٪ · كهرماني ١٠٪–٢٠٪ · أحمر &gt; ٢٠٪</div>
           <div class="ct-meta" id="ct-m-0"></div>
         </div>
         <div class="ct-card" id="ct-card-1">
@@ -3541,6 +3541,13 @@ function ctReverseZone(val,target){
   if(val<=target*1.25)return'warn';
   return'danger';
 }
+/** Agent stagnation %: green &lt;10%, yellow 10–20%, red &gt;20% (4-day window). */
+function ctStagnationZone(pct){
+  if(!Number.isFinite(pct))return'warn';
+  if(pct<10)return'good';
+  if(pct<=20)return'warn';
+  return'danger';
+}
 function ctSetCard(i,zone,valText,metaLine,trendKind){
   const card=document.getElementById('ct-card-'+i);
   const v=document.getElementById('ct-v-'+i);
@@ -3556,13 +3563,13 @@ function renderControlTowerPage(){
   const merged=hasApi?apiShipments:(shipments||[]);
   const delayed=merged.filter(s=>cls(s.delay_days)!=='ok').length;
   const withAgent=merged.filter(s=>s.status==='with_driver').length;
-  const stagnant48hProxy=merged.filter(s=>{
+  const stagnant4dProxy=merged.filter(s=>{
     if(s.status!=='with_driver')return false;
     const d=parseInt(s.delay_days||s.delay||0)||0;
-    return d>=2;
+    return d>=4;
   }).length;
   const ret=merged.filter(s=>s.status==='returned').length;
-  const stagnationPct=withAgent<=0?0:(stagnant48hProxy/withAgent)*100;
+  const stagnationPct=withAgent<=0?0:(stagnant4dProxy/withAgent)*100;
   const returnVol=Math.max(ret/7,1);
   const agingDays=returnVol>0?ret/returnVol:0;
   const doneN=merged.filter(s=>['delivered','completed','processed'].includes(String(s.status||''))).length;
@@ -3580,10 +3587,10 @@ function renderControlTowerPage(){
   const eps=1e-6;
   function tri(c,p){if(p==null||!Number.isFinite(p)||!Number.isFinite(c))return'flat';if(c>p+eps)return'up';if(c<p-eps)return'down';return'flat';}
   const t0=tri(stagnationPct,pa),t1=tri(agingDays,pr),t2=tri(backlog,pb);
-  const z0=ctReverseZone(stagnationPct,5);
+  const z0=ctStagnationZone(stagnationPct);
   const z1=ctReverseZone(agingDays,1.5);
   const z2=ctReverseZone(backlog,0.5);
-  const meta0=`مع مندوب: ${withAgent.toLocaleString('ar-SA')} · ركود +٢يوم: ${stagnant48hProxy.toLocaleString('ar-SA')}`;
+  const meta0=`مع مندوب: ${withAgent.toLocaleString('ar-SA')} · ركود +٤ أيام: ${stagnant4dProxy.toLocaleString('ar-SA')}`;
   const meta1=`مرتجعات: ${ret.toLocaleString('ar-SA')} · متوسط يومي تقديري: ${returnVol.toFixed(0)}`;
   const meta2=`متأخر: ${delayed.toLocaleString('ar-SA')} · إنجاز يومي تقديري: ${completionRate.toFixed(0)}`;
   ctSetCard(0,z0,stagnationPct.toFixed(1)+'٪',meta0,t0==='up'?'up':t0==='down'?'down':'flat');

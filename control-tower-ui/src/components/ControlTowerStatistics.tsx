@@ -10,6 +10,11 @@ export interface ControlTowerStatsData {
   delayedOrders: number;
   ordersWithAgents: number;
   returnOrders: number;
+  /** Count of orders with same agent &gt; 4 days (96h) */
+  ordersWithAgentOver4Days?: number;
+  /**
+   * @deprecated Use `ordersWithAgentOver4Days` (same field semantics must be &gt; 4 days).
+   */
   ordersWithAgentOver48h?: number;
   avgDailyReturnProcessingVolume?: number;
   avgDailyCompletionRate?: number;
@@ -29,6 +34,14 @@ function zoneForReverseKpi(value: number, target: number): Zone {
   if (!Number.isFinite(value)) return "warn";
   if (value <= target) return "good";
   if (value <= target * WARN_FACTOR) return "warn";
+  return "danger";
+}
+
+/** Agent stagnation %: green &lt;10%, yellow 10–20%, red &gt;20% (4-day window). */
+function zoneForAgentStagnationRatePct(value: number): Zone {
+  if (!Number.isFinite(value)) return "warn";
+  if (value < 10) return "good";
+  if (value <= 20) return "warn";
   return "danger";
 }
 
@@ -106,15 +119,19 @@ export function ControlTowerStatistics({
       delayedOrders,
       ordersWithAgents,
       returnOrders,
-      ordersWithAgentOver48h = 0,
+      ordersWithAgentOver4Days,
+      ordersWithAgentOver48h,
       avgDailyReturnProcessingVolume,
       avgDailyCompletionRate,
       kpi24hAgo,
     } = statsData;
 
+    const stuckWithAgentOver4d =
+      ordersWithAgentOver4Days ?? ordersWithAgentOver48h ?? 0;
+
     const denomAgents = Math.max(ordersWithAgents, 1);
     const agentStagnationRatePct =
-      ordersWithAgents <= 0 ? 0 : (ordersWithAgentOver48h / denomAgents) * 100;
+      ordersWithAgents <= 0 ? 0 : (stuckWithAgentOver4d / denomAgents) * 100;
 
     const returnVol =
       avgDailyReturnProcessingVolume ??
@@ -138,19 +155,24 @@ export function ControlTowerStatistics({
     const { agentStagnationRatePct, pendingReturnsAgingDays, backlogDensityIndex, kpi24hAgo } =
       kpis;
 
-    const stagnationTarget = 5;
     const returnsAgingTarget = 1.5;
     const backlogTarget = 0.5;
+
+    const stagnationSubtitle =
+      "طلبات مع المندوب أكثر من ٤ أيام (٩٦ ساعة) ÷ إجمالي الطلبات مع مندوب × ١٠٠";
+    const stagnationZonesHelp =
+      "أخضر: أقل من ١٠٪ (طبيعي مع نافذة ٤ أيام) · كهرماني: ١٠٪–٢٠٪ · أحمر: أكثر من ٢٠٪ (ركود حرج)";
 
     return [
       {
         key: "stagnation",
-        title: "معدل ركود المناديب",
-        subtitle: "طلبات مع المندوب أكثر من ٤٨ ساعة ÷ إجمالي الطلبات مع مندوب",
+        title: "معدل الركود (> 4 أيام)",
+        subtitle: stagnationSubtitle,
+        /** Full description + zone thresholds (tooltip) */
+        subtitleTitle: `${stagnationSubtitle} — ${stagnationZonesHelp}`,
         value: fmtPct(agentStagnationRatePct),
-        targetLabel: `الهدف أقل من ${stagnationTarget}٪`,
-        target: stagnationTarget,
-        zone: zoneForReverseKpi(agentStagnationRatePct, stagnationTarget),
+        targetLabel: stagnationZonesHelp,
+        zone: zoneForAgentStagnationRatePct(agentStagnationRatePct),
         trend: trendReverse(
           agentStagnationRatePct,
           kpi24hAgo?.agentStagnationRatePct
@@ -212,13 +234,24 @@ export function ControlTowerStatistics({
                 <h3 className="text-sm font-bold leading-snug text-slate-100">{c.title}</h3>
                 <span
                   className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}
-                  title="مقارنة آخر ٢٤ ساعة"
+                  title={
+                    c.key === "stagnation"
+                      ? "مقارنة آخر ٢٤ ساعة — الركود: طلبات مع المندوب أكثر من ٤ أيام (٩٦ ساعة) ÷ إجمالي الطلبات مع مندوب"
+                      : "مقارنة آخر ٢٤ ساعة"
+                  }
                 >
                   <TrendGlyph trend={c.trend} />
                   <span className="sr-only">اتجاه المؤشر</span>
                 </span>
               </div>
-              <p className="mb-4 line-clamp-2 text-xs leading-relaxed text-slate-500">
+              <p
+                className="mb-4 line-clamp-2 text-xs leading-relaxed text-slate-500"
+                title={
+                  "subtitleTitle" in c && c.subtitleTitle
+                    ? c.subtitleTitle
+                    : `${c.subtitle}${c.target != null ? ` — الهدف: ≤ ${c.target}` : ""}`
+                }
+              >
                 {c.subtitle}
               </p>
               <p

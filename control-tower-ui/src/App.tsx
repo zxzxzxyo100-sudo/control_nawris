@@ -5,7 +5,7 @@ const demoStats: ControlTowerStatsData = {
   delayedOrders: 3500,
   ordersWithAgents: 8200,
   returnOrders: 420,
-  ordersWithAgentOver48h: 310,
+  ordersWithAgentOver4Days: 310,
   avgDailyReturnProcessingVolume: 340,
   avgDailyCompletionRate: 9200,
   kpi24hAgo: {
