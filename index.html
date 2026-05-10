@@ -2206,8 +2206,8 @@ function resolveLogApiBase(){
   return 'api';
 }
 const LOG_API_BASE=resolveLogApiBase();
-/** حد أيام التأخير لطلبات Algoriza «متابعة الفروع» — متفق عليه 4 أيام؛ يُجرّى احتياطياً يومان/1 إن كان الرد فارغاً */
-const BRANCH_DELAYED_LIST_DAYS=4;
+/** حد أيام التأخير لطلبات Algoriza «متابعة الفروع»: يومان أو أكثر (≥2). إن فرغ الرد يُجرّى طلب احتياطي بـ delay_days=1 */
+const BRANCH_DELAYED_LIST_DAYS=2;
 function logApiAbsolute(relPath){
   const p=String(relPath||'').replace(/^\//,'');
   const baseRaw=LOG_API_BASE.replace(/\/$/,'');
@@ -2769,12 +2769,11 @@ async function loadReturns(){
     const listEl=document.getElementById('returns-list');
     if(listEl)listEl.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
     setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...');
-    // الطلب من API التأخير: delay_days الافتراضي = BRANCH_DELAYED_LIST_DAYS (4)، ثم احتياط 2 ثم 1 إن فرغ الرد.
+    // الطلب من API: delay_days = BRANCH_DELAYED_LIST_DAYS (2)، ثم احتياط 1 إن فرغ الرد.
     const token=cfg.token;
     let rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
     if(!(rows&&rows.length)&&token){
-      try{rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,2);}catch(_){}
-      if(!(rows&&rows.length))try{rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
+      try{rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
     }
     const inCompanyRows=rows.filter(r=>{
       const d=parseInt(r?.delay_days||r?.delay||0)||0;
@@ -2894,8 +2893,7 @@ async function loadTransfers(){
     const token=cfg.token;
     let apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_TRANSFER_DELAY);
     if(!(apiRows&&apiRows.length)&&token){
-      try{apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,2);}catch(_){}
-      if(!(apiRows&&apiRows.length))try{apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
+      try{apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
     }
     let transferRows=apiRows.filter(r=>transferRowMatchesStrict(r,MIN_TRANSFER_DELAY));
     if(!transferRows.length&&apiRows.length){
