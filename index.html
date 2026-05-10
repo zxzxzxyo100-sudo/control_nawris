@@ -2208,6 +2208,16 @@ const DEFAULT_USERS = {
 const ALLOWED_USER_NAMES = ['محمد سعد','عبد الله الفرجاني','حسن القبالي','حسن المقرحي','حمزة المقرحي'];
 const USERS_CLEANUP_KEY = 'nawris_users_cleanup_v2';
 
+// قائمة حظر دائمة — هؤلاء المستخدمون يُحذفون دائماً من المنظومة (مستخدمون + إسنادات + كل التبويبات)
+// تطبَّق في كل تحميل ولا تتأثر بأي مفاتيح cleanup
+const BLOCKED_USER_NAMES = ['أحمد علي','احمد علي','عبد الرحمن ابوزيد','عبدالرحمن ابوزيد','عبد الرحمن أبوزيد','عبدالرحمن أبوزيد','فاطمة','فاطمة محمد','علي امسيلخ','علي أمسيلخ'];
+function _normName(s){return String(s||'').replace(/\s+/g,' ').trim();}
+function isBlockedUserName(name){
+  const n=_normName(name);
+  if(!n) return false;
+  return BLOCKED_USER_NAMES.some(b=>_normName(b)===n);
+}
+
 // Load users from localStorage, falling back to defaults
 function loadUsers(){
   try{
@@ -2248,6 +2258,18 @@ function loadUsers(){
           migrated=true;
           console.log('🧹 تم حذف المستخدمين غير المسموح بهم:',removed);
         }
+      }
+      // قائمة حظر دائمة — تُطبَّق في كل تحميل
+      const blockedRemoved=[];
+      Object.keys(parsed).forEach(k=>{
+        if(isBlockedUserName(parsed[k]?.name)||isBlockedUserName(k)){
+          blockedRemoved.push(`${k} (${parsed[k]?.name||''})`);
+          delete parsed[k];
+          migrated=true;
+        }
+      });
+      if(blockedRemoved.length){
+        console.log('🚫 تم حذف مستخدمين محظورين:',blockedRemoved);
       }
       if(migrated) saveUsers(parsed);
       return parsed;
@@ -2410,7 +2432,16 @@ async function init(){
       if(rows&&rows.length&&rows[0].value){
         const fresh=JSON.parse(rows[0].value);
         Object.keys(fresh).forEach(k=>USERS[k]=fresh[k]);
+        // تطبيق قائمة الحظر بعد دمج بيانات Supabase حتى لا يعودوا
+        let blockedDropped=false;
+        Object.keys(USERS).forEach(k=>{
+          if(isBlockedUserName(USERS[k]?.name)||isBlockedUserName(k)){
+            delete USERS[k];
+            blockedDropped=true;
+          }
+        });
         localStorage.setItem('nawris_users',JSON.stringify(USERS));
+        if(blockedDropped){try{saveUsers(USERS);}catch(_){}}
         try{sanitizeAPIAssignmentsToStore();}catch(_){}
       }
     }catch(e){console.warn('pre-login user sync failed',e);}
@@ -9317,8 +9348,9 @@ function userByDisplayName(name){
   if(name==null||name==='')return null;
   return Object.values(USERS).find(u=>String(u.name)===String(name).trim())||null;
 }
-/** موظف يمكن إسناد طرود API إليه — المدير مُستبعد دائماً */
+/** موظف يمكن إسناد طرود API إليه — المدير والمحظورون مُستبعدون دائماً */
 function isAssignableEmployeeName(name){
+  if(isBlockedUserName(name)) return false;
   const u=userByDisplayName(name);
   return !!(u&&u.status!=='inactive'&&u.role!=='manager');
 }
@@ -9326,18 +9358,27 @@ function isManagerName(name){
   return userByDisplayName(name)?.role==='manager';
 }
 /**
- * إزالة من المخزن والمزامنة مع Supabase أي إسناد لحساب: مدير، موظف معطّل، أو اسم غير مُعرّف (مُحذوف من المستخدمين).
+ * إزالة من المخزن والمزامنة مع Supabase أي إسناد لحساب: مدير، موظف معطّل، محظور، أو اسم غير مُعرّف.
  * يضمن سلوكاً موحّداً على كل الأجهزة بعد التنظيف.
  */
 function sanitizeAPIAssignmentsToStore(){
   const a=_getAssignmentsRaw();
   let removed=0;
   for(const [code,entry] of Object.entries(a)){
-    if(!entry||!entry.emp)continue;
-    if(!isAssignableEmployeeName(entry.emp)){
+    if(!entry||!entry.emp){
+      if(entry&&isBlockedUserName(entry.emp)){delete a[code];removed++;}
+      continue;
+    }
+    if(isBlockedUserName(entry.emp)||!isAssignableEmployeeName(entry.emp)){
       delete a[code];
       removed++;
     }
+  }
+  // تنظيف contact_results_db من أسماء المحظورين
+  if(Array.isArray(window.contact_results_db)){
+    contact_results_db.forEach(cr=>{
+      if(cr&&isBlockedUserName(cr.updated_by)) cr.updated_by='';
+    });
   }
   if(removed)saveAPIAssignments(a);
   return removed;
