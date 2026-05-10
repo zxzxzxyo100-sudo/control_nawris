@@ -534,6 +534,7 @@ html.light .ct-card{background:#fff;border-color:var(--rim);box-shadow:var(--sha
 .ct-disch-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px;font-family:var(--ar-font)}
 .ct-disch-table th,.ct-disch-table td{padding:8px 6px;border-bottom:1px solid var(--rim);text-align:right;vertical-align:middle}
 .ct-disch-table th{color:var(--mute);font-weight:800;font-size:10px}
+.ct-disch-row-collapsed{display:none!important}
 .ct-disch-alert{display:inline-flex;align-items:center;gap:4px;margin-inline-start:6px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;background:var(--rd);color:var(--red);border:1px solid var(--rb);white-space:nowrap}
 .ct-score-grn{color:var(--grn);font-weight:900;font-family:var(--mono)}
 .ct-score-gld{color:var(--gold);font-weight:900;font-family:var(--mono)}
@@ -3644,38 +3645,60 @@ function resolveApiShipmentAssignedStaff(r,trackingCode){
   }catch(_){}
   return'';
 }
-function buildControlTowerDischargeUsers(rows){
+/** مفتاح تجميع الموظف من صف apiShipments (بعد الجلب أو من الكاش). */
+function dischargeStaffKeyFromShipment(s){
+  let name=String(s.assigned_staff||'').trim();
+  if(!name){
+    try{
+      const tc=s.tracking_code;
+      if(typeof assignments!=='undefined'&&assignments&&tc)name=String(assignments[tc]||'').trim();
+    }catch(_){}
+  }
+  return name||'غير مسند';
+}
+/**
+ * مرور واحد على mergedSource: تصفية «مرتجع مع المندوب» + تجميع حسب الموظف + مؤشر عام.
+ * يقلل التكرار على البيانات الضخمة مقارنةً بـ filter ثم حلقات منفصلة.
+ */
+function computeDischargeMetricsOnePass(mergedSource){
+  const RETURN_RAW='مرتجع مع المندوب';
   const groups={};
-  for(let i=0;i<rows.length;i++){
-    const s=rows[i];
-    let name=String(s.assigned_staff||'').trim();
-    if(!name){
-      try{
-        const tc=s.tracking_code;
-        if(typeof assignments!=='undefined'&&assignments&&tc)name=String(assignments[tc]||'').trim();
-      }catch(_){}
-    }
-    if(!name)name='غير مسند';
-    if(!groups[name])groups[name]={name,orderCount:0,ages:[]};
-    groups[name].orderCount++;
+  let dischargeFilteredCount=0,globalAgeSum=0,globalAgeN=0;
+  const nowMs=Date.now();
+  const n=mergedSource.length;
+  for(let i=0;i<n;i++){
+    const s=mergedSource[i];
+    if(String(s.raw_status||'').trim()!==RETURN_RAW)continue;
+    dischargeFilteredCount++;
+    const name=dischargeStaffKeyFromShipment(s);
+    let g=groups[name];
+    if(!g){g={orderCount:0,ageSum:0,ageN:0};groups[name]=g;}
+    g.orderCount++;
     const tms=pickReturnTransitionMsFromRow(s);
     if(tms!=null&&Number.isFinite(tms)){
-      const days=(Date.now()-tms)/86400000;
-      if(Number.isFinite(days)&&days>=0)groups[name].ages.push(days);
+      const days=(nowMs-tms)/86400000;
+      if(Number.isFinite(days)&&days>=0){
+        g.ageSum+=days;
+        g.ageN++;
+        globalAgeSum+=days;
+        globalAgeN++;
+      }
     }
   }
-  const out=[];
-  const keys=Object.keys(groups);
-  for(let j=0;j<keys.length;j++){
-    const g=groups[keys[j]];
-    const cnt=g.orderCount;
-    const scored=g.ages.length;
-    const avgAge=scored?g.ages.reduce((a,b)=>a+b,0)/scored:0;
+  const dischargeScoredCount=globalAgeN;
+  const dischargeAvgAge=globalAgeN?globalAgeSum/globalAgeN:0;
+  const dischargePerfScore=globalAgeN===0?100:Math.max(0,100-(dischargeAvgAge-3)*10);
+  const dischargeByUser=[];
+  const gKeys=Object.keys(groups);
+  for(let j=0;j<gKeys.length;j++){
+    const gg=groups[gKeys[j]];
+    const scored=gg.ageN;
+    const avgAge=scored?gg.ageSum/scored:0;
     const score=scored===0?100:Math.max(0,100-(avgAge-3)*10);
     const zone=controlTowerEfficiencyZone(score);
-    out.push({
-      name:g.name,
-      count:cnt,
+    dischargeByUser.push({
+      name:gKeys[j],
+      count:gg.orderCount,
       scoredCount:scored,
       avgAge,
       score,
@@ -3683,8 +3706,8 @@ function buildControlTowerDischargeUsers(rows){
       needsAlert:score<70
     });
   }
-  out.sort((a,b)=>a.score-b.score||b.count-a.count||String(a.name).localeCompare(String(b.name),'ar'));
-  return out;
+  dischargeByUser.sort((a,b)=>a.score-b.score||b.count-a.count||String(a.name).localeCompare(String(b.name),'ar'));
+  return{dischargeFilteredCount,dischargeScoredCount,dischargeAvgAge,dischargePerfScore,dischargeByUser};
 }
 function controlTowerEfficiencyZone(score){
   if(!Number.isFinite(score))return'yellow';
@@ -3736,19 +3759,12 @@ function computeControlTowerMetrics(){
   let dischargeByUser=[];
   if(hasApi){
     useDischargeCard=true;
-    const rw=mergedSource.filter(s=>String(s.raw_status||'').trim()==='مرتجع مع المندوب');
-    dischargeFilteredCount=rw.length;
-    const ages=[];
-    for(let i=0;i<rw.length;i++){
-      const tms=pickReturnTransitionMsFromRow(rw[i]);
-      if(tms==null||!Number.isFinite(tms))continue;
-      const days=(Date.now()-tms)/86400000;
-      if(Number.isFinite(days)&&days>=0)ages.push(days);
-    }
-    dischargeScoredCount=ages.length;
-    dischargeAvgAge=dischargeScoredCount?ages.reduce((a,b)=>a+b,0)/dischargeScoredCount:0;
-    dischargePerfScore=dischargeScoredCount===0?100:Math.max(0,100-(dischargeAvgAge-3)*10);
-    dischargeByUser=buildControlTowerDischargeUsers(rw);
+    const d=computeDischargeMetricsOnePass(mergedSource);
+    dischargeFilteredCount=d.dischargeFilteredCount;
+    dischargeScoredCount=d.dischargeScoredCount;
+    dischargeAvgAge=d.dischargeAvgAge;
+    dischargePerfScore=d.dischargePerfScore;
+    dischargeByUser=d.dischargeByUser;
   }
   return{
     mergedSource,stagnation,aging,backlog,delayed,totalWithAgent,over96h,pendingRet,retVol,completion,
@@ -3775,12 +3791,28 @@ function renderControlTowerStats(){
   const fmtIdx=n=>Number.isFinite(n)&&n!==Infinity?n.toFixed(2):'—';
   controlTowerHistPush({stag:m.stagnation,age:m.aging,back:m.backlog,discharge:m.useDischargeCard?m.dischargePerfScore:null});
   const escCt=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const dischargeRows=m.useDischargeCard&&(m.dischargeByUser||[]).length?(m.dischargeByUser||[]).map(u=>{
-    const scCls=u.score>=90?'ct-score-grn':u.score>=70?'ct-score-gld':'ct-score-red';
-    const alert=u.needsAlert?'<span class="ct-disch-alert" title="نسبة الأداء أقل من ٧٠٪ — يستدعي متابعة إدارية">⚠️ متابعة</span>':'';
-    const avgDisp=u.scoredCount?`${u.avgAge.toFixed(2)} يوم`:'—';
-    return`<tr><td><strong>${escCt(u.name)}</strong>${alert}</td><td>${u.count.toLocaleString('ar-LY')}</td><td class="${scCls}">${fmtPct(u.score)}</td><td>${avgDisp}</td></tr>`;
-  }).join(''):'';
+  const CT_DISCH_PREVIEW=5;
+  let dischargeBodyHtml='';
+  if(m.useDischargeCard){
+    const users=m.dischargeByUser||[];
+    if(users.length){
+      let acc='';
+      for(let ri=0;ri<users.length;ri++){
+        const u=users[ri];
+        const scCls=u.score>=90?'ct-score-grn':u.score>=70?'ct-score-gld':'ct-score-red';
+        const alert=u.needsAlert?'<span class="ct-disch-alert" title="نسبة الأداء أقل من ٧٠٪ — يستدعي متابعة إدارية">⚠️ متابعة</span>':'';
+        const avgDisp=u.scoredCount?`${u.avgAge.toFixed(2)} يوم`:'—';
+        const rowCls=ri>=CT_DISCH_PREVIEW?'ct-disch-row-collapsed':'';
+        acc+=`<tr${rowCls?` class="${rowCls}"`:''}><td><strong>${escCt(u.name)}</strong>${alert}</td><td>${u.count.toLocaleString('ar-LY')}</td><td class="${scCls}">${fmtPct(u.score)}</td><td>${avgDisp}</td></tr>`;
+      }
+      if(users.length>CT_DISCH_PREVIEW){
+        acc+=`<tr class="ct-disch-more-wrap"><td colspan="4" style="text-align:center;padding:6px"><button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" onclick="var tbl=this.closest('table');if(!tbl)return;tbl.querySelectorAll('tr.ct-disch-row-collapsed').forEach(function(r){r.style.display='table-row';});var mw=tbl.querySelector('.ct-disch-more-wrap');if(mw)mw.style.display='none';">عرض الكل (${users.length.toLocaleString('ar-LY')} موظف)</button></td></tr>`;
+      }
+      dischargeBodyHtml=acc;
+    }else{
+      dischargeBodyHtml='<tr><td colspan="4" style="text-align:center;color:var(--mute);padding:14px">لا طلبات بحالة «مرتجع مع المندوب»</td></tr>';
+    }
+  }
   const midCard=m.useDischargeCard?`
       <div class="ct-card ct-card--${zDischarge}">
         <div class="ct-card-top">
@@ -3798,11 +3830,11 @@ function renderControlTowerStats(){
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
           <table class="ct-disch-table" dir="rtl">
             <thead><tr><th>الموظف المسند</th><th>عدد المرتجعات</th><th>الأداء</th><th>متوسط عمر التفريغ</th></tr></thead>
-            <tbody>${dischargeRows||`<tr><td colspan="4" style="text-align:center;color:var(--mute);padding:14px">لا طلبات بحالة «مرتجع مع المندوب»</td></tr>`}</tbody>
+            <tbody>${dischargeBodyHtml}</tbody>
           </table>
         </div>
         <span class="ct-target ct-target--${zDischarge}">لكل موظف: ١٠٠٪ − (متوسط العمر − ٣) × ١٠ · أقل من ٧٠٪ = تنبيه مسؤول</span>
-        <div class="ct-footnote">«مرتجع مع المندوب»: ${m.dischargeFilteredCount.toLocaleString('ar-LY')} · بتاريخ صالح للعمر: ${m.dischargeScoredCount.toLocaleString('ar-LY')} · صفوف الجدول: ${(m.dischargeByUser||[]).length.toLocaleString('ar-LY')}</div>
+        <div class="ct-footnote">«مرتجع مع المندوب»: ${m.dischargeFilteredCount.toLocaleString('ar-LY')} · بتاريخ صالح للعمر: ${m.dischargeScoredCount.toLocaleString('ar-LY')} · صفوف الجدول: ${(m.dischargeByUser||[]).length.toLocaleString('ar-LY')} · للقوائم الضخمة جداً يُفضّل تجميع المعدلات في الـ Backend/قاعدة البيانات وإرجاع نتائج جاهزة.</div>
       </div>`:`
       <div class="ct-card ct-card--${zAge}">
         <div class="ct-card-top">

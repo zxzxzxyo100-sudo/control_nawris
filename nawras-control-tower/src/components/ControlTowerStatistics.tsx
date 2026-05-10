@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 import {
   Activity,
   Gauge,
@@ -159,28 +160,35 @@ function daysSinceReturnTransition(o: MixedApiOrder): number | null {
   return null;
 }
 
-function computeReturnDischargeEfficiency(orders: readonly MixedApiOrder[]): {
+/**
+ * مرور واحد على الطلبات: تصفية «مرتجع مع المندوب» + جمع أعمار للمعدل والنتيجة.
+ * للمجموعات الكبيرة جداً (مثلاً عشرات الآلاف) يُفضّل نقل التجميع والمعدلات إلى الـ Backend/DB
+ * وإرجاع أرقام جاهزة لتقليل حجم البيانات والمعالجة في المتصفح.
+ */
+function computeReturnDischargeEfficiencyScan(orders: readonly MixedApiOrder[]): {
   filteredCount: number;
   scoredCount: number;
   averageAge: number;
   performanceScore: number;
 } {
-  const filtered = orders.filter((o) => rawOrderStatus(o) === RETURN_WITH_DRIVER_STATUS);
-  const ages: number[] = [];
-  for (const o of filtered) {
+  let filteredCount = 0;
+  let ageSum = 0;
+  let ageN = 0;
+  for (let i = 0; i < orders.length; i++) {
+    const o = orders[i];
+    if (rawOrderStatus(o) !== RETURN_WITH_DRIVER_STATUS) continue;
+    filteredCount++;
     const d = daysSinceReturnTransition(o);
-    if (d != null && Number.isFinite(d) && d >= 0) ages.push(d);
+    if (d != null && Number.isFinite(d) && d >= 0) {
+      ageSum += d;
+      ageN++;
+    }
   }
-  const scoredCount = ages.length;
-  const averageAge = scoredCount > 0 ? ages.reduce((a, b) => a + b, 0) / scoredCount : 0;
+  const scoredCount = ageN;
+  const averageAge = scoredCount > 0 ? ageSum / scoredCount : 0;
   const performanceScore =
     scoredCount === 0 ? 100 : Math.max(0, 100 - (averageAge - 3) * 10);
-  return {
-    filteredCount: filtered.length,
-    scoredCount,
-    averageAge,
-    performanceScore,
-  };
+  return { filteredCount, scoredCount, averageAge, performanceScore };
 }
 
 /** أخضر ≥90، برتقالي 70–89، أحمر <70 */
@@ -350,7 +358,10 @@ export function ControlTowerStatistics({
   const zBack = reverseKpiZone(backlog, 0.5);
 
   const useMixedReturns = mixedApiOrders !== undefined;
-  const eff = useMixedReturns ? computeReturnDischargeEfficiency(mixedApiOrders) : null;
+  const eff = useMemo(() => {
+    if (mixedApiOrders === undefined) return null;
+    return computeReturnDischargeEfficiencyScan(mixedApiOrders);
+  }, [mixedApiOrders]);
   const dischargeScore = eff?.performanceScore ?? 0;
   const dischargeTrend = forwardTrendDelta(
     dischargeScore,
