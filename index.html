@@ -3734,13 +3734,6 @@ function controlTowerTrendClassForward(dir){
   if(dir==='down')return'up';
   return'flat';
 }
-/** رابط POST لحساب التفريغ — من localStorage فقط (المفتاح nawris_discharge_api). */
-function getDischargeBackendUrl(){
-  try{return String(localStorage.getItem('nawris_discharge_api')||'').trim();}catch(_){return'';}
-}
-function getDischargeBackendApiKeyFromStorage(){
-  try{return String(localStorage.getItem('nawris_discharge_api_key')||'').trim();}catch(_){return'';}
-}
 /** يبني جسم الطلب من أي مصفوفة طرود (مثلاً apiShipments). */
 function buildDischargePayloadFromShipments(shipments){
   const out=[];
@@ -3758,20 +3751,24 @@ function buildDischargePayloadFromShipments(shipments){
   return out;
 }
 /**
- * يرسل الطرود إلى nawris_discharge_api (POST). يُرفق X-Api-Key من localStorage إن وُجد.
- * @param {Array} shipments مصفوفة الطرود؛ إن حُذفت يُستخدم apiShipments الحالي.
+ * POST إلى الرابط المخزّن في localStorage فقط: nawris_discharge_api.
+ * الحمولة: buildDischargePayloadFromShipments(shipments).
+ * رأس X-Api-Key يُضاف فقط إذا كانت nawris_discharge_api_key غير فارغة بعد trim.
+ * @param {Array} [shipments] — إن لم تُمرَّر تُستخدم apiShipments الحالية.
  */
 async function refreshDischargeScoresFromBackend(shipments){
-  const url=getDischargeBackendUrl();
+  let url='';
+  try{url=String(localStorage.getItem('nawris_discharge_api')||'').trim();}catch(_){url='';}
   const list=Array.isArray(shipments)&&shipments.length?shipments:(typeof apiShipments!=='undefined'&&apiShipments?apiShipments:[]);
   if(!url||!list.length)return;
   const headers={'Content-Type':'application/json'};
-  const k=getDischargeBackendApiKeyFromStorage();
-  if(k)headers['X-Api-Key']=k;
+  let apiKey='';
+  try{apiKey=String(localStorage.getItem('nawris_discharge_api_key')||'').trim();}catch(_){apiKey='';}
+  if(apiKey!=='')headers['X-Api-Key']=apiKey;
   try{
     const res=await fetch(url,{method:'POST',headers,credentials:'omit',body:JSON.stringify({shipments:buildDischargePayloadFromShipments(list)})});
     const j=await res.json().catch(()=>null);
-    if(j&&j.success&&Array.isArray(j.employees)&&j.summary){
+    if(res.ok&&j&&j.success===true&&Array.isArray(j.employees)&&j.summary&&typeof j.summary==='object'){
       window._ctDischargeBackend=j;
       try{renderControlTowerStats();}catch(_){}
     }
@@ -3804,7 +3801,7 @@ function computeControlTowerMetrics(){
   let dischargeByUser=[];
   if(hasApi){
     useDischargeCard=true;
-    /** أولوية لنتيجة السيرفر إن وُجدت؛ وإلا الحساب المحلي (مرة واحدة على المصدر). */
+    /** الأولوية: نتيجة السيرفر الجاهزة في window._ctDischargeBackend (نجاح + موظفون + ملخص). */
     const be=typeof window!=='undefined'?window._ctDischargeBackend:null;
     if(be&&be.success===true&&Array.isArray(be.employees)&&be.summary&&typeof be.summary==='object'){
       const s=be.summary;
@@ -3827,6 +3824,7 @@ function computeControlTowerMetrics(){
         };
       });
     }else{
+      /** Fallback: لا استجابة خلفية صالحة أو فشل الطلب — حساب محلي في المتصفح (مرة واحدة). */
       const d=computeDischargeMetricsOnePass(mergedSource);
       dischargeFilteredCount=d.dischargeFilteredCount;
       dischargeScoredCount=d.dischargeScoredCount;
