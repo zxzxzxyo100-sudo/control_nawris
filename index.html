@@ -3734,6 +3734,44 @@ function controlTowerTrendClassForward(dir){
   if(dir==='down')return'up';
   return'flat';
 }
+/** POST إلى api/discharge_efficiency.php — المسار الكامل أو النسبي؛ المفتاح: localStorage nawris_discharge_api_key */
+function getDischargeBackendUrl(){
+  try{return String(localStorage.getItem('nawris_discharge_api')||window.NAWRIS_DISCHARGE_SCORE_API||'').trim();}catch(_){return String(window.NAWRIS_DISCHARGE_SCORE_API||'').trim();}
+}
+function getDischargeBackendApiKey(){
+  try{return String(localStorage.getItem('nawris_discharge_api_key')||'').trim();}catch(_){return'';}
+}
+function buildDischargePayloadFromApiShipments(){
+  const out=[];
+  const n=apiShipments.length;
+  for(let i=0;i<n;i++){
+    const s=apiShipments[i];
+    out.push({
+      raw_status:s.raw_status,
+      assigned_staff:s.assigned_staff,
+      tracking_code:s.tracking_code,
+      return_transition_ms:s.return_transition_ms
+    });
+  }
+  return out;
+}
+async function refreshDischargeScoresFromBackend(){
+  const url=getDischargeBackendUrl();
+  if(!url||!(apiShipments&&apiShipments.length))return;
+  const headers={'Content-Type':'application/json'};
+  const k=getDischargeBackendApiKey();
+  if(k)headers['X-Api-Key']=k;
+  try{
+    const res=await fetch(url,{method:'POST',headers,credentials:'omit',body:JSON.stringify({shipments:buildDischargePayloadFromApiShipments()})});
+    const j=await res.json().catch(()=>null);
+    if(j&&j.success&&Array.isArray(j.employees)&&j.summary){
+      window._ctDischargeBackend=j;
+      try{renderControlTowerStats();}catch(_){}
+    }
+  }catch(e){
+    console.warn('discharge backend',e);
+  }
+}
 function computeControlTowerMetrics(){
   const hasApi=(apiShipments?.length||0)>0;
   const mergedSource=hasApi?apiShipments:shipments;
@@ -3759,12 +3797,35 @@ function computeControlTowerMetrics(){
   let dischargeByUser=[];
   if(hasApi){
     useDischargeCard=true;
-    const d=computeDischargeMetricsOnePass(mergedSource);
-    dischargeFilteredCount=d.dischargeFilteredCount;
-    dischargeScoredCount=d.dischargeScoredCount;
-    dischargeAvgAge=d.dischargeAvgAge;
-    dischargePerfScore=d.dischargePerfScore;
-    dischargeByUser=d.dischargeByUser;
+    const be=typeof window!=='undefined'?window._ctDischargeBackend:null;
+    if(be&&be.success&&Array.isArray(be.employees)&&be.summary){
+      const s=be.summary;
+      dischargeFilteredCount=Number(s.filtered_count)||0;
+      dischargeScoredCount=Number(s.scored_count)||0;
+      dischargeAvgAge=Number(s.global_average_age_days)||0;
+      let gs=Number(s.global_score);
+      if(!Number.isFinite(gs))gs=100;
+      dischargePerfScore=gs;
+      dischargeByUser=be.employees.map(e=>{
+        const sc=Number(e.score);
+        return{
+          name:String(e.employee||'غير مسند'),
+          count:Number(e.count)||0,
+          scoredCount:Number(e.scored_count)||0,
+          avgAge:Number(e.average_age_days)||0,
+          score:Number.isFinite(sc)?sc:100,
+          zone:controlTowerEfficiencyZone(Number.isFinite(sc)?sc:100),
+          needsAlert:!!e.needs_alert
+        };
+      });
+    }else{
+      const d=computeDischargeMetricsOnePass(mergedSource);
+      dischargeFilteredCount=d.dischargeFilteredCount;
+      dischargeScoredCount=d.dischargeScoredCount;
+      dischargeAvgAge=d.dischargeAvgAge;
+      dischargePerfScore=d.dischargePerfScore;
+      dischargeByUser=d.dischargeByUser;
+    }
   }
   return{
     mergedSource,stagnation,aging,backlog,delayed,totalWithAgent,over96h,pendingRet,retVol,completion,
@@ -3834,7 +3895,7 @@ function renderControlTowerStats(){
           </table>
         </div>
         <span class="ct-target ct-target--${zDischarge}">لكل موظف: ١٠٠٪ − (متوسط العمر − ٣) × ١٠ · أقل من ٧٠٪ = تنبيه مسؤول</span>
-        <div class="ct-footnote">«مرتجع مع المندوب»: ${m.dischargeFilteredCount.toLocaleString('ar-LY')} · بتاريخ صالح للعمر: ${m.dischargeScoredCount.toLocaleString('ar-LY')} · صفوف الجدول: ${(m.dischargeByUser||[]).length.toLocaleString('ar-LY')} · للقوائم الضخمة جداً يُفضّل تجميع المعدلات في الـ Backend/قاعدة البيانات وإرجاع نتائج جاهزة.</div>
+        <div class="ct-footnote">«مرتجع مع المندوب»: ${m.dischargeFilteredCount.toLocaleString('ar-LY')} · بتاريخ صالح للعمر: ${m.dischargeScoredCount.toLocaleString('ar-LY')} · صفوف الجدول: ${(m.dischargeByUser||[]).length.toLocaleString('ar-LY')} · للحساب على السيرفر: ضع مسار POST في localStorage <code style="font-size:9px">nawris_discharge_api</code> (مثل <code style="font-size:9px">/api/discharge_efficiency.php</code>) واختيارياً <code style="font-size:9px">nawris_discharge_api_key</code>.</div>
       </div>`:`
       <div class="ct-card ct-card--${zAge}">
         <div class="ct-card-top">
@@ -7211,6 +7272,7 @@ function resetAPIFilters(){
 }
 
 function clearAPIStateForFreshStart(showToastMsg=true){
+  try{window._ctDischargeBackend=null;}catch(_){}
   apiShipments=[];
   apiFetchLog=[];
   apiChecked=new Set();
@@ -7353,6 +7415,7 @@ function reconcileApiProcessedFromStatus(nextShipments){
 }
 
 async function fetchAPIShipments(){
+  try{window._ctDischargeBackend=null;}catch(_){}
   // Try to get API settings from the upload page inputs or from saved settings
   let url=document.getElementById('api-url2')?.value?.trim()||document.getElementById('api-url')?.value?.trim()||'';
   let token=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
@@ -7909,6 +7972,7 @@ async function fetchAPIShipments(){
     updateKPIs();
     renderHome();
     renderStaff();
+    refreshDischargeScoresFromBackend();
     toast(`✅ ${apiShipments.length} طرد من API`,'s');
 
   }catch(e){
@@ -8750,6 +8814,7 @@ function loadCachedAPIShipments(){
       try{
         if(typeof updateAPIKPIs==='function')updateAPIKPIs();
         if(typeof renderAPIShipments==='function')renderAPIShipments();
+        if(typeof refreshDischargeScoresFromBackend==='function')refreshDischargeScoresFromBackend();
       }catch(e2){console.warn('cached API UI refresh',e2);}
     }
     const logCached=localStorage.getItem('api_fetch_log');
