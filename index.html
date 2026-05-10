@@ -475,6 +475,33 @@ html.light .hero-greeting{background:linear-gradient(135deg,#1a1d2e 30%,var(--pu
 @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
 .kcard-actions{font-size:var(--fs-2xs);color:#64748b;margin-top:8px;display:flex;align-items:center;gap:5px;font-family:var(--ar-font);font-weight:600}
 .kcard-actions svg{width:10px;height:10px;opacity:.7}
+/* ── Control Tower (reverse KPIs) ── */
+.ct-wrap{padding:0 4px 28px}
+.ct-head{margin-bottom:18px}
+.ct-title{font-size:18px;font-weight:800;color:var(--white);font-family:var(--ar-font)}
+.ct-sub{font-size:12px;color:var(--mute);margin-top:8px;max-width:760px;line-height:1.65}
+.ct-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:720px){.ct-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1100px){.ct-grid{grid-template-columns:repeat(3,1fr)}}
+.ct-card{border-radius:var(--r);padding:18px 16px;position:relative;border:1px solid var(--rim);background:var(--bg3);transition:box-shadow .2s,border-color .2s;border-right:3px solid transparent}
+.ct-card.ct-good{border-right-color:var(--grn);box-shadow:0 0 0 1px var(--grb)}
+.ct-card.ct-warn{border-right-color:var(--orn);box-shadow:0 0 0 1px var(--orb)}
+.ct-card.ct-danger{border-right-color:var(--red);box-shadow:0 0 0 1px var(--rb)}
+.ct-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.ct-card-title{font-size:14px;font-weight:700;color:var(--pale);line-height:1.35}
+.ct-trend{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg4);border:1px solid var(--rim);flex-shrink:0}
+.ct-trend svg{width:16px;height:16px}
+.ct-trend-bad{color:var(--red)}
+.ct-trend-good{color:var(--grn)}
+.ct-trend-flat{color:var(--mute)}
+.ct-desc{font-size:11px;color:var(--dim);line-height:1.55;margin-bottom:10px;min-height:3.1em}
+.ct-val{font-family:var(--mono);font-size:clamp(26px,3.4vw,34px);font-weight:800;color:var(--white);letter-spacing:-.5px}
+.ct-val.ct-val-good{color:var(--grn)}
+.ct-val.ct-val-warn{color:var(--orn)}
+.ct-val.ct-val-danger{color:var(--red)}
+.ct-target{font-size:11px;color:var(--mute);margin-top:6px}
+.ct-meta{font-size:10px;color:var(--dim);margin-top:10px;font-family:var(--mono);opacity:.85}
+html.light .ct-card{background:var(--bg2)}
 /* ── API KPI mini-cards ── */
 .api-kgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 @media(max-width:1200px){.api-kgrid{grid-template-columns:repeat(4,1fr)}}
@@ -809,6 +836,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="sb-section manager-only">الإدارة</div>
       <div class="sb-item manager-only" data-tab="users"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> المستخدمون</div>
       <div class="sb-item manager-only" data-tab="reports"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> التقارير</div>
+      <div class="sb-item manager-only" data-tab="control-tower"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span> برج المراقبة</div>
       <div class="sb-item manager-only" data-tab="staff" data-menu-toggle="staff"><span class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> متابعة الموظفين <span class="sb-caret">▾</span></div>
       <div class="sb-submenu manager-only" data-menu="staff">
         <div class="sb-subitem" data-staff-menu="complete">جدول الطرود التامة</div>
@@ -1869,6 +1897,48 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     </div>
   </div><!-- /tab-upload -->
 
+  <!-- ══ CONTROL TOWER (reverse KPIs) ══ -->
+  <div class="page manager-only" id="tab-control-tower">
+    <div class="ct-wrap">
+      <div class="ct-head">
+        <div class="ct-title">إحصائيات برج المراقبة</div>
+        <div class="ct-sub">مؤشرات أداء عكسية: كلما انخفض الرقم كان الوضع أفضل. تُحسب من طرود API (أو الطرود المحلية عند غياب API). اتجاه الأيقونة يقارن ببداية يوم العمل الحالي.</div>
+      </div>
+      <div class="ct-grid">
+        <div class="ct-card" id="ct-card-0">
+          <div class="ct-card-top">
+            <div class="ct-card-title">معدل ركود المناديب</div>
+            <div class="ct-trend" id="ct-tr-0" title="اتجاه المؤشر"></div>
+          </div>
+          <div class="ct-desc">طلبات مع المندوب أكثر من يومين تقريباً ÷ إجمالي الطلبات مع مندوب × ١٠٠ — الهدف أقل من ٥٪</div>
+          <div class="ct-val" id="ct-v-0">—</div>
+          <div class="ct-target">الهدف: أقل من ٥٪</div>
+          <div class="ct-meta" id="ct-m-0"></div>
+        </div>
+        <div class="ct-card" id="ct-card-1">
+          <div class="ct-card-top">
+            <div class="ct-card-title">أعمار المرتجعات المعلّقة</div>
+            <div class="ct-trend" id="ct-tr-1" title="اتجاه المؤشر"></div>
+          </div>
+          <div class="ct-desc">إجمالي المرتجعات المعلّقة ÷ متوسط الحجم اليومي التقديري للمعالجة — الهدف أقل من ١٫٥ يوم</div>
+          <div class="ct-val" id="ct-v-1">—</div>
+          <div class="ct-target">الهدف: أقل من ١٫٥ يوم</div>
+          <div class="ct-meta" id="ct-m-1"></div>
+        </div>
+        <div class="ct-card" id="ct-card-2">
+          <div class="ct-card-top">
+            <div class="ct-card-title">مؤشر كثافة التراكم</div>
+            <div class="ct-trend" id="ct-tr-2" title="اتجاه المؤشر"></div>
+          </div>
+          <div class="ct-desc">الطلبات المتأخرة حالياً ÷ متوسط الإنجاز اليومي التقديري — الهدف أقل من ٠٫٥</div>
+          <div class="ct-val" id="ct-v-2">—</div>
+          <div class="ct-target">الهدف: أقل من ٠٫٥</div>
+          <div class="ct-meta" id="ct-m-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ USERS MANAGEMENT ══ -->
   <div class="page manager-only" id="tab-users">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1980,6 +2050,9 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="reports"> 📊 التقارير
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
+            <input type="checkbox" class="um-perm" value="control-tower"> 🛰️ برج المراقبة
           </label>
           <label style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r3);font-size:12px;cursor:pointer">
             <input type="checkbox" class="um-perm" value="staff"> 👥 متابعة الموظفين
@@ -2129,6 +2202,7 @@ const ALL_TABS = [
   {id:'service-kpi',label:'📈 أداء الخدمة'},
   {id:'whatsapp',label:'💬 واتساب'},
   {id:'reports',label:'📊 التقارير'},
+  {id:'control-tower',label:'🛰️ برج المراقبة'},
   {id:'staff',label:'👥 متابعة الموظفين'},
   {id:'master',label:'⚙️ البيانات الثابتة'},
   {id:'upload',label:'📥 رفع البيانات'},
@@ -2534,7 +2608,7 @@ function applyRole(){
       if(mgr) el.style.display='';
       else {
         // Check if any admin tab is permitted to show section headers
-        const adminTabs=['reports','staff','master','upload','users'];
+        const adminTabs=['reports','control-tower','staff','master','upload','users'];
         const hasAdmin=adminTabs.some(t=>perms.includes(t));
         if(el.classList.contains('sb-section')||el.classList.contains('sb-divider')){
           el.style.display=hasAdmin?'':'none';
@@ -3380,7 +3454,7 @@ function resetAllFilters(){
 // ══════════════════════════════════════════
 // REFRESH
 // ══════════════════════════════════════════
-function refreshAll(){updateKPIs();renderHome();renderShipments();renderDrivers();renderWA();}
+function refreshAll(){updateKPIs();renderHome();renderShipments();renderDrivers();renderWA();if(document.getElementById('tab-control-tower')?.classList.contains('on'))renderControlTowerPage();}
 
 function updateKPIs(){
   const hasApi=(apiShipments?.length||0)>0;
@@ -3450,6 +3524,71 @@ function renderKPISparklines(vals){
     if(!el)return;
     el.querySelector('polyline').setAttribute('points',sparkPts(vals[k],map[k].up));
   });
+}
+
+// ══════════════════════════════════════════
+// CONTROL TOWER (reverse KPIs)
+// ══════════════════════════════════════════
+const CT_BASE_KEY='nawris_ct_day_baseline_v1';
+function ctTrendSvg(kind){
+  if(kind==='up')return'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="ct-trend-bad"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
+  if(kind==='down')return'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="ct-trend-good"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>';
+  return'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="ct-trend-flat"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+}
+function ctReverseZone(val,target){
+  if(!Number.isFinite(val))return'warn';
+  if(val<=target)return'good';
+  if(val<=target*1.25)return'warn';
+  return'danger';
+}
+function ctSetCard(i,zone,valText,metaLine,trendKind){
+  const card=document.getElementById('ct-card-'+i);
+  const v=document.getElementById('ct-v-'+i);
+  const m=document.getElementById('ct-m-'+i);
+  const tr=document.getElementById('ct-tr-'+i);
+  if(card){card.classList.remove('ct-good','ct-warn','ct-danger');card.classList.add('ct-'+zone);}
+  if(v){v.textContent=valText;v.classList.remove('ct-val-good','ct-val-warn','ct-val-danger');v.classList.add('ct-val-'+zone);}
+  if(m)m.textContent=metaLine||'';
+  if(tr)tr.innerHTML=ctTrendSvg(trendKind);
+}
+function renderControlTowerPage(){
+  const hasApi=(apiShipments?.length||0)>0;
+  const merged=hasApi?apiShipments:(shipments||[]);
+  const delayed=merged.filter(s=>cls(s.delay_days)!=='ok').length;
+  const withAgent=merged.filter(s=>s.status==='with_driver').length;
+  const stagnant48hProxy=merged.filter(s=>{
+    if(s.status!=='with_driver')return false;
+    const d=parseInt(s.delay_days||s.delay||0)||0;
+    return d>=2;
+  }).length;
+  const ret=merged.filter(s=>s.status==='returned').length;
+  const stagnationPct=withAgent<=0?0:(stagnant48hProxy/withAgent)*100;
+  const returnVol=Math.max(ret/7,1);
+  const agingDays=returnVol>0?ret/returnVol:0;
+  const doneN=merged.filter(s=>['delivered','completed','processed'].includes(String(s.status||''))).length;
+  const completionRate=Math.max(doneN/7,merged.length>0?Math.max(merged.length/21,40):1);
+  const backlog=delayed/Math.max(completionRate,0.001);
+  const today=(new Date()).toISOString().slice(0,10);
+  let base=null;
+  try{base=JSON.parse(localStorage.getItem(CT_BASE_KEY)||'null');}catch(e){base=null;}
+  let pa=null,pr=null,pb=null;
+  if(base&&base.day===today&&typeof base.a==='number'){
+    pa=base.a;pr=base.r;pb=base.b;
+  }else{
+    try{localStorage.setItem(CT_BASE_KEY,JSON.stringify({day:today,a:stagnationPct,r:agingDays,b:backlog}));}catch(e){}
+  }
+  const eps=1e-6;
+  function tri(c,p){if(p==null||!Number.isFinite(p)||!Number.isFinite(c))return'flat';if(c>p+eps)return'up';if(c<p-eps)return'down';return'flat';}
+  const t0=tri(stagnationPct,pa),t1=tri(agingDays,pr),t2=tri(backlog,pb);
+  const z0=ctReverseZone(stagnationPct,5);
+  const z1=ctReverseZone(agingDays,1.5);
+  const z2=ctReverseZone(backlog,0.5);
+  const meta0=`مع مندوب: ${withAgent.toLocaleString('ar-SA')} · ركود +٢يوم: ${stagnant48hProxy.toLocaleString('ar-SA')}`;
+  const meta1=`مرتجعات: ${ret.toLocaleString('ar-SA')} · متوسط يومي تقديري: ${returnVol.toFixed(0)}`;
+  const meta2=`متأخر: ${delayed.toLocaleString('ar-SA')} · إنجاز يومي تقديري: ${completionRate.toFixed(0)}`;
+  ctSetCard(0,z0,stagnationPct.toFixed(1)+'٪',meta0,t0==='up'?'up':t0==='down'?'down':'flat');
+  ctSetCard(1,z1,agingDays.toFixed(2)+' يوم',meta1,t1==='up'?'up':t1==='down'?'down':'flat');
+  ctSetCard(2,z2,backlog.toFixed(2),meta2,t2==='up'?'up':t2==='down'?'down':'flat');
 }
 
 // ══════════════════════════════════════════
@@ -5681,6 +5820,7 @@ function gTab(id){
     master:()=>{setMasterSeg(masterSeg);renderMasterContent();setTimeout(renderStatusLists,100);loadDbStats();},
     upload:()=>{loadDbStats();},
     users:renderUsersPage,
+    'control-tower':renderControlTowerPage,
   };
   if(renders[id])renders[id]();
 
