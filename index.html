@@ -526,7 +526,11 @@ html.light .ct-card{background:#fff;border-color:var(--rim);box-shadow:var(--sha
 .ct-card-ico.ct-ico-sky{color:var(--blu)}
 .ct-card-ico.ct-ico-orn{color:var(--orn)}
 .ct-card-lbl{font-size:var(--fs-sm);font-weight:800;color:var(--white);font-family:var(--ar-font);line-height:1.35}
+.ct-card-lbl--green{color:var(--grn)}
+.ct-card-lbl--yellow{color:var(--gold)}
+.ct-card-lbl--red{color:var(--red)}
 .ct-card-sub{font-size:var(--fs-2xs);color:var(--mute);margin-top:4px;line-height:1.4}
+.ct-caption{font-size:12px;color:var(--mute);margin-top:8px;line-height:1.45;font-family:var(--ar-font)}
 .ct-val{font-size:clamp(28px,3.4vw,38px);font-weight:900;font-family:var(--mono);letter-spacing:-.03em;line-height:1;margin:6px 0 2px}
 .ct-val--green{color:var(--grn)}
 .ct-val--yellow{color:var(--gold)}
@@ -3018,7 +3022,8 @@ function persistAPIShipmentsCache(){
       const slim=(apiShipments||[]).slice(0,1200).map(s=>({
         id:s.id,tracking_code:s.tracking_code,client_name:s.client_name,receiver_name:s.receiver_name,
         customer_phone:s.customer_phone,status:s.status,delay_days:s.delay_days,current_branch:s.current_branch,
-        government:s.government,area:s.area,captain:s.captain,raw_status:s.raw_status,fetched_at:s.fetched_at
+        government:s.government,area:s.area,captain:s.captain,raw_status:s.raw_status,fetched_at:s.fetched_at,
+        return_transition_ms:s.return_transition_ms
       }));
       localStorage.setItem('api_shipments',JSON.stringify(slim));
       return true;
@@ -3561,7 +3566,7 @@ function controlTowerHistPush(sample){
   if(now-_ctHistPushAt<55*60*1000)return;
   _ctHistPushAt=now;
   let h=controlTowerHistRead();
-  h.push({ts:now,stag:sample.stag,age:sample.age,back:sample.back});
+  h.push({ts:now,stag:sample.stag,age:sample.age,back:sample.back,discharge:sample.discharge});
   if(h.length>80)h=h.slice(-80);
   localStorage.setItem(CT_HIST_KEY,JSON.stringify(h));
 }
@@ -3589,6 +3594,47 @@ function controlTowerTrendTitle(dir){
   if(dir==='down')return'أقل من قراءة أمس التقريبية — اتجاه إيجابي';
   return'مستقر أو لا توجد قراءة كافية (آخر 24 ساعة)';
 }
+/** أول طابع زمني صالح لحساب عمر حالة «مرتجع» (من صف API أو من apiShipments). */
+function pickReturnTransitionMsFromRow(o){
+  if(!o||typeof o!=='object')return null;
+  if(o.return_transition_ms!=null){
+    const x=Number(o.return_transition_ms);
+    if(Number.isFinite(x))return x;
+  }
+  const keys=['returned_at','returnedAt','status_changed_at','statusChangedAt','return_status_at','updated_at','updatedAt','last_status_change','lastStatusChange'];
+  for(let i=0;i<keys.length;i++){
+    const v=o[keys[i]];
+    if(v==null)continue;
+    const t=typeof v==='number'?(v>1e12?v:v*1000):Date.parse(String(v));
+    if(Number.isFinite(t))return t;
+  }
+  return null;
+}
+function controlTowerEfficiencyZone(score){
+  if(!Number.isFinite(score))return'yellow';
+  if(score>=90)return'green';
+  if(score>=70)return'yellow';
+  return'red';
+}
+/** لمؤشر مباشر: ارتفاع القيمة = أداء أفضل */
+function controlTowerTrendForward(current,prev){
+  if(prev==null||!Number.isFinite(prev)||!Number.isFinite(current))return'flat';
+  const eps=0.25;
+  if(current>prev+eps)return'up';
+  if(current<prev-eps)return'down';
+  return'flat';
+}
+function controlTowerTrendTitleForward(dir){
+  if(dir==='up')return'تحسّنت الكفاءة عن القراءة السابقة';
+  if(dir==='down')return'انخفضت الكفاءة عن القراءة السابقة';
+  return'مستقر أو لا توجد قراءة كافية (آخر 24 ساعة)';
+}
+/** يعكس اتجاه الاتجاه إلى أصناف ct-trend (صعود الكفاءة = أخضر مثل ct-trend--down) */
+function controlTowerTrendClassForward(dir){
+  if(dir==='up')return'down';
+  if(dir==='down')return'up';
+  return'flat';
+}
 function computeControlTowerMetrics(){
   const hasApi=(apiShipments?.length||0)>0;
   const mergedSource=hasApi?apiShipments:shipments;
@@ -3610,8 +3656,25 @@ function computeControlTowerMetrics(){
     completion=Math.max(120,Math.round((mergedSource.length||1)*3));
   }
   const backlog=completion>0?delayed/completion:NaN;
+  let useDischargeCard=false,dischargeFilteredCount=0,dischargeScoredCount=0,dischargeAvgAge=0,dischargePerfScore=100;
+  if(hasApi){
+    useDischargeCard=true;
+    const rw=mergedSource.filter(s=>String(s.raw_status||'').trim()==='مرتجع مع المندوب');
+    dischargeFilteredCount=rw.length;
+    const ages=[];
+    for(let i=0;i<rw.length;i++){
+      const tms=pickReturnTransitionMsFromRow(rw[i]);
+      if(tms==null||!Number.isFinite(tms))continue;
+      const days=(Date.now()-tms)/86400000;
+      if(Number.isFinite(days)&&days>=0)ages.push(days);
+    }
+    dischargeScoredCount=ages.length;
+    dischargeAvgAge=dischargeScoredCount?ages.reduce((a,b)=>a+b,0)/dischargeScoredCount:0;
+    dischargePerfScore=dischargeScoredCount===0?100:Math.max(0,100-(dischargeAvgAge-3)*10);
+  }
   return{
-    mergedSource,stagnation,aging,backlog,delayed,totalWithAgent,over96h,pendingRet,retVol,completion
+    mergedSource,stagnation,aging,backlog,delayed,totalWithAgent,over96h,pendingRet,retVol,completion,
+    hasApi,useDischargeCard,dischargeFilteredCount,dischargeScoredCount,dischargeAvgAge,dischargePerfScore
   };
 }
 function renderControlTowerStats(){
@@ -3625,10 +3688,46 @@ function renderControlTowerStats(){
   const zStag=controlTowerReverseZone(m.stagnation,5);
   const zAge=controlTowerReverseZone(m.aging,1.5);
   const zBack=controlTowerReverseZone(m.backlog,0.5);
+  const dischargePrev=ref&&Number.isFinite(ref.discharge)?ref.discharge:null;
+  const dischargeTrendDir=m.useDischargeCard?controlTowerTrendForward(m.dischargePerfScore,dischargePrev):null;
+  const dischargeTrendCls=m.useDischargeCard?controlTowerTrendClassForward(dischargeTrendDir):ageTrend;
+  const zDischarge=m.useDischargeCard?controlTowerEfficiencyZone(m.dischargePerfScore):zAge;
   const fmtPct=n=>Number.isFinite(n)?n.toFixed(2)+'٪':'—';
   const fmtDays=n=>Number.isFinite(n)&&n!==Infinity?n.toFixed(2)+' يوم':'—';
   const fmtIdx=n=>Number.isFinite(n)&&n!==Infinity?n.toFixed(2):'—';
-  controlTowerHistPush({stag:m.stagnation,age:m.aging,back:m.backlog});
+  controlTowerHistPush({stag:m.stagnation,age:m.aging,back:m.backlog,discharge:m.useDischargeCard?m.dischargePerfScore:null});
+  const midCard=m.useDischargeCard?`
+      <div class="ct-card ct-card--${zDischarge}">
+        <div class="ct-card-top">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <div class="ct-card-ico ct-ico-sky" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div>
+              <div class="ct-card-lbl ct-card-lbl--${zDischarge}">كفاءة تفريغ المرتجعات مع المندوب</div>
+              <div class="ct-card-sub">يُحتسب من طلبات «مرتجع مع المندوب» فقط (دون «مع المندوب» العادية)</div>
+            </div>
+          </div>
+          <div class="ct-trend ct-trend--${dischargeTrendCls}" title="${controlTowerTrendTitleForward(dischargeTrendDir)}">${controlTowerSvgTrend(dischargeTrendDir)}</div>
+        </div>
+        <div class="ct-val ct-val--${zDischarge}">${fmtPct(m.dischargePerfScore)}</div>
+        <div class="ct-caption">معدل كفاءة التفريغ بناءً على متوسط عمر ${m.dischargeAvgAge.toFixed(2)} يوم</div>
+        <span class="ct-target ct-target--${zDischarge}">الهدف: ١٠٠٪ عند متوسط عمر ≤ ٣ أيام</span>
+        <div class="ct-footnote">«مرتجع مع المندوب»: ${m.dischargeFilteredCount.toLocaleString('ar-LY')} · بتاريخ صالح للعمر: ${m.dischargeScoredCount.toLocaleString('ar-LY')}</div>
+      </div>`:`
+      <div class="ct-card ct-card--${zAge}">
+        <div class="ct-card-top">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <div class="ct-card-ico ct-ico-sky" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div>
+              <div class="ct-card-lbl">أعمار المرتجعات المعلقة</div>
+              <div class="ct-card-sub">إجمالي المرتجعات المعلقة ÷ متوسط المعالجة اليومية (${m.retVol.toLocaleString('ar-LY')} طرد/يوم)</div>
+            </div>
+          </div>
+          <div class="ct-trend ct-trend--${ageTrend}" title="${controlTowerTrendTitle(ageTrend)}">${controlTowerSvgTrend(ageTrend)}</div>
+        </div>
+        <div class="ct-val ct-val--${zAge}">${fmtDays(m.aging)}</div>
+        <span class="ct-target ct-target--${zAge}">الهدف: أقل من ١٫٥ يوم</span>
+        <div class="ct-footnote">معلقة: ${m.pendingRet.toLocaleString('ar-LY')} · يمكن ضبط المعدل اليومي من الإعدادات (المفتاح: returnDailyVol)</div>
+      </div>`;
   root.innerHTML=`
     <div class="ct-head">
       <div class="ct-head-title">
@@ -3655,21 +3754,7 @@ function renderControlTowerStats(){
         <span class="ct-target ct-target--${zStag}">الهدف: أقل من ٥٪</span>
         <div class="ct-footnote">مع مندوب: ${m.totalWithAgent.toLocaleString('ar-LY')} · ركود ≥٤أيام: ${m.over96h.toLocaleString('ar-LY')}</div>
       </div>
-      <div class="ct-card ct-card--${zAge}">
-        <div class="ct-card-top">
-          <div style="display:flex;align-items:flex-start;gap:10px">
-            <div class="ct-card-ico ct-ico-sky" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-            <div>
-              <div class="ct-card-lbl">أعمار المرتجعات المعلقة</div>
-              <div class="ct-card-sub">إجمالي المرتجعات المعلقة ÷ متوسط المعالجة اليومية (${m.retVol.toLocaleString('ar-LY')} طرد/يوم)</div>
-            </div>
-          </div>
-          <div class="ct-trend ct-trend--${ageTrend}" title="${controlTowerTrendTitle(ageTrend)}">${controlTowerSvgTrend(ageTrend)}</div>
-        </div>
-        <div class="ct-val ct-val--${zAge}">${fmtDays(m.aging)}</div>
-        <span class="ct-target ct-target--${zAge}">الهدف: أقل من ١٫٥ يوم</span>
-        <div class="ct-footnote">معلقة: ${m.pendingRet.toLocaleString('ar-LY')} · يمكن ضبط المعدل اليومي من الإعدادات (المفتاح: returnDailyVol)</div>
-      </div>
+      ${midCard}
       <div class="ct-card ct-card--${zBack}">
         <div class="ct-card-top">
           <div style="display:flex;align-items:flex-start;gap:10px">
@@ -7594,6 +7679,7 @@ async function fetchAPIShipments(){
         delay_days:days,
         source:'api',
         fetched_at:new Date().toISOString(),
+        return_transition_ms:pickReturnTransitionMsFromRow(r),
         rep_commission:null,
         branch_commission:null
       });
