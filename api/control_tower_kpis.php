@@ -22,16 +22,54 @@ if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
 }
 
 try {
+    <?php
+declare(strict_types=1);
+
+require __DIR__ . '/db.php';
+
+// منع الطلبات غير المسموحة
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+    json_response(['ok' => false, 'message' => 'Method not allowed'], 405);
+}
+
+$table = getenv('CT_SHIPMENTS_TABLE') ?: 'shipments';
+
+try {
     $pdo = crm_pdo();
 
-    $colsStmt = $pdo->prepare(
-        'SELECT column_name FROM information_schema.columns
-         WHERE table_schema = DATABASE() AND table_name = :t'
-    );
-    $colsStmt->execute([':t' => $table]);
-    $have = [];
-    foreach ($colsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $have[strtolower((string)($row['column_name'] ?? ''))] = true;
+    // استعلام واحد شامل لجلب كل التصنيفات التي تظهر في الصورة
+    $sql = "
+        SELECT 
+            COUNT(*) AS total_all,
+            -- الطرود التي بالطريق (التحويلات)
+            SUM(CASE WHEN status IN ('transferring', 'transfer_pending', 'in_transit') THEN 1 ELSE 0 END) AS in_transit_count,
+            -- مع المندوب
+            SUM(CASE WHEN status IN ('with_driver', 'out_for_delivery') THEN 1 ELSE 0 END) AS with_driver_count,
+            -- المرتجع
+            SUM(CASE WHEN status IN ('returned', 'returning') THEN 1 ELSE 0 END) AS returned_count,
+            -- التكدس (المتأخر في المخزن > 48 ساعة)
+            SUM(CASE WHEN status = 'in_company' AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= 48 THEN 1 ELSE 0 END) AS delayed_warehouse_count
+        FROM `$table`
+    ";
+
+    $stmt = $pdo->query($sql);
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // تجهيز الرد ليتوافق مع واجهة المستخدم (الكرتات الملونة)
+    json_response([
+        'ok' => true,
+        'summary' => [
+            'total' => (int)$data['total_all'],
+            'transit' => (int)$data['in_transit_count'],    // ستظهر في كرت "بالطريق"
+            'driver' => (int)$data['with_driver_count'],    // ستظهر في كرت "مع المندوب"
+            'returned' => (int)$data['returned_count'],     // ستظهر في كرت "المرتجع"
+            'stale' => (int)$data['delayed_warehouse_count'] // كرت التكدس
+        ]
+    ]);
+
+} catch (Throwable $e) {
+    json_response(['ok' => false, 'message' => $e->getMessage()], 500);
+}
     }
 
     if (!isset($have['status'], $have['created_at'])) {
