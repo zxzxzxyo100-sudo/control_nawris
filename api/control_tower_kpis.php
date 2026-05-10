@@ -51,19 +51,41 @@ try {
         $anchorExpr = '`created_at`';
     }
 
-    // Warehouse: in_company, stale ≥ 48h (TIMESTAMPDIFF HOUR from anchor to NOW)
+    // Warehouse: statuses = in_company by default; override with CT_WAREHOUSE_STATUSES (comma, snake_case tokens)
+    $whStatusCsv = (string) (getenv('CT_WAREHOUSE_STATUSES') ?: 'in_company');
+    $whStatuses = array_values(array_unique(array_filter(
+        array_map('trim', explode(',', $whStatusCsv)),
+        static fn ($s) => $s !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $s)
+    )));
+    if ($whStatuses === []) {
+        $whStatuses = ['in_company'];
+    }
+    $whPlaceholders = [];
+    $whBind = [];
+    foreach ($whStatuses as $i => $st) {
+        $k = ':whst_' . $i;
+        $whPlaceholders[] = $k;
+        $whBind[$k] = $st;
+    }
+    $whInList = implode(',', $whPlaceholders);
+
+    // Warehouse: stale ≥ 48h (TIMESTAMPDIFF HOUR from anchor to NOW)
     $sqlWh = sprintf(
         'SELECT
             COUNT(*) AS total_count,
             SUM(CASE WHEN TIMESTAMPDIFF(HOUR, %s, NOW()) >= 48 THEN 1 ELSE 0 END) AS delayed_count
          FROM `%s`
-         WHERE `status` = :st_in_company',
+         WHERE `status` IN (%s)',
         $anchorExpr,
-        str_replace('`', '``', $table)
+        str_replace('`', '``', $table),
+        $whInList
     );
 
     $stWh = $pdo->prepare($sqlWh);
-    $stWh->execute([':st_in_company' => 'in_company']);
+    foreach ($whBind as $k => $v) {
+        $stWh->bindValue($k, $v, PDO::PARAM_STR);
+    }
+    $stWh->execute();
     $rowWh = $stWh->fetch(PDO::FETCH_ASSOC) ?: ['total_count' => 0, 'delayed_count' => 0];
     $whTotal = (int)($rowWh['total_count'] ?? 0);
     $whDelayed = (int)($rowWh['delayed_count'] ?? 0);
@@ -184,6 +206,7 @@ try {
         'ok' => true,
         'source' => 'mysql',
         'table' => $table,
+        'warehouse_statuses' => $whStatuses,
         'warehouse' => [
             'pct' => $whPct,
             'delayed_count' => $whDelayed,

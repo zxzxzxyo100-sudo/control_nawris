@@ -2195,7 +2195,28 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
 const SB = 'https://kdlcoqcwqlxawejxfjss.supabase.co';
 const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbGNvcWN3cWx4YXdlanhmanNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MzU0NzIsImV4cCI6MjA5MDIxMTQ3Mn0.rlxHDrJagHk8EiPsdVPy62bDicPXhwjZn0g6cdVQkv0';
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
-const LOG_API_BASE = 'api';
+/** قاعدة مسارات PHP (إحصائيات برج المراقبة، سجلات، …). يمكن ضبطها عبر window.__NAWRIS_LOG_API_BASE__ أو localStorage nawris_log_api_base للنشر عبر نطاق مختلف */
+function resolveLogApiBase(){
+  try{
+    const w=typeof window!=='undefined'&&window.__NAWRIS_LOG_API_BASE__;
+    if(w&&String(w).trim())return String(w).trim().replace(/\/$/,'');
+    const ls=localStorage.getItem('nawris_log_api_base');
+    if(ls&&String(ls).trim())return String(ls).trim().replace(/\/$/,'');
+  }catch(_){}
+  return 'api';
+}
+const LOG_API_BASE=resolveLogApiBase();
+/** حد أيام التأخير لطلبات Algoriza «متابعة الفروع» — متفق عليه 4 أيام؛ يُجرّى احتياطياً يومان/1 إن كان الرد فارغاً */
+const BRANCH_DELAYED_LIST_DAYS=4;
+function logApiAbsolute(relPath){
+  const p=String(relPath||'').replace(/^\//,'');
+  const baseRaw=LOG_API_BASE.replace(/\/$/,'');
+  if(/^https?:\/\//i.test(baseRaw))return `${baseRaw}/${p}`;
+  return new URL(`${baseRaw}/${p}`,window.location.href).toString();
+}
+function logApiCredentialsMode(absUrl){
+  try{return new URL(absUrl,window.location.href).origin===window.location.origin?'same-origin':'omit';}catch(_){return'same-origin';}
+}
 const MANUAL_EXCEL_SHIPMENTS_ONLY = true; // keep main shipments table sourced only from manual Excel upload
 
 /** إعدادات عمولات الطرود (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
@@ -2743,14 +2764,18 @@ async function fetchAllBranchDelayedRows(baseUrl,token,minDelay){
 async function loadReturns(){
   const cfg=getBranchApiConfig();
   const EXTERNAL_DELAYED_API=cfg.url;
-  const MIN_COMPANY_DELAY=2;
+  const MIN_COMPANY_DELAY=BRANCH_DELAYED_LIST_DAYS;
   try{
     const listEl=document.getElementById('returns-list');
     if(listEl)listEl.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
     setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...');
     // Branch follow-up "في الشركة": start delay from 2 days.
     const token=cfg.token;
-    const rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
+    let rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
+    if(!(rows&&rows.length)&&token){
+      try{rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,2);}catch(_){}
+      if(!(rows&&rows.length))try{rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
+    }
     const inCompanyRows=rows.filter(r=>{
       const d=parseInt(r?.delay_days||r?.delay||0)||0;
       const s=String(r?.status||'').toLowerCase();
@@ -2857,7 +2882,7 @@ function transferRowMatchesLoose(r,minD){
 async function loadTransfers(){
   const cfg=getBranchApiConfig();
   const EXTERNAL_DELAYED_API=cfg.url;
-  const MIN_TRANSFER_DELAY=2;
+  const MIN_TRANSFER_DELAY=BRANCH_DELAYED_LIST_DAYS;
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
   try{
@@ -2869,7 +2894,8 @@ async function loadTransfers(){
     const token=cfg.token;
     let apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_TRANSFER_DELAY);
     if(!(apiRows&&apiRows.length)&&token){
-      try{apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
+      try{apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,2);}catch(_){}
+      if(!(apiRows&&apiRows.length))try{apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
     }
     let transferRows=apiRows.filter(r=>transferRowMatchesStrict(r,MIN_TRANSFER_DELAY));
     if(!transferRows.length&&apiRows.length){
@@ -3316,10 +3342,12 @@ async function logPackageAction({packageId,actionType,status}){
   try{
     const rawId=String(packageId||'').replace(/^api_/i,'');
     const payload={package_id:rawId,tracking_code:rawId,action_type:actionType||'update',status:status||''};
-    const r=await fetch(`${LOG_API_BASE}/log_action.php`,{
+    const logUrl=logApiAbsolute('log_action.php');
+    const r=await fetch(logUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      credentials:'same-origin',
+      credentials:logApiCredentialsMode(logUrl),
+      mode:'cors',
       body:JSON.stringify(payload)
     });
     if(!r.ok){
@@ -3332,11 +3360,11 @@ async function logPackageAction({packageId,actionType,status}){
   }
 }
 async function fetchPackageLogs(packageId,dateStr){
-  const u=new URL(`${LOG_API_BASE}/get_logs.php`,window.location.href);
+  const u=new URL(logApiAbsolute('get_logs.php'));
   u.searchParams.set('package_id',String(packageId||'').replace(/^api_/i,''));
   u.searchParams.set('date',dateStr||getTodayISO());
   try{
-    const r=await fetch(u.toString(),{method:'GET'});
+    const r=await fetch(u.toString(),{method:'GET',credentials:logApiCredentialsMode(u.toString()),mode:'cors'});
     const raw=await r.text();
     let data=null;
     try{
@@ -3711,8 +3739,12 @@ async function renderControlTowerPage(){
   let tr=computeTransferDelaysFromTransfersData();
   let whSrc='client',trSrc='client-transfers';
   try{
-    const u=new URL(`${LOG_API_BASE}/control_tower_kpis.php`,window.location.href);
-    const res=await fetch(u.toString(),{credentials:'same-origin'});
+    const kpiUrl=logApiAbsolute('control_tower_kpis.php');
+    const res=await fetch(kpiUrl,{
+      credentials:logApiCredentialsMode(kpiUrl),
+      mode:'cors',
+      headers:{Accept:'application/json'}
+    });
     if(res.ok){
       const j=await res.json();
       if(j&&j.ok&&j.warehouse){
@@ -6398,7 +6430,8 @@ async function renderStaff(){
   let serverStaffBoard=null;
   try{
     const ym=currentMonthKey();
-    const r=await fetch(`${LOG_API_BASE}/staff_leaderboard.php?month=${encodeURIComponent(ym)}`,{credentials:'same-origin'});
+    const lbUrl=logApiAbsolute(`staff_leaderboard.php?month=${encodeURIComponent(ym)}`);
+    const r=await fetch(lbUrl,{credentials:logApiCredentialsMode(lbUrl),mode:'cors'});
     if(r.ok){
       const j=await r.json();
       if(j&&j.success)serverStaffBoard=j;
@@ -7126,10 +7159,12 @@ async function syncStaffResolvedToServer(trackingCode,employeeUsername){
   const key=`${code}|${emp}`;
   if(posted.has(key))return;
   try{
-    const r=await fetch(`${LOG_API_BASE}/staff_record_resolved.php`,{
+    const srUrl=logApiAbsolute('staff_record_resolved.php');
+    const r=await fetch(srUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      credentials:'same-origin',
+      credentials:logApiCredentialsMode(srUrl),
+      mode:'cors',
       body:JSON.stringify({tracking_code:code,employee_username:emp})
     });
     if(r.ok){
