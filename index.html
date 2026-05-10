@@ -2769,7 +2769,7 @@ async function loadReturns(){
     const listEl=document.getElementById('returns-list');
     if(listEl)listEl.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
     setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...');
-    // Branch follow-up "في الشركة": start delay from 2 days.
+    // الطلب من API التأخير: delay_days الافتراضي = BRANCH_DELAYED_LIST_DAYS (4)، ثم احتياط 2 ثم 1 إن فرغ الرد.
     const token=cfg.token;
     let rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
     if(!(rows&&rows.length)&&token){
