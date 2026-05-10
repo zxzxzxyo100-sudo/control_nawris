@@ -2797,33 +2797,63 @@ async function loadReturns(){
     }
   }
 }
+function isToBranchTransitStatus(s){
+  const x=String(s||'').toLowerCase();
+  return x.includes('بالطريق للفرع')||
+    x.includes('بالطريق')||
+    x.includes('in_transit')||
+    x.includes('on_the_way')||
+    x.includes('route_to_branch')||
+    x.includes('to_branch')||
+    x.includes('transferring')||
+    x.includes('transfer_pending')||
+    (x.includes('تحويل')&&!x.includes('تم التحويل')&&!x.includes('مكتمل'));
+}
+/** يستخرج أسماء الفروع من أشكال مختلفة لردّ API (التحويلات) */
+function transferBranchHints(r){
+  const prev=String(r?.previous_branch||r?.previous_branch_name||r?.from_branch||r?.branch_from||r?.source_branch||r?.['الفرع السابق']||'').trim();
+  const recv=String(r?.received_branch||r?.received_branch_name||r?.to_branch||r?.branch_to||r?.destination_branch||r?.target_branch||r?.['فرع الاستلام']||'').trim();
+  const cur=String(r?.current_branch||r?.branch_name||r?.branch||r?.['الفرع الحالي']||'').trim();
+  const fromB=prev||cur||String(r?.from_branch_name||'').trim();
+  const toB=recv||cur||String(r?.to_branch_name||'').trim();
+  const hasPair=Boolean((prev&&recv)||(prev&&cur&&prev!==cur)||(recv&&cur&&recv!==cur)||(fromB&&toB&&fromB!==toB));
+  return{prev,recv,cur,fromB,toB,hasPair};
+}
+function transferRowMatchesStrict(r,minD){
+  const d=parseInt(r?.delay_days||r?.delay||0)||0;
+  const s=String(r?.status||'').toLowerCase();
+  const h=transferBranchHints(r);
+  return d>=minD&&h.hasPair&&isToBranchTransitStatus(s);
+}
+function transferRowMatchesLoose(r,minD){
+  const d=parseInt(r?.delay_days||r?.delay||0)||0;
+  const s=String(r?.status||'').toLowerCase();
+  const h=transferBranchHints(r);
+  if(d<minD||!isToBranchTransitStatus(s))return false;
+  return Boolean(h.prev||h.recv||h.cur||h.fromB||h.toB);
+}
 async function loadTransfers(){
   const cfg=getBranchApiConfig();
   const EXTERNAL_DELAYED_API=cfg.url;
-  const MIN_TRANSFER_DELAY=3;
+  const MIN_TRANSFER_DELAY=2;
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
   try{
     setBranchApiStatus('⏳ جارٍ جلب بيانات "التحويلات"...');
-    // Transfers follow-up: start delay from 3 days.
+    if(!cfg.token){
+      setBranchApiStatus('⚠️ أدخل X-API-TOKEN في حقول متابعة الفروع ثم «ربط متابعة الفروع»','err');
+      toast('بدون التوكن لن يُجلب API الخارجي — سيتم المحاولة ثم fallback محلي','w');
+    }
     const token=cfg.token;
-    const apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_TRANSFER_DELAY);
-    const transferRows=apiRows.filter(r=>{
-      const d=parseInt(r?.delay_days||r?.delay||0)||0;
-      const s=String(r?.status||'').toLowerCase();
-      const prevBranch=String(r?.previous_branch||'').trim();
-      const recvBranch=String(r?.received_branch||'').trim();
-      const hasBothBranches=Boolean(prevBranch&&recvBranch);
-      const isToBranchTransit=
-        s.includes('بالطريق للفرع')||
-        s.includes('بالطريق')||
-        s.includes('in_transit')||
-        s.includes('on_the_way')||
-        s.includes('route_to_branch')||
-        s.includes('to_branch');
-      // Transfers tab should show only branch-to-branch in-transit records.
-      return d>=MIN_TRANSFER_DELAY&&hasBothBranches&&isToBranchTransit;
-    });
+    let apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_TRANSFER_DELAY);
+    if(!(apiRows&&apiRows.length)&&token){
+      try{apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,1);}catch(_){}
+    }
+    let transferRows=apiRows.filter(r=>transferRowMatchesStrict(r,MIN_TRANSFER_DELAY));
+    if(!transferRows.length&&apiRows.length){
+      transferRows=apiRows.filter(r=>transferRowMatchesLoose(r,MIN_TRANSFER_DELAY));
+      if(transferRows.length)console.warn('[transfers] relaxed filter matched',transferRows.length,'of',apiRows.length);
+    }
     transfers_data=transferRows.map((r,i)=>{
       const shipmentCode=String(
         r.return_tracking_code||r.return_code||r.shipment_code||r.tracking_code||r.code||r.order_code||r.id||'—'
@@ -2834,14 +2864,16 @@ async function loadTransfers(){
       const cityName=String(
         r.city||r.government||r.area||'—'
       ).trim()||'—';
-      const prevBranch=String(r.previous_branch||'').trim();
-      const recvBranch=String(r.received_branch||'').trim();
-      const currentBranch=String(r.current_branch||'').trim();
-      const fallbackFrom=String(r.from_branch||r.branch||'').trim();
-      const fallbackTo=String(r.to_branch||r.branch||'').trim();
+      const bh=transferBranchHints(r);
+      const prevBranch=bh.prev;
+      const recvBranch=bh.recv;
+      const currentBranch=bh.cur;
+      const fallbackFrom=String(r.from_branch||r.branch||bh.fromB||'').trim();
+      const fallbackTo=String(r.to_branch||bh.toB||'').trim();
       const fromBranch=prevBranch||currentBranch||fallbackFrom||'—';
-      // Destination branch in transfers must follow current_branch.
-      let toBranch=currentBranch||recvBranch||fallbackTo||'—';
+      let toBranch=recvBranch||fallbackTo||currentBranch||'—';
+      if(fromBranch===toBranch&&recvBranch)toBranch=recvBranch;
+      if(fromBranch===toBranch&&fallbackTo&&fallbackTo!==fromBranch)toBranch=fallbackTo;
       const branchRoute=`${fromBranch} → ${toBranch}`;
       const delayDaysNow=parseInt(r.delay_days||r.delay||0)||0;
       const derivedTripId=
