@@ -1,0 +1,9 @@
+# Dependencies & build
+node_modules/
+dist/
+*.local
+
+# Logs & OS
+npm-debug.log*
+.DS_Store
+Thumbs.db
