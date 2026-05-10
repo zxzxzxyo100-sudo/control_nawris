@@ -7,7 +7,8 @@ declare(strict_types=1);
  * Env: CT_SHIPMENTS_TABLE (default: shipments)
  *
  * Card «تكدس المخزن»: % of in_company where COALESCE(received_at, created_at) is ≥ 48 hours old.
- * Card «تأخر الطريق»: % of in_transit / with_delegate / with_driver where updated_at is > 4 days old (96h).
+ * Card «تأخر التحويلات»: % of rows in CT_TRANSFERS_TABLE (default transfers) with active transfer status
+ * where TIMESTAMPDIFF(HOUR, updated_at, NOW()) > 48 (not received / stale > 48h).
  */
 require __DIR__ . '/db.php';
 
@@ -42,7 +43,6 @@ try {
     }
 
     $hasReceived = isset($have['received_at']);
-    $hasUpdated = isset($have['updated_at']);
 
     // Anchor for warehouse age: COALESCE(received_at, created_at) when received_at exists on table
     if ($hasReceived) {
@@ -50,9 +50,6 @@ try {
     } else {
         $anchorExpr = '`created_at`';
     }
-
-    // Spec: TIMESTAMPDIFF(HOUR, updated_at, NOW()); fallback to created_at only if updated_at column is absent
-    $lastTouchExpr = $hasUpdated ? '`updated_at`' : '`created_at`';
 
     // Warehouse: in_company, stale ≥ 48h (TIMESTAMPDIFF HOUR from anchor to NOW)
     $sqlWh = sprintf(
@@ -72,27 +69,116 @@ try {
     $whDelayed = (int)($rowWh['delayed_count'] ?? 0);
     $whPct = $whTotal > 0 ? round(($whDelayed / $whTotal) * 100, 2) : 0.0;
 
-    // Transit: last touch via TIMESTAMPDIFF(HOUR, updated_at, NOW()) per spec; COALESCE to created_at if needed
-    $sqlTr = sprintf(
-        'SELECT
-            COUNT(*) AS total_count,
-            SUM(CASE WHEN TIMESTAMPDIFF(HOUR, %s, NOW()) > 96 THEN 1 ELSE 0 END) AS delayed_count
-         FROM `%s`
-         WHERE `status` IN (:st1, :st2, :st3)',
-        $lastTouchExpr,
-        str_replace('`', '``', $table)
-    );
+    $transferTable = getenv('CT_TRANSFERS_TABLE') ?: 'transfers';
+    $trTotal = 0;
+    $trDelayed = 0;
+    $trPct = 0.0;
+    $transferMeta = ['table' => $transferTable, 'found' => false];
 
-    $stTr = $pdo->prepare($sqlTr);
-    $stTr->execute([
-        ':st1' => 'in_transit',
-        ':st2' => 'with_delegate',
-        ':st3' => 'with_driver',
-    ]);
-    $rowTr = $stTr->fetch(PDO::FETCH_ASSOC) ?: ['total_count' => 0, 'delayed_count' => 0];
-    $trTotal = (int)($rowTr['total_count'] ?? 0);
-    $trDelayed = (int)($rowTr['delayed_count'] ?? 0);
-    $trPct = $trTotal > 0 ? round(($trDelayed / $trTotal) * 100, 2) : 0.0;
+    if (preg_match('/^[a-zA-Z0-9_]+$/', $transferTable)) {
+        $existsTr = $pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = :t'
+        );
+        $existsTr->execute([':t' => $transferTable]);
+        if ((int) $existsTr->fetchColumn() > 0) {
+            $colsTrStmt = $pdo->prepare(
+                'SELECT column_name FROM information_schema.columns
+                 WHERE table_schema = DATABASE() AND table_name = :t'
+            );
+            $colsTrStmt->execute([':t' => $transferTable]);
+            $haveTr = [];
+            foreach ($colsTrStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $haveTr[strtolower((string)($row['column_name'] ?? ''))] = true;
+            }
+            if (isset($haveTr['status'], $haveTr['updated_at'])) {
+                $statusCsv = (string) (getenv('CT_TRANSFER_ACTIVE_STATUSES') ?: 'transferring,transfer_pending');
+                $statuses = array_values(array_unique(array_filter(array_map('trim', explode(',', $statusCsv)), static fn ($s) => $s !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $s))));
+                if ($statuses === []) {
+                    $statuses = ['transferring'];
+                }
+                $placeholders = [];
+                $bind = [];
+                foreach ($statuses as $i => $st) {
+                    $k = ':st_' . $i;
+                    $placeholders[] = $k;
+                    $bind[$k] = $st;
+                }
+                $inList = implode(',', $placeholders);
+                $sqlTr = sprintf(
+                    'SELECT
+                        COUNT(*) AS total_count,
+                        SUM(CASE WHEN TIMESTAMPDIFF(HOUR, `updated_at`, NOW()) > 48 THEN 1 ELSE 0 END) AS delayed_count
+                     FROM `%s`
+                     WHERE `status` IN (%s)',
+                    str_replace('`', '``', $transferTable),
+                    $inList
+                );
+                $stTr = $pdo->prepare($sqlTr);
+                foreach ($bind as $k => $v) {
+                    $stTr->bindValue($k, $v, PDO::PARAM_STR);
+                }
+                $stTr->execute();
+                $rowTr = $stTr->fetch(PDO::FETCH_ASSOC) ?: ['total_count' => 0, 'delayed_count' => 0];
+                $trTotal = (int) ($rowTr['total_count'] ?? 0);
+                $trDelayed = (int) ($rowTr['delayed_count'] ?? 0);
+                $trPct = $trTotal > 0 ? round(($trDelayed / $trTotal) * 100, 2) : 0.0;
+                $transferMeta = [
+                    'table' => $transferTable,
+                    'found' => true,
+                    'statuses' => $statuses,
+                    'stale_hours_threshold' => 48,
+                    'time_column' => 'updated_at',
+                ];
+            } elseif (isset($haveTr['status'], $haveTr['created_at'])) {
+                $statusCsv = (string) (getenv('CT_TRANSFER_ACTIVE_STATUSES') ?: 'transferring,transfer_pending');
+                $statuses = array_values(array_unique(array_filter(array_map('trim', explode(',', $statusCsv)), static fn ($s) => $s !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $s))));
+                if ($statuses === []) {
+                    $statuses = ['transferring'];
+                }
+                $placeholders = [];
+                $bind = [];
+                foreach ($statuses as $i => $st) {
+                    $k = ':st_' . $i;
+                    $placeholders[] = $k;
+                    $bind[$k] = $st;
+                }
+                $inList = implode(',', $placeholders);
+                $sqlTr = sprintf(
+                    'SELECT
+                        COUNT(*) AS total_count,
+                        SUM(CASE WHEN TIMESTAMPDIFF(HOUR, `created_at`, NOW()) > 48 THEN 1 ELSE 0 END) AS delayed_count
+                     FROM `%s`
+                     WHERE `status` IN (%s)',
+                    str_replace('`', '``', $transferTable),
+                    $inList
+                );
+                $stTr = $pdo->prepare($sqlTr);
+                foreach ($bind as $k => $v) {
+                    $stTr->bindValue($k, $v, PDO::PARAM_STR);
+                }
+                $stTr->execute();
+                $rowTr = $stTr->fetch(PDO::FETCH_ASSOC) ?: ['total_count' => 0, 'delayed_count' => 0];
+                $trTotal = (int) ($rowTr['total_count'] ?? 0);
+                $trDelayed = (int) ($rowTr['delayed_count'] ?? 0);
+                $trPct = $trTotal > 0 ? round(($trDelayed / $trTotal) * 100, 2) : 0.0;
+                $transferMeta = [
+                    'table' => $transferTable,
+                    'found' => true,
+                    'statuses' => $statuses,
+                    'stale_hours_threshold' => 48,
+                    'time_column' => 'created_at',
+                ];
+            }
+        }
+    }
+
+    $transferPayload = [
+        'pct' => $trPct,
+        'delayed_count' => $trDelayed,
+        'total_count' => $trTotal,
+        'meta' => $transferMeta,
+    ];
 
     json_response([
         'ok' => true,
@@ -104,13 +190,8 @@ try {
             'total_count' => $whTotal,
             'anchor' => $hasReceived ? 'COALESCE(received_at, created_at)' : 'created_at',
         ],
-        'transit' => [
-            'pct' => $trPct,
-            'delayed_count' => $trDelayed,
-            'total_count' => $trTotal,
-            'stale_hours_threshold' => 96,
-            'time_column' => $hasUpdated ? 'updated_at' : 'created_at',
-        ],
+        'transfer_delays' => $transferPayload,
+        'transit' => $transferPayload,
     ]);
 } catch (Throwable $e) {
     json_response([

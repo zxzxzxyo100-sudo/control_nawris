@@ -1948,12 +1948,12 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         </div>
         <div class="ct-card" id="ct-card-4">
           <div class="ct-card-top">
-            <div class="ct-card-title">تأخر الطريق</div>
-            <div class="ct-trend" id="ct-tr-4" title="اتجاه المؤشر — نسبة الطلبات بالطريق/مع المندوب التي لم يُحدَّث سجلّها أكثر من ٤ أيام"></div>
+            <div class="ct-card-title">تأخر التحويلات</div>
+            <div class="ct-trend" id="ct-tr-4" title="اتجاه المؤشر — نسبة طلبات التحويل (لم تُستلم) لأكثر من ٤٨ ساعة حسب updated_at"></div>
           </div>
-          <div class="ct-desc" title="الحالات: in_transit أو with_delegate أو with_driver؛ TIMESTAMPDIFF(HOUR, updated_at, NOW()) &gt; ٩٦ في MySQL. في المتصفح يُعتمد حقل updated_at فقط إن وُجد. أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر &gt;١٥٪.">نسبة الطلبات «بالطريق / مع المندوب» دون تحديث (updated_at) لأكثر من ٤ أيام (٩٦ ساعة)</div>
+          <div class="ct-desc" title="نسبة الطلبات في حالة (تحويل) ولم يتم استلامها لأكثر من ٤٨ ساعة. MySQL: جدول transfers وحالة transferring (أو CT_TRANSFER_ACTIVE_STATUSES) مع TIMESTAMPDIFF(HOUR, updated_at, NOW()) &gt; ٤٨. أخضر &lt;٥٪ · كهرماني ٥٪–١٢٪ · أحمر &gt;١٢٪.">نسبة الطلبات في حالة (تحويل) ولم يتم استلامها لأكثر من ٤٨ ساعة</div>
           <div class="ct-val" id="ct-v-4">—</div>
-          <div class="ct-target">أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر &gt;١٥٪</div>
+          <div class="ct-target">أخضر &lt;٥٪ · كهرماني ٥٪–١٢٪ · أحمر &gt;١٢٪</div>
           <div class="ct-meta" id="ct-m-4"></div>
         </div>
       </div>
@@ -2863,6 +2863,7 @@ async function loadTransfers(){
         delay_days:delayDaysNow,
         status:(r.status||'pending').toString().toLowerCase(),
         created_at:r.created_at||new Date().toISOString(),
+        updated_at:r.updated_at||r.modified_at||r.last_update||null,
         source:'api'
       };
     });
@@ -2894,6 +2895,7 @@ async function loadTransfers(){
         delay_days:t.delay_days??null,
         status:(t.status||'pending').toString().toLowerCase(),
         created_at:t.created_at||new Date().toISOString(),
+        updated_at:t.updated_at||null,
         source:'legacy'
       }));
       transfers_data.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
@@ -3596,16 +3598,26 @@ function computeWarehouseKpiClient(merged){
   const total=pool.length;
   return{pct:total?delayed/total*100:0,delayed_count:delayed,total_count:total,source:'client'};
 }
-function computeTransitKpiClient(merged){
-  const pool=(merged||[]).filter(s=>['in_transit','with_delegate','with_driver'].includes(s.status));
+function isActiveTransferStatusForKpi(st){
+  const s=String(st||'').toLowerCase();
+  if(/تم الاستلام|تمت|مكتمل|completed|delivered|received|cancel|ملغ|closed/.test(s))return false;
+  return s==='transferring'||s==='transfer_pending'||s==='transfering'||
+    s.includes('بالطريق')||s.includes('in_transit')||s.includes('on_the_way')||
+    (s.includes('تحويل')&&!s.includes('تم التحويل'));
+}
+/** KPI من تبويب التحويلات (transfers_data): حالة تحويل نشطة ولم يُحدَّث السجل أكثر من ٤٨ ساعة */
+function computeTransferDelaysFromTransfersData(){
+  const rows=Array.isArray(transfers_data)?transfers_data:[];
+  let pool=rows.filter(t=>isActiveTransferStatusForKpi(t.status));
+  if(!pool.length&&rows.length)pool=rows.slice();
   let delayed=0;
-  for(const s of pool){
-    const touch=s.updated_at||null;
+  for(const t of pool){
+    const touch=t.updated_at||t.created_at||null;
     const h=ctHoursSince(touch);
-    if(h!==null&&h>96)delayed++;
+    if(h!==null&&h>48)delayed++;
   }
   const total=pool.length;
-  return{pct:total?delayed/total*100:0,delayed_count:delayed,total_count:total,source:'client'};
+  return{pct:total?delayed/total*100:0,delayed_count:delayed,total_count:total,source:'client-transfers'};
 }
 function ctWarehouseStockZone(pct){
   if(!Number.isFinite(pct))return'warn';
@@ -3613,10 +3625,10 @@ function ctWarehouseStockZone(pct){
   if(pct<=25)return'warn';
   return'danger';
 }
-function ctTransitDelayZone(pct){
+function ctTransferDelayZone(pct){
   if(!Number.isFinite(pct))return'warn';
-  if(pct<=7)return'good';
-  if(pct<=15)return'warn';
+  if(pct<5)return'good';
+  if(pct<=12)return'warn';
   return'danger';
 }
 async function renderControlTowerPage(){
@@ -3637,18 +3649,26 @@ async function renderControlTowerPage(){
   const completionRate=Math.max(doneN/7,merged.length>0?Math.max(merged.length/21,40):1);
   const backlog=delayed/Math.max(completionRate,0.001);
 
+  if(!(Array.isArray(transfers_data)&&transfers_data.length)){
+    try{await loadTransfers();}catch(_){}
+  }
+
   let wh=computeWarehouseKpiClient(merged);
-  let tr=computeTransitKpiClient(merged);
-  let kpiSource='client';
+  let tr=computeTransferDelaysFromTransfersData();
+  let whSrc='client',trSrc='client-transfers';
   try{
     const u=new URL(`${LOG_API_BASE}/control_tower_kpis.php`,window.location.href);
     const res=await fetch(u.toString(),{credentials:'same-origin'});
     if(res.ok){
       const j=await res.json();
-      if(j&&j.ok&&j.warehouse&&j.transit){
+      if(j&&j.ok&&j.warehouse){
         wh={pct:Number(j.warehouse.pct)||0,delayed_count:Number(j.warehouse.delayed_count)||0,total_count:Number(j.warehouse.total_count)||0,source:'mysql'};
-        tr={pct:Number(j.transit.pct)||0,delayed_count:Number(j.transit.delayed_count)||0,total_count:Number(j.transit.total_count)||0,source:'mysql'};
-        kpiSource='mysql';
+        whSrc='mysql';
+      }
+      const td=j.transfer_delays||j.transit;
+      if(j&&j.ok&&td&&td.total_count!=null){
+        tr={pct:Number(td.pct)||0,delayed_count:Number(td.delayed_count)||0,total_count:Number(td.total_count)||0,source:'mysql-transfers'};
+        trSrc='mysql-transfers';
       }
     }
   }catch(e){console.warn('control_tower_kpis',e);}
@@ -3671,13 +3691,14 @@ async function renderControlTowerPage(){
   const z1=ctReverseZone(agingDays,1.5);
   const z2=ctReverseZone(backlog,0.5);
   const z3=ctWarehouseStockZone(wh.pct);
-  const z4=ctTransitDelayZone(tr.pct);
+  const z4=ctTransferDelayZone(tr.pct);
   const meta0=`مع مندوب: ${withAgent.toLocaleString('ar-SA')} · ركود +٤ أيام: ${stagnant4dProxy.toLocaleString('ar-SA')}`;
   const meta1=`مرتجعات: ${ret.toLocaleString('ar-SA')} · متوسط يومي تقديري: ${returnVol.toFixed(0)}`;
   const meta2=`متأخر: ${delayed.toLocaleString('ar-SA')} · إنجاز يومي تقديري: ${completionRate.toFixed(0)}`;
-  const srcTag=kpiSource==='mysql'?'MySQL':'متصفح';
-  const meta3=`متأخر: ${wh.delayed_count.toLocaleString('ar-SA')} · إجمالي: ${wh.total_count.toLocaleString('ar-SA')} · ${srcTag}`;
-  const meta4=`متأخر: ${tr.delayed_count.toLocaleString('ar-SA')} · إجمالي: ${tr.total_count.toLocaleString('ar-SA')} · ${srcTag}`;
+  const srcWh=whSrc==='mysql'?'MySQL':'متصفح';
+  const srcTr=trSrc==='mysql-transfers'?'MySQL (تحويلات)':(trSrc==='client-transfers'?'تبويب التحويلات':'—');
+  const meta3=`متأخر: ${wh.delayed_count.toLocaleString('ar-SA')} · إجمالي: ${wh.total_count.toLocaleString('ar-SA')} · ${srcWh}`;
+  const meta4=`متأخر: ${tr.delayed_count.toLocaleString('ar-SA')} · إجمالي: ${tr.total_count.toLocaleString('ar-SA')} · ${srcTr}`;
   ctSetCard(0,z0,stagnationPct.toFixed(1)+'٪',meta0,t0==='up'?'up':t0==='down'?'down':'flat');
   ctSetCard(1,z1,agingDays.toFixed(2)+' يوم',meta1,t1==='up'?'up':t1==='down'?'down':'flat');
   ctSetCard(2,z2,backlog.toFixed(2),meta2,t2==='up'?'up':t2==='down'?'down':'flat');

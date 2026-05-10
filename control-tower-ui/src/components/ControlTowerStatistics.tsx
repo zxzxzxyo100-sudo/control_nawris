@@ -24,6 +24,13 @@ export interface ControlTowerStatsData {
     delayedCount: number;
     totalCount: number;
   };
+  /** تأخر التحويلات — من جدول/مصدر التحويلات */
+  transferDelays?: {
+    pct: number;
+    delayedCount: number;
+    totalCount: number;
+  };
+  /** @deprecated use transferDelays */
   transitDelay?: {
     pct: number;
     delayedCount: number;
@@ -35,6 +42,8 @@ export interface ControlTowerStatsData {
     pendingReturnsAgingDays: number;
     backlogDensityIndex: number;
     warehouseStockPct?: number;
+    transferDelayPct?: number;
+    /** @deprecated */
     transitDelayPct?: number;
   };
 }
@@ -66,11 +75,11 @@ function zoneForWarehouseStockPct(value: number): Zone {
   return "danger";
 }
 
-/** in_transit / delegate / driver, no update >4d: green ≤7%, yellow up to 15%, red >15% */
-function zoneForTransitDelayPct(value: number): Zone {
+/** Transfer flow: green <5%, yellow 5–12%, red >12% */
+function zoneForTransferDelayPct(value: number): Zone {
   if (!Number.isFinite(value)) return "warn";
-  if (value <= 7) return "good";
-  if (value <= 15) return "warn";
+  if (value < 5) return "good";
+  if (value <= 12) return "warn";
   return "danger";
 }
 
@@ -177,18 +186,20 @@ export function ControlTowerStatistics({
       delayedCount: 0,
       totalCount: 0,
     };
-    const tr = statsData.transitDelay ?? {
-      pct: 0,
-      delayedCount: 0,
-      totalCount: 0,
-    };
+    const tr =
+      statsData.transferDelays ??
+      statsData.transitDelay ?? {
+        pct: 0,
+        delayedCount: 0,
+        totalCount: 0,
+      };
 
     return {
       agentStagnationRatePct,
       pendingReturnsAgingDays,
       backlogDensityIndex,
       warehouseStock: wh,
-      transitDelay: tr,
+      transferDelays: tr,
       kpi24hAgo,
     };
   }, [statsData]);
@@ -199,7 +210,7 @@ export function ControlTowerStatistics({
       pendingReturnsAgingDays,
       backlogDensityIndex,
       warehouseStock,
-      transitDelay,
+      transferDelays,
       kpi24hAgo,
     } = kpis;
 
@@ -263,17 +274,20 @@ export function ControlTowerStatistics({
         trend: trendReverse(warehouseStock.pct, kpi24hAgo?.warehouseStockPct),
       },
       {
-        key: "transit",
-        title: "تأخر الطريق",
+        key: "transfer-delays",
+        title: "تأخر التحويلات",
         subtitle:
-          "نسبة الطلبات in_transit أو with_delegate أو with_driver حيث آخر تحديث (updated_at) قبل أكثر من ٤ أيام — TIMESTAMPDIFF(HOUR, updated_at, NOW()) > 96",
+          "نسبة الطلبات في حالة (تحويل) ولم يتم استلامها لأكثر من ٤٨ ساعة — حسب سجل التحويلات و updated_at (MySQL: جدول transfers، حالة transferring أو ما يعادلها)",
         subtitleTitle:
-          "MySQL: TIMESTAMPDIFF(HOUR, updated_at, NOW()) > 96. أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر >١٥٪.",
-        value: fmtPct(transitDelay.pct),
-        countLine: `متأخر: ${transitDelay.delayedCount.toLocaleString("ar-SA")} · إجمالي: ${transitDelay.totalCount.toLocaleString("ar-SA")}`,
-        targetLabel: "أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر >١٥٪",
-        zone: zoneForTransitDelayPct(transitDelay.pct),
-        trend: trendReverse(transitDelay.pct, kpi24hAgo?.transitDelayPct),
+          "TIMESTAMPDIFF(HOUR, updated_at, NOW()) > 48 على جدول التحويلات. أخضر <٥٪ · كهرماني ٥٪–١٢٪ · أحمر >١٢٪.",
+        value: fmtPct(transferDelays.pct),
+        countLine: `متأخر: ${transferDelays.delayedCount.toLocaleString("ar-SA")} · إجمالي: ${transferDelays.totalCount.toLocaleString("ar-SA")}`,
+        targetLabel: "أخضر <٥٪ · كهرماني ٥٪–١٢٪ · أحمر >١٢٪",
+        zone: zoneForTransferDelayPct(transferDelays.pct),
+        trend: trendReverse(
+          transferDelays.pct,
+          kpi24hAgo?.transferDelayPct ?? kpi24hAgo?.transitDelayPct
+        ),
       },
     ];
   }, [kpis]);
@@ -314,8 +328,8 @@ export function ControlTowerStatistics({
                       ? "مقارنة آخر ٢٤ ساعة — الركود: طلبات مع المندوب أكثر من ٤ أيام (٩٦ ساعة) ÷ إجمالي الطلبات مع مندوب"
                       : c.key === "warehouse"
                         ? "مقارنة آخر ٢٤ ساعة — تكدس المخزن: نسبة in_company بمرور ≥٤٨ ساعة على أول طابع زمني"
-                        : c.key === "transit"
-                          ? "مقارنة آخر ٢٤ ساعة — تأخر الطريق: آخر تحديث >٩٦ ساعة"
+                        : c.key === "transfer-delays"
+                          ? "مقارنة آخر ٢٤ ساعة — تأخر التحويلات: لم يُستلم لأكثر من ٤٨ ساعة"
                           : "مقارنة آخر ٢٤ ساعة"
                   }
                 >

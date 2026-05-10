@@ -9,13 +9,13 @@ const demoStats: ControlTowerStatsData = {
   avgDailyReturnProcessingVolume: 340,
   avgDailyCompletionRate: 9200,
   warehouseStock: { pct: 18.5, delayedCount: 37, totalCount: 200 },
-  transitDelay: { pct: 9.2, delayedCount: 46, totalCount: 500 },
+  transferDelays: { pct: 8.0, delayedCount: 24, totalCount: 300 },
   kpi24hAgo: {
     agentStagnationRatePct: 4.2,
     pendingReturnsAgingDays: 1.35,
     backlogDensityIndex: 0.42,
     warehouseStockPct: 22.0,
-    transitDelayPct: 11.0,
+    transferDelayPct: 10.0,
   },
 };
 
