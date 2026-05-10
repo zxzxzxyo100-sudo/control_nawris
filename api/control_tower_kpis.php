@@ -40,16 +40,11 @@ try {
     // استعلام واحد شامل لجلب كل التصنيفات التي تظهر في الصورة
     $sql = "
         SELECT 
-            COUNT(*) AS total_all,
-            -- الطرود التي بالطريق (التحويلات)
-            SUM(CASE WHEN status IN ('transferring', 'transfer_pending', 'in_transit') THEN 1 ELSE 0 END) AS in_transit_count,
-            -- مع المندوب
-            SUM(CASE WHEN status IN ('with_driver', 'out_for_delivery') THEN 1 ELSE 0 END) AS with_driver_count,
-            -- المرتجع
-            SUM(CASE WHEN status IN ('returned', 'returning') THEN 1 ELSE 0 END) AS returned_count,
-            -- التكدس (المتأخر في المخزن > 48 ساعة)
-            SUM(CASE WHEN status = 'in_company' AND TIMESTAMPDIFF(HOUR, created_at, NOW()) >= 48 THEN 1 ELSE 0 END) AS delayed_warehouse_count
-        FROM `$table`
+            status, 
+            COUNT(*) as count 
+        FROM `$table` 
+        GROUP BY status
+    "; FROM `$table`
     ";
 
     $stmt = $pdo->query($sql);
