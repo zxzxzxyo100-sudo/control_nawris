@@ -2700,7 +2700,7 @@ async function loadReturns(){
   try{
     const listEl=document.getElementById('returns-list');
     if(listEl)listEl.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
-    setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...');
+    setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...','info','r');
     // Branch follow-up "في الشركة": start delay from 2 days.
     const token=cfg.token;
     const rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
@@ -2735,50 +2735,145 @@ async function loadReturns(){
     const last=document.getElementById('returns-last-sync');if(last)last.textContent=syncTxt;
     const live=document.getElementById('returns-live-state');if(live)live.textContent='Connected';
     const conn=document.getElementById('returns-conn-badge');if(conn){conn.className='badge b-grn';conn.textContent='✅ Connected';}
-    setBranchApiStatus(`✅ في الشركة: تم جلب ${returns_data.length} سجل (من ${rows.length} من API)`,`ok`);
+    setBranchApiStatus(`✅ في الشركة: تم جلب ${returns_data.length} سجل (من ${rows.length} من API)`,'ok','r');
   }catch(e){
     console.warn('returns api',e);
     try{
       returns_data=await sb('returns','GET',null,'?select=*,shipments(tracking_code,customer_name),drivers(name),branches(name)&order=created_at.desc&limit=500');
       renderReturns();
       const conn=document.getElementById('returns-conn-badge');if(conn){conn.className='badge b-gold';conn.textContent='⚠️ Fallback';}
-      setBranchApiStatus(`⚠️ في الشركة: fallback محلي (${returns_data.length} سجل)`,`info`);
+      setBranchApiStatus(`⚠️ في الشركة: fallback محلي (${returns_data.length} سجل)`,'info','r');
     }catch(err){
       console.warn('returns fallback',err);
       const conn=document.getElementById('returns-conn-badge');if(conn){conn.className='badge b-red';conn.textContent='❌ Disconnected';}
       const live=document.getElementById('returns-live-state');if(live)live.textContent='Disconnected';
-      setBranchApiStatus('❌ فشل جلب بيانات "في الشركة"','err');
+      setBranchApiStatus('❌ فشل جلب بيانات "في الشركة"','err','r');
     }
   }
   try{renderControlTowerStats();}catch(_){}
 }
+function transferDelayFromRow(r){
+  const raw=r?.delay_days??r?.delay??r?.days_delayed??r?.delayed_days??0;
+  const n=typeof raw==='string'?parseFloat(raw.replace(/,/g,'.')):Number(raw);
+  return Number.isFinite(n)?Math.floor(Math.abs(n)):0;
+}
+function transferStatusNorm(r){
+  return String(r?.status||r?.status_label||r?.order_status||r?.state||'').toLowerCase();
+}
+function transferPickBranchVal(v){
+  if(v==null)return'';
+  if(typeof v==='object')v=v?.name??v?.title??v?.label??'';
+  return String(v).trim();
+}
+function transferPickFromRow(r,keys){
+  for(const k of keys){
+    const x=transferPickBranchVal(r?.[k]);
+    if(x)return x;
+  }
+  return'';
+}
+function transferParseArrowRoute(r){
+  const raw=r?.branch||r?.branch_route||r?.route||r?.path||r?.branch_path||'';
+  const s=String(raw);
+  const parts=s.split(/→|->|—|–|=>/).map(x=>x.trim()).filter(Boolean);
+  if(parts.length>=2)return{from:parts[0],to:parts[parts.length-1]};
+  return{from:'',to:''};
+}
+function transferEndpointsFromRow(r){
+  const nest=r?.shipment||r?.order||r?.parcel||{};
+  const pick=(keys)=>transferPickFromRow(r,keys)||transferPickFromRow(nest,keys);
+  const prevB=pick(['previous_branch','previous_branch_name','from_branch_name','from_branch','source_branch','origin_branch','sender_branch','branch_from']);
+  const recvB=pick(['received_branch','received_branch_name','to_branch_name','to_branch','destination_branch','target_branch','receiver_branch','branch_to','next_branch','next_branch_name']);
+  const respB=pick(['responsible_branch','responsible_branch_name','assigned_branch','assigned_branch_name','owner_branch','accountable_branch']);
+  const currB=pick(['current_branch','current_branch_name','branch_name','warehouse_branch']);
+  const arrow=transferParseArrowRoute(r);
+  const fbObj=transferPickBranchVal(r?.from_branch)||transferPickBranchVal(nest?.from_branch);
+  const tbObj=transferPickBranchVal(r?.to_branch)||transferPickBranchVal(nest?.to_branch);
+  let fromB=(prevB||fbObj||arrow.from||respB||'').trim();
+  let toB=(recvB||tbObj||arrow.to||currB||'').trim();
+  if((!fromB||!toB||fromB===toB)&&respB&&currB&&respB!==currB){fromB=respB;toB=currB;}
+  return{prevB,recvB,currB,fromB,toB,respB};
+}
+function transferIsTransitStatus(s){
+  if(!s)return false;
+  return(
+    s.includes('بالطريق للفرع')||
+    s.includes('بالطريق')||
+    s.includes('في الطريق')||
+    s.includes('طريق للفرع')||
+    s.includes('بين الفروع')||
+    s.includes('بين الفرع')||
+    s.includes('تحويل')||
+    s.includes('التحويل')||
+    s.includes('قيد النقل')||
+    s.includes('في النقل')||
+    s.includes('نقل بين')||
+    s.includes('إلى فرع')||
+    s.includes('للفرع')||
+    s.includes('in_transit')||
+    s.includes('on_the_way')||
+    s.includes('route_to_branch')||
+    s.includes('to_branch')||
+    s.includes('transfer')||
+    s.includes('transit')||
+    s.includes('dispatch')
+  );
+}
+function transferStrictFilter(r,minDelay){
+  const d=transferDelayFromRow(r);
+  const s=transferStatusNorm(r);
+  const prevBranch=String(r?.previous_branch||'').trim();
+  const recvBranch=String(r?.received_branch||'').trim();
+  const hasBothBranches=Boolean(prevBranch&&recvBranch);
+  const isToBranchTransit=transferIsTransitStatus(s);
+  return d>=minDelay&&hasBothBranches&&isToBranchTransit;
+}
+function transferRelaxedFilter(r,minDelay){
+  const d=transferDelayFromRow(r);
+  if(d<minDelay)return false;
+  const s=transferStatusNorm(r);
+  if(/delivered|تم التسليم|مُسلم|returned|مرتجع|cancel|ملغ|منته|closed|done|completed|سلم للعميل/.test(s))return false;
+  const{fromB,toB,prevB,recvB}=transferEndpointsFromRow(r);
+  if(!fromB||!toB||fromB===toB)return false;
+  if(s.includes('في الشركة')&&!transferIsTransitStatus(s)&&!(prevB&&recvB))return false;
+  return transferIsTransitStatus(s)||Boolean(prevB&&recvB)||/تحويل|transfer|بالطريق|نقل/.test(s);
+}
+function transferBroadFilter(r,minDelay){
+  const d=transferDelayFromRow(r);
+  if(d<minDelay)return false;
+  const s=transferStatusNorm(r);
+  if(/delivered|تم التسليم|مُسلم|returned|مرتجع|cancel|ملغ|منته|closed|done|completed|سلم للعميل/.test(s))return false;
+  const ep=transferEndpointsFromRow(r);
+  let fromB=ep.fromB,toB=ep.toB;
+  const resp=transferPickFromRow(r,['responsible_branch','responsible_branch_name','assigned_branch','assigned_branch_name'])||ep.respB;
+  const curr=transferPickFromRow(r,['current_branch','current_branch_name','branch_name'])||ep.currB;
+  if(!fromB||!toB||fromB===toB){
+    if(resp&&curr&&resp!==curr){fromB=resp;toB=curr;}
+  }
+  if(!fromB||!toB||fromB===toB)return false;
+  return true;
+}
 async function loadTransfers(){
   const cfg=getBranchApiConfig();
   const EXTERNAL_DELAYED_API=cfg.url;
-  const MIN_TRANSFER_DELAY=3;
+  const MIN_TRANSFER_DELAY=2;
+  const BRANCH_API_FETCH_MIN=2;
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
   try{
-    setBranchApiStatus('⏳ جارٍ جلب بيانات "التحويلات"...');
-    // Transfers follow-up: start delay from 3 days.
+    setBranchApiStatus('⏳ جارٍ جلب بيانات "التحويلات"...','info','t');
     const token=cfg.token;
-    const apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_TRANSFER_DELAY);
-    const transferRows=apiRows.filter(r=>{
-      const d=parseInt(r?.delay_days||r?.delay||0)||0;
-      const s=String(r?.status||'').toLowerCase();
-      const prevBranch=String(r?.previous_branch||'').trim();
-      const recvBranch=String(r?.received_branch||'').trim();
-      const hasBothBranches=Boolean(prevBranch&&recvBranch);
-      const isToBranchTransit=
-        s.includes('بالطريق للفرع')||
-        s.includes('بالطريق')||
-        s.includes('in_transit')||
-        s.includes('on_the_way')||
-        s.includes('route_to_branch')||
-        s.includes('to_branch');
-      // Transfers tab should show only branch-to-branch in-transit records.
-      return d>=MIN_TRANSFER_DELAY&&hasBothBranches&&isToBranchTransit;
-    });
+    const apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,BRANCH_API_FETCH_MIN);
+    let transferRows=apiRows.filter(r=>transferStrictFilter(r,MIN_TRANSFER_DELAY));
+    let transferTier='';
+    if(!transferRows.length&&apiRows.length){
+      transferRows=apiRows.filter(r=>transferRelaxedFilter(r,MIN_TRANSFER_DELAY));
+      if(transferRows.length)transferTier='relaxed';
+    }
+    if(!transferRows.length&&apiRows.length){
+      transferRows=apiRows.filter(r=>transferBroadFilter(r,MIN_TRANSFER_DELAY));
+      if(transferRows.length)transferTier='broad';
+    }
     transfers_data=transferRows.map((r,i)=>{
       const shipmentCode=String(
         r.return_tracking_code||r.return_code||r.shipment_code||r.tracking_code||r.code||r.order_code||r.id||'—'
@@ -2789,16 +2884,16 @@ async function loadTransfers(){
       const cityName=String(
         r.city||r.government||r.area||'—'
       ).trim()||'—';
-      const prevBranch=String(r.previous_branch||'').trim();
-      const recvBranch=String(r.received_branch||'').trim();
-      const currentBranch=String(r.current_branch||'').trim();
-      const fallbackFrom=String(r.from_branch||r.branch||'').trim();
-      const fallbackTo=String(r.to_branch||r.branch||'').trim();
-      const fromBranch=prevBranch||currentBranch||fallbackFrom||'—';
-      // Destination branch in transfers must follow current_branch.
-      let toBranch=currentBranch||recvBranch||fallbackTo||'—';
+      const ep=transferEndpointsFromRow(r);
+      const prevBranch=ep.prevB||String(r.previous_branch||'').trim();
+      const recvBranch=ep.recvB||String(r.received_branch||'').trim();
+      const currentBranch=ep.currB||String(r.current_branch||'').trim();
+      const fallbackFrom=String(transferPickBranchVal(r.from_branch)||r.branch||'').trim();
+      const fallbackTo=String(transferPickBranchVal(r.to_branch)||'').trim();
+      const fromBranch=(ep.fromB||prevBranch||currentBranch||fallbackFrom||'—').trim()||'—';
+      let toBranch=(ep.toB||recvBranch||currentBranch||fallbackTo||'—').trim()||'—';
       const branchRoute=`${fromBranch} → ${toBranch}`;
-      const delayDaysNow=parseInt(r.delay_days||r.delay||0)||0;
+      const delayDaysNow=transferDelayFromRow(r);
       const derivedTripId=
         r.trip_id||
         r.tripId||
@@ -2831,7 +2926,12 @@ async function loadTransfers(){
     const last=document.getElementById('transfers-last-sync');if(last)last.textContent=syncTxt;
     const live=document.getElementById('transfers-live-state');if(live)live.textContent='Connected';
     const conn=document.getElementById('transfers-conn-badge');if(conn){conn.className='badge b-grn';conn.textContent='✅ Connected';}
-    setBranchApiStatus(`✅ التحويلات: تم جلب ${transfers_data.length} سجل (من ${apiRows.length} من API)`,`ok`);
+    const tierNote=transferTier==='broad'?' — عرض موسّع (فرع مسؤول/مرسل ≠ فرع حالي)':transferTier==='relaxed'?' — بفلتر موسّع للحقول/الحالة':'';
+    if(!transfers_data.length&&apiRows.length){
+      setBranchApiStatus(`⚠️ وصل ${apiRows.length} سجل من API — لا تحويل يطابق الشروط (تأخير ≥${MIN_TRANSFER_DELAY} يوم، فرعان مختلفان). افتح F12 وابحث عن حقول الفرع في أول سجل.`,'info','t');
+    }else{
+      setBranchApiStatus(`✅ التحويلات: تم جلب ${transfers_data.length} سجل (من ${apiRows.length} من API)${tierNote}`,'ok','t');
+    }
   }catch(e){
     console.warn('transfers api',e);
     try{
@@ -2858,14 +2958,14 @@ async function loadTransfers(){
       const branchSel=document.getElementById('t-branch');if(branchSel)delete branchSel.dataset.ready;
       renderTransfers();
       const conn=document.getElementById('transfers-conn-badge');if(conn){conn.className='badge b-gold';conn.textContent='⚠️ Fallback';}
-      setBranchApiStatus(`⚠️ التحويلات: fallback محلي (${transfers_data.length} سجل)`,`info`);
+      setBranchApiStatus(`⚠️ التحويلات: fallback محلي (${transfers_data.length} سجل)`,'info','t');
     }catch(err){
       console.warn('transfers fallback',err);
       if(table)table.innerHTML='<div class="tr-error">❌ تعذر تحميل التحويلات</div>';
       const conn=document.getElementById('transfers-conn-badge');if(conn){conn.className='badge b-red';conn.textContent='❌ Disconnected';}
       const live=document.getElementById('transfers-live-state');if(live)live.textContent='Disconnected';
       toast('خطأ في تحميل التحويلات: '+(err.message||e.message),'e');
-      setBranchApiStatus('❌ فشل جلب بيانات "التحويلات"','err');
+      setBranchApiStatus('❌ فشل جلب بيانات "التحويلات"','err','t');
     }
   }
 }
@@ -4751,7 +4851,9 @@ function renderTransfers(){
   // Find disappeared codes
   let tfSeenBefore=[];
   try{tfSeenBefore=JSON.parse(localStorage.getItem('tf_seen_codes')||'[]');}catch{}
-  const tfDisappeared=tfSeenBefore.filter(tc=>!currentTransferCodes.has(tc));
+  const tfDisappeared=transfers_data.length
+    ?tfSeenBefore.filter(tc=>!currentTransferCodes.has(tc))
+    :[];
   const showTransferProcessed=!!document.getElementById('t-show-processed-mode')?.dataset?.active;
 
   const setTxt=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=String(val);};
@@ -5670,11 +5772,13 @@ function syncBranchApiInputs(url,token){
   const tR=document.getElementById('branch-api-token-r');if(tR)tR.value=token||'';
   const tT=document.getElementById('branch-api-token-t');if(tT)tT.value=token||'';
 }
-function setBranchApiStatus(msg,type='info'){
+function setBranchApiStatus(msg,type='info',which='both'){
   const color=type==='ok'?'var(--grn)':type==='err'?'var(--red)':'var(--mute)';
-  ['branch-api-status-r','branch-api-status-t'].forEach(id=>{
+  const html=`<span style="color:${color}">${msg}</span>`;
+  const ids=which==='r'?['branch-api-status-r']:which==='t'?['branch-api-status-t']:['branch-api-status-r','branch-api-status-t'];
+  ids.forEach(id=>{
     const el=document.getElementById(id);
-    if(el)el.innerHTML=`<span style="color:${color}">${msg}</span>`;
+    if(el)el.innerHTML=html;
   });
 }
 async function connectBranchAPI(){
