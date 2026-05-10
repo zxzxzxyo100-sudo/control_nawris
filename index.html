@@ -2669,8 +2669,9 @@ async function loadAll(){
       if(r.key==='api_url'&&document.getElementById('api-url'))document.getElementById('api-url').value=r.value;
       if(r.key==='api_token'&&document.getElementById('api-token'))document.getElementById('api-token').value=r.value;
       if(r.key==='branch_api_url'){
-        const elR=document.getElementById('branch-api-url-r');if(elR)elR.value=r.value||'';
-        const elT=document.getElementById('branch-api-url-t');if(elT)elT.value=r.value||'';
+        const norm=normalizeDelayedOrdersApiUrl(r.value||'')||'';
+        const elR=document.getElementById('branch-api-url-r');if(elR)elR.value=norm;
+        const elT=document.getElementById('branch-api-url-t');if(elT)elT.value=norm;
       }
       if(r.key==='branch_api_token'){
         const elR=document.getElementById('branch-api-token-r');if(elR)elR.value=r.value||'';
@@ -2718,7 +2719,7 @@ async function loadShipments(){
 }
 
 async function fetchAllBranchDelayedRows(baseUrl,token,minDelay){
-  const cleanBase=String(baseUrl||'').replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
+  const cleanBase=String(normalizeDelayedOrdersApiUrl(baseUrl||'')).replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
   let allRows=[];
   let nextCursor='';
   let page=0;
@@ -5710,9 +5711,27 @@ async function uploadShipments(rows,forceStatus){
 // ══════════════════════════════════════════
 // CORS proxy via Cloudflare Worker — sends cursor separately to avoid encoding issues
 const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
+/** يزيل /with-captain من رابط التأخير — متابعة الفروع والتحويلات تحتاج ‎/orders/delayed فقط وليس مسار المندوب */
+function normalizeDelayedOrdersApiUrl(raw){
+  try{
+    let s=String(raw||'').trim();
+    if(!s)return s;
+    const u=new URL(s,window.location.origin);
+    if(/backoffice\.nawris\.algoriza\.com$/i.test(u.hostname)){
+      u.pathname=u.pathname.replace(/\/external-api\/orders\/delayed\/with-captain\/?/i,'/external-api/orders/delayed');
+      u.pathname=u.pathname.replace(/\/orders\/delayed\/with-captain\/?/i,'/orders/delayed');
+    }
+    let out=u.toString();
+    return out.replace(/\?$/,'');
+  }catch(_){
+    return String(raw||'')
+      .replace(/\/external-api\/orders\/delayed\/with-captain/gi,'/external-api/orders/delayed')
+      .replace(/\/delayed\/with-captain/gi,'/delayed');
+  }
+}
 async function apiFetch(baseUrl,token,cursor){
   const cleanToken=token?token.replace(/^(Bearer|Token)\s*/i,'').trim():'';
-  const reqUrl=String(baseUrl||'').trim();
+  const reqUrl=normalizeDelayedOrdersApiUrl(String(baseUrl||'').trim());
   // For Algoriza backoffice API, send token exactly as X-API-TOKEN (as required by curl).
   if(reqUrl.includes('backoffice.nawris.algoriza.com')){
     try{
@@ -5722,7 +5741,7 @@ async function apiFetch(baseUrl,token,cursor){
         method:'GET',
         headers:{
           'Accept':'application/json',
-          ...(cleanToken?{'X-API-TOKEN':cleanToken}:{})
+          ...(cleanToken?{'X-API-TOKEN':cleanToken,'X-Api-Token':cleanToken}:{})
         },
         credentials:'omit'
       });
@@ -5741,9 +5760,10 @@ async function apiFetch(baseUrl,token,cursor){
 }
 function getBranchApiConfig(){
   const defaultUrl='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
-  const url=(document.getElementById('branch-api-url-r')?.value||document.getElementById('branch-api-url-t')?.value||defaultUrl).trim();
+  const raw=(document.getElementById('branch-api-url-r')?.value||document.getElementById('branch-api-url-t')?.value||defaultUrl).trim();
+  const url=normalizeDelayedOrdersApiUrl(raw||defaultUrl)||defaultUrl;
   const token=(document.getElementById('branch-api-token-r')?.value||document.getElementById('branch-api-token-t')?.value||'').trim();
-  return {url:url||defaultUrl,token};
+  return{url:url||defaultUrl,token};
 }
 function syncBranchApiInputs(url,token){
   const uR=document.getElementById('branch-api-url-r');if(uR)uR.value=url||'';
@@ -5760,14 +5780,15 @@ function setBranchApiStatus(msg,type='info'){
 }
 async function connectBranchAPI(){
   const cfg=getBranchApiConfig();
-  if(!cfg.url){toast('أدخل رابط API متابعة الفروع','e');return;}
+  const apiUrl=normalizeDelayedOrdersApiUrl(cfg.url)||cfg.url;
+  if(!apiUrl){toast('أدخل رابط API متابعة الفروع','e');return;}
   if(!cfg.token){toast('أدخل X-API-TOKEN لمتابعة الفروع','e');return;}
   setBranchApiStatus('⏳ جارٍ اختبار الربط...');
   try{
-    const probe=await apiFetch(`${cfg.url}?delay_days=1`,cfg.token);
+    const probe=await apiFetch(`${apiUrl}?delay_days=1`,cfg.token);
     if(!probe.ok)throw new Error(`HTTP ${probe.status}`);
-    await sbUp('settings',[{key:'branch_api_url',value:cfg.url},{key:'branch_api_token',value:cfg.token}]);
-    syncBranchApiInputs(cfg.url,cfg.token);
+    await sbUp('settings',[{key:'branch_api_url',value:apiUrl},{key:'branch_api_token',value:cfg.token}]);
+    syncBranchApiInputs(apiUrl,cfg.token);
     setBranchApiStatus('✅ تم حفظ وربط API متابعة الفروع بنجاح','ok');
     toast('✅ تم ربط API متابعة الفروع','s');
     loadReturns();
@@ -8501,7 +8522,11 @@ async function autoSyncAPI(){
       autoFetchTimer2=setInterval(fetchAPIShipments,interval*3600000);
     }
     if(branchUrl||branchToken){
-      syncBranchApiInputs(branchUrl||'https://backoffice.nawris.algoriza.com/external-api/orders/delayed',branchToken||'');
+      syncBranchApiInputs(
+        normalizeDelayedOrdersApiUrl(branchUrl||'https://backoffice.nawris.algoriza.com/external-api/orders/delayed')||
+          'https://backoffice.nawris.algoriza.com/external-api/orders/delayed',
+        branchToken||''
+      );
       setBranchApiStatus('✅ API متابعة الفروع مفعل بشكل مستقل','ok');
     }
   }catch(e){console.warn('autoSyncAPI',e);}
