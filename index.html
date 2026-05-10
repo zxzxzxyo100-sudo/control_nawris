@@ -2799,24 +2799,41 @@ async function loadReturns(){
   }
 }
 function isToBranchTransitStatus(s){
-  const x=String(s||'').toLowerCase();
-  return x.includes('بالطريق للفرع')||
-    x.includes('بالطريق')||
+  const raw=String(s||'').trim();
+  const x=raw.toLowerCase();
+  // عربي: «في الطريق للفرع» لا يحتوي «بالطريق» — نغطي صيغ الواجهات الشائعة
+  const ar=raw.normalize('NFKC');
+  const arLo=ar.toLowerCase();
+  return arLo.includes('بالطريق للفرع')||
+    arLo.includes('في الطريق')||
+    arLo.includes('فى الطريق')||
+    arLo.includes('الطريق للفرع')||
+    arLo.includes('إلى الفرع')||
+    arLo.includes('الي الفرع')||
+    arLo.includes('الى الفرع')||
+    arLo.includes('بين الفروع')||
+    arLo.includes('شحن بين فرع')||
+    arLo.includes('تحويل بين')||
+    arLo.includes('بالطريق')||
     x.includes('in_transit')||
     x.includes('on_the_way')||
     x.includes('route_to_branch')||
     x.includes('to_branch')||
     x.includes('transferring')||
     x.includes('transfer_pending')||
+    x.includes('inter_branch')||
+    x.includes('between_branches')||
+    x.includes('branch_transfer')||
     (x.includes('تحويل')&&!x.includes('تم التحويل')&&!x.includes('مكتمل'));
 }
 /** يستخرج أسماء الفروع من أشكال مختلفة لردّ API (التحويلات) */
 function transferBranchHints(r){
-  const prev=String(r?.previous_branch||r?.previous_branch_name||r?.from_branch||r?.branch_from||r?.source_branch||r?.['الفرع السابق']||'').trim();
-  const recv=String(r?.received_branch||r?.received_branch_name||r?.to_branch||r?.branch_to||r?.destination_branch||r?.target_branch||r?.['فرع الاستلام']||'').trim();
-  const cur=String(r?.current_branch||r?.branch_name||r?.branch||r?.['الفرع الحالي']||'').trim();
-  const fromB=prev||cur||String(r?.from_branch_name||'').trim();
-  const toB=recv||cur||String(r?.to_branch_name||'').trim();
+  const str=v=>String(v==null?'':typeof v==='object'?(v?.name??v?.title??''):v).trim();
+  const prev=str(r?.previous_branch||r?.previous_branch_name||r?.from_branch||r?.branch_from||r?.source_branch||r?.origin_branch||r?.['الفرع السابق']||r?.from_branch_name);
+  const recv=str(r?.received_branch||r?.received_branch_name||r?.to_branch||r?.branch_to||r?.destination_branch||r?.target_branch||r?.next_branch||r?.['فرع الاستلام']||r?.to_branch_name);
+  const cur=str(r?.current_branch||r?.branch_name||r?.branch||r?.['الفرع الحالي']);
+  const fromB=prev||cur||str(r?.from_branch_name);
+  const toB=recv||cur||str(r?.to_branch_name);
   const hasPair=Boolean((prev&&recv)||(prev&&cur&&prev!==cur)||(recv&&cur&&recv!==cur)||(fromB&&toB&&fromB!==toB));
   return{prev,recv,cur,fromB,toB,hasPair};
 }
@@ -2830,8 +2847,12 @@ function transferRowMatchesLoose(r,minD){
   const d=parseInt(r?.delay_days||r?.delay||0)||0;
   const s=String(r?.status||'').toLowerCase();
   const h=transferBranchHints(r);
-  if(d<minD||!isToBranchTransitStatus(s))return false;
-  return Boolean(h.prev||h.recv||h.cur||h.fromB||h.toB);
+  if(d<minD)return false;
+  if(isToBranchTransitStatus(r?.status||''))return Boolean(h.prev||h.recv||h.cur||h.fromB||h.toB);
+  // حالة عامة (متأخر / delayed) لكن يوجد فرع مُرسِل وفرع مُستلم مختلفان — غالباً تحويل
+  const generic=!s||s==='pending'||s.includes('delayed')||s.includes('delay')||s.includes('متأخر')||s.includes('مؤجل');
+  if(generic&&h.fromB&&h.toB&&String(h.fromB)!==String(h.toB))return true;
+  return false;
 }
 async function loadTransfers(){
   const cfg=getBranchApiConfig();
@@ -5711,16 +5732,14 @@ async function uploadShipments(rows,forceStatus){
 // ══════════════════════════════════════════
 // CORS proxy via Cloudflare Worker — sends cursor separately to avoid encoding issues
 const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
-/** يزيل /with-captain من رابط التأخير — متابعة الفروع والتحويلات تحتاج ‎/orders/delayed فقط وليس مسار المندوب */
+/** يزيل /with-captain من رابط التأخير — متابعة الفروع والتحويلات تحتاج ‎/orders/delayed فقط وليس مسار المندوب (أي نطاق، ليس algoriza فقط) */
 function normalizeDelayedOrdersApiUrl(raw){
   try{
     let s=String(raw||'').trim();
     if(!s)return s;
     const u=new URL(s,window.location.origin);
-    if(/backoffice\.nawris\.algoriza\.com$/i.test(u.hostname)){
-      u.pathname=u.pathname.replace(/\/external-api\/orders\/delayed\/with-captain\/?/i,'/external-api/orders/delayed');
-      u.pathname=u.pathname.replace(/\/orders\/delayed\/with-captain\/?/i,'/orders/delayed');
-    }
+    u.pathname=u.pathname.replace(/\/external-api\/orders\/delayed\/with-captain\/?/i,'/external-api/orders/delayed');
+    u.pathname=u.pathname.replace(/\/orders\/delayed\/with-captain\/?/i,'/orders/delayed');
     let out=u.toString();
     return out.replace(/\?$/,'');
   }catch(_){
@@ -5745,10 +5764,11 @@ async function apiFetch(baseUrl,token,cursor){
         },
         credentials:'omit'
       });
-      // Some environments reject direct calls; fallback to proxy for resiliency.
       if(directRes.ok)return directRes;
-      if(directRes.status!==401)return directRes;
-    }catch(_){}
+      // 401: token قد يكون خاطئاً — لا نخفي الخطأ خلف البروكسي
+      if(directRes.status===401)return directRes;
+      // أي فشل آخر (404، 5xx، CORS غير مُلتقط): جرّب البروكسي قبل الإرجاع
+    }catch(_){/* شبكة/CORS — نتابع للبروكسي */}
   }
   const body={url:reqUrl,token:cleanToken};
   if(cursor)body.cursor=cursor;
@@ -7173,6 +7193,7 @@ async function fetchAPIShipments(){
       url=u.toString();
     }
   }catch(_){}
+  url=normalizeDelayedOrdersApiUrl(url)||url;
 
   // Sync URL/token to both inputs
   const u2=document.getElementById('api-url2');if(u2&&!u2.value)u2.value=url;
