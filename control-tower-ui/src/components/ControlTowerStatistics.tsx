@@ -18,11 +18,24 @@ export interface ControlTowerStatsData {
   ordersWithAgentOver48h?: number;
   avgDailyReturnProcessingVolume?: number;
   avgDailyCompletionRate?: number;
-  /** Same three KPIs from ~24h ago for trend icons */
+  /** From MySQL `control_tower_kpis.php` or your API */
+  warehouseStock?: {
+    pct: number;
+    delayedCount: number;
+    totalCount: number;
+  };
+  transitDelay?: {
+    pct: number;
+    delayedCount: number;
+    totalCount: number;
+  };
+  /** Same KPIs from ~24h ago for trend icons */
   kpi24hAgo?: {
     agentStagnationRatePct: number;
     pendingReturnsAgingDays: number;
     backlogDensityIndex: number;
+    warehouseStockPct?: number;
+    transitDelayPct?: number;
   };
 }
 
@@ -42,6 +55,22 @@ function zoneForAgentStagnationRatePct(value: number): Zone {
   if (!Number.isFinite(value)) return "warn";
   if (value < 10) return "good";
   if (value <= 20) return "warn";
+  return "danger";
+}
+
+/** in_company stale ≥48h: green ≤15%, yellow up to 25%, red >25% */
+function zoneForWarehouseStockPct(value: number): Zone {
+  if (!Number.isFinite(value)) return "warn";
+  if (value <= 15) return "good";
+  if (value <= 25) return "warn";
+  return "danger";
+}
+
+/** in_transit / delegate / driver, no update >4d: green ≤7%, yellow up to 15%, red >15% */
+function zoneForTransitDelayPct(value: number): Zone {
+  if (!Number.isFinite(value)) return "warn";
+  if (value <= 7) return "good";
+  if (value <= 15) return "warn";
   return "danger";
 }
 
@@ -143,17 +172,36 @@ export function ControlTowerStatistics({
     const backlogDensityIndex =
       completionRate > 0 ? delayedOrders / completionRate : 0;
 
+    const wh = statsData.warehouseStock ?? {
+      pct: 0,
+      delayedCount: 0,
+      totalCount: 0,
+    };
+    const tr = statsData.transitDelay ?? {
+      pct: 0,
+      delayedCount: 0,
+      totalCount: 0,
+    };
+
     return {
       agentStagnationRatePct,
       pendingReturnsAgingDays,
       backlogDensityIndex,
+      warehouseStock: wh,
+      transitDelay: tr,
       kpi24hAgo,
     };
   }, [statsData]);
 
   const cards = useMemo(() => {
-    const { agentStagnationRatePct, pendingReturnsAgingDays, backlogDensityIndex, kpi24hAgo } =
-      kpis;
+    const {
+      agentStagnationRatePct,
+      pendingReturnsAgingDays,
+      backlogDensityIndex,
+      warehouseStock,
+      transitDelay,
+      kpi24hAgo,
+    } = kpis;
 
     const returnsAgingTarget = 1.5;
     const backlogTarget = 0.5;
@@ -201,6 +249,32 @@ export function ControlTowerStatistics({
         zone: zoneForReverseKpi(backlogDensityIndex, backlogTarget),
         trend: trendReverse(backlogDensityIndex, kpi24hAgo?.backlogDensityIndex),
       },
+      {
+        key: "warehouse",
+        title: "تكدس المخزن",
+        subtitle:
+          "نسبة طلبات «في الشركة» التي مرّ عليها ≥٤٨ ساعة منذ الإنشاء أو الاستلام (MySQL: TIMESTAMPDIFF من COALESCE(received_at, created_at))",
+        subtitleTitle:
+          "حالة in_company؛ TIMESTAMPDIFF(HOUR, COALESCE(received_at, created_at), NOW()) ≥ 48. أخضر ≤١٥٪ · كهرماني حتى ٢٥٪ · أحمر >٢٥٪.",
+        value: fmtPct(warehouseStock.pct),
+        countLine: `متأخر: ${warehouseStock.delayedCount.toLocaleString("ar-SA")} · إجمالي: ${warehouseStock.totalCount.toLocaleString("ar-SA")}`,
+        targetLabel: "أخضر ≤١٥٪ · كهرماني حتى ٢٥٪ · أحمر >٢٥٪",
+        zone: zoneForWarehouseStockPct(warehouseStock.pct),
+        trend: trendReverse(warehouseStock.pct, kpi24hAgo?.warehouseStockPct),
+      },
+      {
+        key: "transit",
+        title: "تأخر الطريق",
+        subtitle:
+          "نسبة الطلبات in_transit أو with_delegate أو with_driver حيث آخر تحديث (updated_at) قبل أكثر من ٤ أيام — TIMESTAMPDIFF(HOUR, updated_at, NOW()) > 96",
+        subtitleTitle:
+          "MySQL: TIMESTAMPDIFF(HOUR, updated_at, NOW()) > 96. أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر >١٥٪.",
+        value: fmtPct(transitDelay.pct),
+        countLine: `متأخر: ${transitDelay.delayedCount.toLocaleString("ar-SA")} · إجمالي: ${transitDelay.totalCount.toLocaleString("ar-SA")}`,
+        targetLabel: "أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر >١٥٪",
+        zone: zoneForTransitDelayPct(transitDelay.pct),
+        trend: trendReverse(transitDelay.pct, kpi24hAgo?.transitDelayPct),
+      },
     ];
   }, [kpis]);
 
@@ -222,9 +296,10 @@ export function ControlTowerStatistics({
         <p className="font-mono text-xs text-slate-500">Reverse KPIs · 24h trend</p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {cards.map((c) => {
           const styles = zoneClasses(c.zone);
+          const countLine = "countLine" in c ? (c as { countLine?: string }).countLine : undefined;
           return (
             <article
               key={c.key}
@@ -237,7 +312,11 @@ export function ControlTowerStatistics({
                   title={
                     c.key === "stagnation"
                       ? "مقارنة آخر ٢٤ ساعة — الركود: طلبات مع المندوب أكثر من ٤ أيام (٩٦ ساعة) ÷ إجمالي الطلبات مع مندوب"
-                      : "مقارنة آخر ٢٤ ساعة"
+                      : c.key === "warehouse"
+                        ? "مقارنة آخر ٢٤ ساعة — تكدس المخزن: نسبة in_company بمرور ≥٤٨ ساعة على أول طابع زمني"
+                        : c.key === "transit"
+                          ? "مقارنة آخر ٢٤ ساعة — تأخر الطريق: آخر تحديث >٩٦ ساعة"
+                          : "مقارنة آخر ٢٤ ساعة"
                   }
                 >
                   <TrendGlyph trend={c.trend} />
@@ -259,6 +338,9 @@ export function ControlTowerStatistics({
               >
                 {c.value}
               </p>
+              {countLine ? (
+                <p className="mt-1 font-mono text-xs font-medium text-slate-400">{countLine}</p>
+              ) : null}
               <p className="mt-3 text-xs font-medium text-slate-500">{c.targetLabel}</p>
             </article>
           );

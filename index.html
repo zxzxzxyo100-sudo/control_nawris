@@ -483,6 +483,7 @@ html.light .hero-greeting{background:linear-gradient(135deg,#1a1d2e 30%,var(--pu
 .ct-grid{display:grid;grid-template-columns:1fr;gap:14px}
 @media(min-width:720px){.ct-grid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1100px){.ct-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1400px){.ct-grid.ct-grid-5{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .ct-card{border-radius:var(--r);padding:18px 16px;position:relative;border:1px solid var(--rim);background:var(--bg3);transition:box-shadow .2s,border-color .2s;border-right:3px solid transparent}
 .ct-card.ct-good{border-right-color:var(--grn);box-shadow:0 0 0 1px var(--grb)}
 .ct-card.ct-warn{border-right-color:var(--orn);box-shadow:0 0 0 1px var(--orb)}
@@ -1904,7 +1905,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <div class="ct-title">إحصائيات برج المراقبة</div>
         <div class="ct-sub">مؤشرات أداء عكسية: كلما انخفض الرقم كان الوضع أفضل. تُحسب من طرود API (أو الطرود المحلية عند غياب API). اتجاه الأيقونة يقارن ببداية يوم العمل الحالي.</div>
       </div>
-      <div class="ct-grid">
+      <div class="ct-grid ct-grid-5">
         <div class="ct-card" id="ct-card-0">
           <div class="ct-card-top">
             <div class="ct-card-title">معدل الركود (&gt; 4 أيام)</div>
@@ -1934,6 +1935,26 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <div class="ct-val" id="ct-v-2">—</div>
           <div class="ct-target">الهدف: أقل من ٠٫٥</div>
           <div class="ct-meta" id="ct-m-2"></div>
+        </div>
+        <div class="ct-card" id="ct-card-3">
+          <div class="ct-card-top">
+            <div class="ct-card-title">تكدس المخزن</div>
+            <div class="ct-trend" id="ct-tr-3" title="اتجاه المؤشر — نسبة طلبات «في الشركة» التي تجاوزت ٤٨ ساعة منذ أول استلام/إنشاء (MySQL عند توفر API)"></div>
+          </div>
+          <div class="ct-desc" title="حسب الحالة in_company؛ يُعتمد TIMESTAMPDIFF(HOUR, COALESCE(received_at, created_at), NOW()) في MySQL. أخضر ≤١٥٪ · كهرماني حتى ٢٥٪ · أحمر &gt;٢٥٪.">نسبة «في الشركة» التي مرّ عليها أكثر من ٤٨ ساعة منذ الإنشاء أو الاستلام</div>
+          <div class="ct-val" id="ct-v-3">—</div>
+          <div class="ct-target">أخضر ≤١٥٪ · كهرماني ١٥٪–٢٥٪ · أحمر &gt;٢٥٪</div>
+          <div class="ct-meta" id="ct-m-3"></div>
+        </div>
+        <div class="ct-card" id="ct-card-4">
+          <div class="ct-card-top">
+            <div class="ct-card-title">تأخر الطريق</div>
+            <div class="ct-trend" id="ct-tr-4" title="اتجاه المؤشر — نسبة الطلبات بالطريق/مع المندوب التي لم يُحدَّث سجلّها أكثر من ٤ أيام"></div>
+          </div>
+          <div class="ct-desc" title="الحالات: in_transit أو with_delegate أو with_driver؛ TIMESTAMPDIFF(HOUR, updated_at, NOW()) &gt; ٩٦ في MySQL. في المتصفح يُعتمد حقل updated_at فقط إن وُجد. أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر &gt;١٥٪.">نسبة الطلبات «بالطريق / مع المندوب» دون تحديث (updated_at) لأكثر من ٤ أيام (٩٦ ساعة)</div>
+          <div class="ct-val" id="ct-v-4">—</div>
+          <div class="ct-target">أخضر ≤٧٪ · كهرماني حتى ١٥٪ · أحمر &gt;١٥٪</div>
+          <div class="ct-meta" id="ct-m-4"></div>
         </div>
       </div>
     </div>
@@ -3558,7 +3579,47 @@ function ctSetCard(i,zone,valText,metaLine,trendKind){
   if(m)m.textContent=metaLine||'';
   if(tr)tr.innerHTML=ctTrendSvg(trendKind);
 }
-function renderControlTowerPage(){
+function ctHoursSince(ts){
+  if(!ts)return null;
+  const t=new Date(ts).getTime();
+  if(Number.isNaN(t))return null;
+  return(Date.now()-t)/(3600*1000);
+}
+function computeWarehouseKpiClient(merged){
+  const pool=(merged||[]).filter(s=>s.status==='in_company');
+  let delayed=0;
+  for(const s of pool){
+    const anchor=s.received_at||s.created_at||s.fetched_at||null;
+    const h=ctHoursSince(anchor);
+    if(h!==null&&h>=48)delayed++;
+  }
+  const total=pool.length;
+  return{pct:total?delayed/total*100:0,delayed_count:delayed,total_count:total,source:'client'};
+}
+function computeTransitKpiClient(merged){
+  const pool=(merged||[]).filter(s=>['in_transit','with_delegate','with_driver'].includes(s.status));
+  let delayed=0;
+  for(const s of pool){
+    const touch=s.updated_at||null;
+    const h=ctHoursSince(touch);
+    if(h!==null&&h>96)delayed++;
+  }
+  const total=pool.length;
+  return{pct:total?delayed/total*100:0,delayed_count:delayed,total_count:total,source:'client'};
+}
+function ctWarehouseStockZone(pct){
+  if(!Number.isFinite(pct))return'warn';
+  if(pct<=15)return'good';
+  if(pct<=25)return'warn';
+  return'danger';
+}
+function ctTransitDelayZone(pct){
+  if(!Number.isFinite(pct))return'warn';
+  if(pct<=7)return'good';
+  if(pct<=15)return'warn';
+  return'danger';
+}
+async function renderControlTowerPage(){
   const hasApi=(apiShipments?.length||0)>0;
   const merged=hasApi?apiShipments:(shipments||[]);
   const delayed=merged.filter(s=>cls(s.delay_days)!=='ok').length;
@@ -3575,27 +3636,60 @@ function renderControlTowerPage(){
   const doneN=merged.filter(s=>['delivered','completed','processed'].includes(String(s.status||''))).length;
   const completionRate=Math.max(doneN/7,merged.length>0?Math.max(merged.length/21,40):1);
   const backlog=delayed/Math.max(completionRate,0.001);
+
+  let wh=computeWarehouseKpiClient(merged);
+  let tr=computeTransitKpiClient(merged);
+  let kpiSource='client';
+  try{
+    const u=new URL(`${LOG_API_BASE}/control_tower_kpis.php`,window.location.href);
+    const res=await fetch(u.toString(),{credentials:'same-origin'});
+    if(res.ok){
+      const j=await res.json();
+      if(j&&j.ok&&j.warehouse&&j.transit){
+        wh={pct:Number(j.warehouse.pct)||0,delayed_count:Number(j.warehouse.delayed_count)||0,total_count:Number(j.warehouse.total_count)||0,source:'mysql'};
+        tr={pct:Number(j.transit.pct)||0,delayed_count:Number(j.transit.delayed_count)||0,total_count:Number(j.transit.total_count)||0,source:'mysql'};
+        kpiSource='mysql';
+      }
+    }
+  }catch(e){console.warn('control_tower_kpis',e);}
+
   const today=(new Date()).toISOString().slice(0,10);
   let base=null;
   try{base=JSON.parse(localStorage.getItem(CT_BASE_KEY)||'null');}catch(e){base=null;}
-  let pa=null,pr=null,pb=null;
-  if(base&&base.day===today&&typeof base.a==='number'){
+  const stable=!!(base&&base.day===today&&typeof base.a==='number');
+  let pa=null,pr=null,pb=null,pw=null,pt=null;
+  if(stable){
     pa=base.a;pr=base.r;pb=base.b;
-  }else{
-    try{localStorage.setItem(CT_BASE_KEY,JSON.stringify({day:today,a:stagnationPct,r:agingDays,b:backlog}));}catch(e){}
+    if(typeof base.w==='number')pw=base.w;
+    if(typeof base.t==='number')pt=base.t;
   }
   const eps=1e-6;
   function tri(c,p){if(p==null||!Number.isFinite(p)||!Number.isFinite(c))return'flat';if(c>p+eps)return'up';if(c<p-eps)return'down';return'flat';}
   const t0=tri(stagnationPct,pa),t1=tri(agingDays,pr),t2=tri(backlog,pb);
+  const t3=tri(wh.pct,pw),t4=tri(tr.pct,pt);
   const z0=ctStagnationZone(stagnationPct);
   const z1=ctReverseZone(agingDays,1.5);
   const z2=ctReverseZone(backlog,0.5);
+  const z3=ctWarehouseStockZone(wh.pct);
+  const z4=ctTransitDelayZone(tr.pct);
   const meta0=`مع مندوب: ${withAgent.toLocaleString('ar-SA')} · ركود +٤ أيام: ${stagnant4dProxy.toLocaleString('ar-SA')}`;
   const meta1=`مرتجعات: ${ret.toLocaleString('ar-SA')} · متوسط يومي تقديري: ${returnVol.toFixed(0)}`;
   const meta2=`متأخر: ${delayed.toLocaleString('ar-SA')} · إنجاز يومي تقديري: ${completionRate.toFixed(0)}`;
+  const srcTag=kpiSource==='mysql'?'MySQL':'متصفح';
+  const meta3=`متأخر: ${wh.delayed_count.toLocaleString('ar-SA')} · إجمالي: ${wh.total_count.toLocaleString('ar-SA')} · ${srcTag}`;
+  const meta4=`متأخر: ${tr.delayed_count.toLocaleString('ar-SA')} · إجمالي: ${tr.total_count.toLocaleString('ar-SA')} · ${srcTag}`;
   ctSetCard(0,z0,stagnationPct.toFixed(1)+'٪',meta0,t0==='up'?'up':t0==='down'?'down':'flat');
   ctSetCard(1,z1,agingDays.toFixed(2)+' يوم',meta1,t1==='up'?'up':t1==='down'?'down':'flat');
   ctSetCard(2,z2,backlog.toFixed(2),meta2,t2==='up'?'up':t2==='down'?'down':'flat');
+  ctSetCard(3,z3,(Number(wh.pct)||0).toFixed(1)+'٪',meta3,t3==='up'?'up':t3==='down'?'down':'flat');
+  ctSetCard(4,z4,(Number(tr.pct)||0).toFixed(1)+'٪',meta4,t4==='up'?'up':t4==='down'?'down':'flat');
+  if(!stable){
+    try{
+      localStorage.setItem(CT_BASE_KEY,JSON.stringify({
+        day:today,a:stagnationPct,r:agingDays,b:backlog,w:wh.pct,t:tr.pct
+      }));
+    }catch(e){}
+  }
 }
 
 // ══════════════════════════════════════════
@@ -7406,6 +7500,9 @@ async function fetchAPIShipments(){
       const rawStatus=r.status||r['الحالة']||'with_driver';
       const clientId=r.client_id||'';
 
+      const _rawCreated=r.created_at||r['تاريخ الانشاء']||r.createdAt||null;
+      const _rawRecv=r.received_at||r['تاريخ الاستلام']||r.receivedAt||null;
+      const _rawUpd=r.updated_at||r.modified_at||r.last_update||r.updatedAt||null;
       apiShipments.push({
         id:'api_'+code,
         tracking_code:code,
@@ -7425,6 +7522,9 @@ async function fetchAPIShipments(){
         delay_days:days,
         source:'api',
         fetched_at:new Date().toISOString(),
+        created_at:_rawCreated||null,
+        received_at:_rawRecv||null,
+        updated_at:_rawUpd||null,
         rep_commission:null,
         branch_commission:null
       });
