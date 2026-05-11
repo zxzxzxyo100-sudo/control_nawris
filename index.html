@@ -4211,7 +4211,8 @@ function renderHomeBranchKPIs(){
   const tTotal=tData.length;
   setEl('h-t-kpi-total',tTotal||'—');
   if(tTotal){
-    const pending=tData.filter(r=>String(r.status||'').trim()==='pending'||(r.status||'')==='');
+    const DONE_RE=/^(accepted|rejected|مقبول|مرفوض|delivered|returned|تم التسليم|مُسلم|مرتجع)$/i;
+    const pending=tData.filter(r=>!DONE_RE.test(String(r.status||'').trim()));
     const pendingCount=pending.length;
     const pendingPct=Math.round(pendingCount/tTotal*100);
     setEl('h-t-kpi-pending',pendingPct+'٪');
@@ -5347,27 +5348,26 @@ function renderTransfers(){
   // ── مؤشرات التحويلات ──
   (()=>{
     const total=transfers_data.length;
-    const pending=transfers_data.filter(r=>String(r.status||'').trim()==='pending'||(r.status||'')==='');
+    // المعلقة = كل ما ليس مقبولاً أو مرفوضاً صراحةً
+    const DONE_RE=/^(accepted|rejected|مقبول|مرفوض|delivered|returned|تم التسليم|مُسلم|مرتجع)$/i;
+    const pending=transfers_data.filter(r=>!DONE_RE.test(String(r.status||'').trim()));
     const pendingCount=pending.length;
     // نسبة المعلقة
     const pendingPct=total?Math.round(pendingCount/total*100):0;
-    const pendingZone=pendingPct<50?'green':pendingPct<75?'yellow':'red';
     setTxt('t-kpi-pending',total?(pendingPct+'٪'):'—');
     const pendingCard=document.getElementById('t-kpi-pending-card');
-    if(pendingCard)pendingCard.className='branch-kpi zone-'+pendingZone;
+    if(pendingCard)pendingCard.className='branch-kpi zone-'+(pendingPct<50?'green':pendingPct<75?'yellow':'red');
     // ركود التحويلات: معلقة delay ≥ 5
     const stagPending=pending.filter(r=>Number(r.delay_days||0)>=5).length;
     const stagPct=pendingCount?Math.round(stagPending/pendingCount*100):0;
-    const stagZone=stagPct<25?'green':stagPct<50?'yellow':'red';
     setTxt('t-kpi-stag',pendingCount?(stagPct+'٪'):'—');
     const stagCard=document.getElementById('t-kpi-stag-card');
-    if(stagCard)stagCard.className='branch-kpi zone-'+stagZone;
+    if(stagCard)stagCard.className='branch-kpi zone-'+(stagPct<25?'green':stagPct<50?'yellow':'red');
     // متوسط تأخير المعلقة
     const avgAge=pendingCount?pending.reduce((s,r)=>s+Number(r.delay_days||0),0)/pendingCount:0;
-    const avgZone=avgAge<4?'green':avgAge<8?'yellow':'red';
     setTxt('t-kpi-avgage',pendingCount?(avgAge.toFixed(1)+' يوم'):'—');
     const avgCard=document.getElementById('t-kpi-avgage-card');
-    if(avgCard)avgCard.className='branch-kpi zone-'+avgZone;
+    if(avgCard)avgCard.className='branch-kpi zone-'+(avgAge<4?'green':avgAge<8?'yellow':'red');
   })();
   updateTransfersSortHeaderIcons();
 
