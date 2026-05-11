@@ -998,6 +998,28 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <!-- إحصائيات برج المراقبة — مؤشرات عكسية -->
     <div class="ct-wrap" id="control-tower-root" aria-live="polite"></div>
 
+    <!-- مؤشرات متابعة الفروع -->
+    <div id="home-branch-kpis" style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:5px;height:26px;border-radius:3px;background:linear-gradient(180deg,#10b981,#0ea5e9)"></div>
+        <div class="crm-section-head">مؤشرات متابعة الفروع</div>
+      </div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--mute);font-weight:600">🏢 في الشركة</div>
+      <div class="branch-kpis" style="margin-bottom:14px">
+        <div class="branch-kpi total"><div>النشطة في الشركة</div><strong id="h-r-kpi-total">—</strong></div>
+        <div class="branch-kpi zone-green" id="h-r-kpi-stag-card"><div>معدل الركود <span style="opacity:.7">(≥7 أيام)</span></div><strong id="h-r-kpi-stag">—</strong><span class="bkpi-target">الهدف: أقل من 20٪</span></div>
+        <div class="branch-kpi zone-green" id="h-r-kpi-avgage-card"><div>متوسط التأخير</div><strong id="h-r-kpi-avgage">—</strong><span class="bkpi-target">الهدف: أقل من 5 أيام</span></div>
+        <div class="branch-kpi zone-info" id="h-r-kpi-topbranch-card"><div>أعلى فرع ضغطاً</div><strong id="h-r-kpi-topbranch" style="font-size:14px;word-break:break-word">—</strong><span class="bkpi-target" id="h-r-kpi-topbranch-cnt"></span></div>
+      </div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--mute);font-weight:600">🔄 التحويلات</div>
+      <div class="branch-kpis">
+        <div class="branch-kpi total"><div>إجمالي التحويلات</div><strong id="h-t-kpi-total">—</strong></div>
+        <div class="branch-kpi zone-green" id="h-t-kpi-pending-card"><div>نسبة المعلقة</div><strong id="h-t-kpi-pending">—</strong><span class="bkpi-target">الهدف: أقل من 50٪</span></div>
+        <div class="branch-kpi zone-green" id="h-t-kpi-stag-card"><div>ركود التحويلات <span style="opacity:.7">(≥5 أيام)</span></div><strong id="h-t-kpi-stag">—</strong><span class="bkpi-target">الهدف: أقل من 25٪</span></div>
+        <div class="branch-kpi zone-green" id="h-t-kpi-avgage-card"><div>متوسط تأخير المعلقة</div><strong id="h-t-kpi-avgage">—</strong><span class="bkpi-target">الهدف: أقل من 4 أيام</span></div>
+      </div>
+    </div>
+
     <!-- API Shipments Summary -->
     <div id="home-api-summary" style="margin-bottom:24px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -4106,6 +4128,54 @@ function renderKPISparklines(vals){
 // ══════════════════════════════════════════
 // HOME
 // ══════════════════════════════════════════
+function renderHomeBranchKPIs(){
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=String(val);};
+  const setZone=(id,zone)=>{const el=document.getElementById(id);if(el)el.className='branch-kpi zone-'+zone;};
+  // ── في الشركة ──
+  const activeRet=(returns_data||[]).filter(r=>{
+    const loc=String(r.location||'').trim();
+    return loc!=='returned_to_store';
+  });
+  const retTotal=activeRet.length;
+  setEl('h-r-kpi-total',retTotal||'—');
+  if(retTotal){
+    const stagCount=activeRet.filter(r=>Number(r.delay_days||0)>=7).length;
+    const stagPct=Math.round(stagCount/retTotal*100);
+    setEl('h-r-kpi-stag',stagPct+'٪');
+    setZone('h-r-kpi-stag-card',stagPct<20?'green':stagPct<40?'yellow':'red');
+    const avgAge=activeRet.reduce((s,r)=>s+Number(r.delay_days||0),0)/retTotal;
+    setEl('h-r-kpi-avgage',avgAge.toFixed(1)+' يوم');
+    setZone('h-r-kpi-avgage-card',avgAge<5?'green':avgAge<10?'yellow':'red');
+    const bc={};
+    activeRet.forEach(r=>{const b=String(r.branch||r.branches?.name||'').trim();if(b)bc[b]=(bc[b]||0)+1;});
+    const top=Object.entries(bc).sort((a,b)=>b[1]-a[1])[0];
+    setEl('h-r-kpi-topbranch',top?top[0]:'—');
+    setEl('h-r-kpi-topbranch-cnt',top?(top[1]+' طرد'):'');
+  }else{
+    ['h-r-kpi-stag','h-r-kpi-avgage','h-r-kpi-topbranch','h-r-kpi-topbranch-cnt'].forEach(id=>setEl(id,'—'));
+  }
+  // ── التحويلات ──
+  const tData=transfers_data||[];
+  const tTotal=tData.length;
+  setEl('h-t-kpi-total',tTotal||'—');
+  if(tTotal){
+    const pending=tData.filter(r=>String(r.status||'').trim()==='pending'||(r.status||'')==='');
+    const pendingCount=pending.length;
+    const pendingPct=Math.round(pendingCount/tTotal*100);
+    setEl('h-t-kpi-pending',pendingPct+'٪');
+    setZone('h-t-kpi-pending-card',pendingPct<50?'green':pendingPct<75?'yellow':'red');
+    const stagPending=pending.filter(r=>Number(r.delay_days||0)>=5).length;
+    const stagPct=pendingCount?Math.round(stagPending/pendingCount*100):0;
+    setEl('h-t-kpi-stag',pendingCount?(stagPct+'٪'):'—');
+    setZone('h-t-kpi-stag-card',stagPct<25?'green':stagPct<50?'yellow':'red');
+    const avgAge=pendingCount?pending.reduce((s,r)=>s+Number(r.delay_days||0),0)/pendingCount:0;
+    setEl('h-t-kpi-avgage',pendingCount?(avgAge.toFixed(1)+' يوم'):'—');
+    setZone('h-t-kpi-avgage-card',avgAge<4?'green':avgAge<8?'yellow':'red');
+  }else{
+    ['h-t-kpi-pending','h-t-kpi-stag','h-t-kpi-avgage'].forEach(id=>setEl(id,'—'));
+  }
+}
+
 function renderHome(){
   updateKPIs();
   const h=new Date().getHours();
@@ -4125,6 +4195,7 @@ function renderHome(){
   const apiAll=apiShipments.length?apiCrit:shipments.filter(s=>cls(s.delay_days)==='critical');
   renderLB('area-lb',apiAll,'government','#ff3a5c');
   renderLBCaptain('drv-lb',apiShipments);
+  renderHomeBranchKPIs();
 }
 function renderLBCaptain(id,data){
   const map={};
