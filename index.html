@@ -2825,9 +2825,32 @@ async function loadReturns(){
       setBranchApiStatus(`⚠️ في الشركة: fallback محلي (${returns_data.length} سجل)`,'info','r');
     }catch(err){
       console.warn('returns fallback',err);
-      const conn=document.getElementById('returns-conn-badge');if(conn){conn.className='badge b-red';conn.textContent='❌ Disconnected';}
-      const live=document.getElementById('returns-live-state');if(live)live.textContent='Disconnected';
-      setBranchApiStatus('❌ فشل جلب بيانات "في الشركة"','err','r');
+      // احتياطي ثالث: بيانات apiShipments للحالة في الشركة
+      const apiSrc=(apiShipments||[]).filter(s=>{
+        const st=String(s.status||'').trim();
+        const raw=String(s.raw_status||'').trim();
+        return st==='in_company'||raw.includes('في الشركة')||raw.includes('بالشركة')||raw.includes('company');
+      });
+      if(apiSrc.length){
+        returns_data=apiSrc.map(s=>({
+          id:s.id||s.tracking_code,
+          location:'in_warehouse',reason:'other',
+          created_at:s.fetched_at||new Date().toISOString(),
+          delay_days:Number(s.delay_days)||0,
+          city:String(s.government||s.area||'—').trim(),
+          branch:String(s.current_branch||'—').trim(),
+          status_text:String(s.raw_status||'في الشركة').trim(),
+          shipments:{tracking_code:s.tracking_code||'—',customer_name:s.customer_name||'—',customer_phone:s.customer_phone||'—'},
+          drivers:{name:String(s.captain||s.driver_name||'—').trim()}
+        }));
+        renderReturns();
+        const conn=document.getElementById('returns-conn-badge');if(conn){conn.className='badge b-gold';conn.textContent='⚠️ من API الطرود';}
+        setBranchApiStatus(`⚠️ في الشركة: ${returns_data.length} سجل من API الطرود`,'info','r');
+      }else{
+        const conn=document.getElementById('returns-conn-badge');if(conn){conn.className='badge b-red';conn.textContent='❌ Disconnected';}
+        const live=document.getElementById('returns-live-state');if(live)live.textContent='Disconnected';
+        setBranchApiStatus('❌ فشل جلب بيانات "في الشركة" — تأكد من ربط API أو وجود بيانات','err','r');
+      }
     }
   }
   try{renderControlTowerStats();}catch(_){}
@@ -3041,11 +3064,40 @@ async function loadTransfers(){
       setBranchApiStatus(`⚠️ التحويلات: fallback محلي (${transfers_data.length} سجل)`,'info','t');
     }catch(err){
       console.warn('transfers fallback',err);
-      if(table)table.innerHTML='<div class="tr-error">❌ تعذر تحميل التحويلات</div>';
-      const conn=document.getElementById('transfers-conn-badge');if(conn){conn.className='badge b-red';conn.textContent='❌ Disconnected';}
-      const live=document.getElementById('transfers-live-state');if(live)live.textContent='Disconnected';
-      toast('خطأ في تحميل التحويلات: '+(err.message||e.message),'e');
-      setBranchApiStatus('❌ فشل جلب بيانات "التحويلات"','err','t');
+      // احتياطي ثالث: بيانات apiShipments للحالة محول
+      const apiSrc=(apiShipments||[]).filter(s=>{
+        const st=String(s.status||'').trim();
+        const raw=String(s.raw_status||'').trim();
+        return st==='transferred'||raw.includes('محول')||raw.includes('تحويل');
+      });
+      if(apiSrc.length){
+        transfers_data=apiSrc.map((s,i)=>({
+          id:s.id||s.tracking_code,
+          trip_id:String(s.current_branch||'بدون-فرع'),
+          shipment_code:s.tracking_code||'—',
+          customer_name:s.customer_name||'—',
+          city:String(s.government||s.area||'—').trim(),
+          branch:String(s.current_branch||'—').trim(),
+          from_branch:String(s.current_branch||'—').trim(),
+          to_branch:'—',
+          delay_days:Number(s.delay_days)||0,
+          status:'pending',
+          created_at:s.fetched_at||new Date().toISOString(),
+          source:'api-fallback'
+        }));
+        transfers_data.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+        transferTripGroups=groupByTrip(transfers_data);
+        transferTripOrder=Object.keys(transferTripGroups).sort((a,b)=>String(b).localeCompare(String(a),'ar'));
+        transferExpandedTrips=new Set();
+        renderTransfers();
+        const conn=document.getElementById('transfers-conn-badge');if(conn){conn.className='badge b-gold';conn.textContent='⚠️ من API الطرود';}
+        setBranchApiStatus(`⚠️ التحويلات: ${transfers_data.length} سجل من API الطرود`,'info','t');
+      }else{
+        if(table)table.innerHTML='<div class="tr-error">❌ تعذر تحميل التحويلات — تأكد من ربط API أو وجود بيانات</div>';
+        const conn=document.getElementById('transfers-conn-badge');if(conn){conn.className='badge b-red';conn.textContent='❌ Disconnected';}
+        const live=document.getElementById('transfers-live-state');if(live)live.textContent='Disconnected';
+        setBranchApiStatus('❌ فشل جلب بيانات "التحويلات"','err','t');
+      }
     }
   }
 }
