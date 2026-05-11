@@ -2611,7 +2611,11 @@ function applyRole(){
       // Managers see all except manager-only class is handled separately
       t.style.display='';
     } else {
-      t.style.display=perms.includes(tab)?'':'none';
+      // branches-followup menu item maps to returns+transfers permissions
+      const visible=tab==='branches-followup'
+        ? (perms.includes('returns')||perms.includes('transfers'))
+        : perms.includes(tab);
+      t.style.display=visible?'':'none';
     }
   });
   // Show/hide manager-only sections and dividers
