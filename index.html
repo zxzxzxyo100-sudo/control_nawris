@@ -3674,9 +3674,10 @@ function resolveApiShipmentAssignedStaff(r,trackingCode){
   }
   try{
     if(trackingCode){
-      const a=getAPIAssignments();
-      const entry=a[trackingCode];
-      if(entry&&entry.emp){const loc=String(entry.emp).trim();if(loc)return loc;}
+      const a=getAPIAssignments(); // {CODE: "اسم الموظف"}
+      const tc=String(trackingCode).trim();
+      const emp=a[tc]||a[tc.toUpperCase()]||a[tc.toLowerCase()];
+      if(emp){const loc=String(emp).trim();if(loc)return loc;}
     }
   }catch(_){}
   return'';
@@ -3686,11 +3687,11 @@ function dischargeStaffKeyFromShipment(s){
   let name=String(s.assigned_staff||'').trim();
   if(!name){
     try{
-      const tc=s.tracking_code;
+      const tc=String(s.tracking_code||'').trim();
       if(tc){
-        const a=getAPIAssignments();
-        const entry=a[tc];
-        if(entry&&entry.emp)name=String(entry.emp).trim();
+        const a=getAPIAssignments(); // {CODE: "اسم الموظف"}
+        const emp=a[tc]||a[tc.toUpperCase()]||a[tc.toLowerCase()];
+        if(emp)name=String(emp).trim();
       }
     }catch(_){}
   }
