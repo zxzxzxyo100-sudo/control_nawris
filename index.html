@@ -3673,9 +3673,10 @@ function resolveApiShipmentAssignedStaff(r,trackingCode){
     if(s)return s;
   }
   try{
-    if(typeof assignments!=='undefined'&&assignments&&trackingCode){
-      const loc=String(assignments[trackingCode]||'').trim();
-      if(loc)return loc;
+    if(trackingCode){
+      const a=getAPIAssignments();
+      const entry=a[trackingCode];
+      if(entry&&entry.emp){const loc=String(entry.emp).trim();if(loc)return loc;}
     }
   }catch(_){}
   return'';
@@ -3686,7 +3687,11 @@ function dischargeStaffKeyFromShipment(s){
   if(!name){
     try{
       const tc=s.tracking_code;
-      if(typeof assignments!=='undefined'&&assignments&&tc)name=String(assignments[tc]||'').trim();
+      if(tc){
+        const a=getAPIAssignments();
+        const entry=a[tc];
+        if(entry&&entry.emp)name=String(entry.emp).trim();
+      }
     }catch(_){}
   }
   return name||'غير مسند';
@@ -3703,21 +3708,33 @@ function computeDischargeMetricsOnePass(mergedSource){
   const n=mergedSource.length;
   for(let i=0;i<n;i++){
     const s=mergedSource[i];
-    if(String(s.raw_status||'').trim()!==RETURN_RAW)continue;
+    // مطابقة موسّعة: النص الحرفي أو أي حالة تتضمن "مرتجع" أو status=returned
+    const rawSt=String(s.raw_status||'').trim();
+    const normSt=String(s.status||'').trim();
+    const isReturn=rawSt===RETURN_RAW
+      ||rawSt.includes('مرتجع')
+      ||(rawSt===''&&normSt==='returned');
+    if(!isReturn)continue;
     dischargeFilteredCount++;
     const name=dischargeStaffKeyFromShipment(s);
     let g=groups[name];
     if(!g){g={orderCount:0,ageSum:0,ageN:0};groups[name]=g;}
     g.orderCount++;
+    // محاولة الحصول على العمر: أولاً من تاريخ الانتقال، ثم من delay_days كبديل
+    let days=null;
     const tms=pickReturnTransitionMsFromRow(s);
     if(tms!=null&&Number.isFinite(tms)){
-      const days=(nowMs-tms)/86400000;
-      if(Number.isFinite(days)&&days>=0){
-        g.ageSum+=days;
-        g.ageN++;
-        globalAgeSum+=days;
-        globalAgeN++;
-      }
+      const d=(nowMs-tms)/86400000;
+      if(Number.isFinite(d)&&d>=0)days=d;
+    }
+    if(days===null&&Number.isFinite(s.delay_days)&&s.delay_days>=0){
+      days=s.delay_days;
+    }
+    if(days!==null){
+      g.ageSum+=days;
+      g.ageN++;
+      globalAgeSum+=days;
+      globalAgeN++;
     }
   }
   const dischargeScoredCount=globalAgeN;
