@@ -2744,7 +2744,8 @@ async function loadAll(){
       renderAssignStats();
     }).catch(()=>{});
     _loadProcessedFromSupabase().then(()=>{try{renderReturns();renderTransfers();}catch(_){}}).catch(()=>{});
-    loadReturns();loadTransfers();loadDbStats();
+    loadDbStats();
+    // loadReturns/loadTransfers تُستدعى من autoSyncAPI بعد تحميل الـ token
   }catch(e){setSyncState('err','خطأ');toast('خطأ في التحميل: '+e.message,'e');}
 }
 
@@ -9117,6 +9118,9 @@ async function autoSyncAPI(){
     // Auto-fetch on load — الجلب الوحيد عند الإقلاع
     await fetchAPIShipments();
     unifiedApiFetched=true;
+    // جلب الفروع بعد تحميل الـ token — مؤجل لعدم الثقل
+    setTimeout(()=>{try{loadReturns();}catch(_){}},500);
+    setTimeout(()=>{try{loadTransfers();}catch(_){}},1000);
     // Set auto-refresh timer
     if(interval>0){
       if(autoFetchTimer2)clearInterval(autoFetchTimer2);
