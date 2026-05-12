@@ -2855,13 +2855,17 @@ async function loadReturns(){
   const derivedBranchUrl=_deriveBranchUrl(cfg.url);
   const EXTERNAL_DELAYED_API=derivedBranchUrl||cfg.url;
   if(!EXTERNAL_DELAYED_API){renderReturnsFromAPI();return;}
+  const mainToken=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
+  const token=cfg.token||mainToken;
+  if(!token){
+    // Token غير متاح بعد — إعادة المحاولة بعد ثانية
+    setTimeout(()=>{try{loadReturns();}catch(_){}},1000);
+    return;
+  }
   try{
     const listEl=document.getElementById('returns-list');
     if(listEl)listEl.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
     setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...','info','r');
-    // استخدم token الفروع أو token الـ API الرئيسي كاحتياطي
-    const mainToken=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
-    const token=cfg.token||mainToken;
     const rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
     const inCompanyRows=rows.filter(r=>{
       const d=parseInt(r?.delay_days||r?.delay||0)||0;
@@ -3041,12 +3045,13 @@ async function loadTransfers(){
   const derivedBranchUrl=_deriveBranchUrl(cfg.url);
   const EXTERNAL_DELAYED_API=derivedBranchUrl||cfg.url;
   if(!EXTERNAL_DELAYED_API){renderTransfersFromAPI();return;}
+  const mainToken=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
+  const token=cfg.token||mainToken;
+  if(!token){setTimeout(()=>{try{loadTransfers();}catch(_){}},1000);return;}
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
   try{
     setBranchApiStatus('⏳ جارٍ جلب بيانات "التحويلات"...','info','t');
-    const mainToken=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
-    const token=cfg.token||mainToken;
     const apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,BRANCH_API_FETCH_MIN);
     let transferRows=apiRows.filter(r=>transferStrictFilter(r,MIN_TRANSFER_DELAY));
     let transferTier='';
