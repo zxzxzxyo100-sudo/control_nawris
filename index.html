@@ -1549,11 +1549,11 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <tr>
             <th><input type="checkbox" id="achk-all" onchange="toggleAllAPIFiltered(this.checked)"></th>
             <th class="mob-hide">#</th><th onclick="setAPISort('tracking_code')" style="cursor:pointer;user-select:none">الكود <span id="a-sort-tracking_code">↕</span></th><th class="mob-hide" onclick="setAPISort('assigned_to')" style="cursor:pointer;user-select:none">المسند إلى <span id="a-sort-assigned_to">↕</span></th><th onclick="setAPISort('client_name')" style="cursor:pointer;user-select:none">المتجر / العميل <span id="a-sort-client_name">↕</span></th><th class="mob-hide" onclick="setAPISort('receiver_name')" style="cursor:pointer;user-select:none">المستلم <span id="a-sort-receiver_name">↕</span></th><th class="mob-hide" onclick="setAPISort('customer_phone')" style="cursor:pointer;user-select:none">هاتف المستلم <span id="a-sort-customer_phone">↕</span></th>
-            <th class="mob-hide" onclick="setAPISort('captain')" style="cursor:pointer;user-select:none">المندوب <span id="a-sort-captain">↕</span></th><th class="mob-hide" onclick="setAPISort('current_branch')" style="cursor:pointer;user-select:none">الفرع <span id="a-sort-current_branch">↕</span></th><th class="mob-hide" onclick="setAPISort('government')" style="cursor:pointer;user-select:none">المحافظة <span id="a-sort-government">↕</span></th><th class="mob-hide" onclick="setAPISort('area')" style="cursor:pointer;user-select:none">المنطقة <span id="a-sort-area">↕</span></th>
+            <th class="mob-hide" onclick="setAPISort('captain')" style="cursor:pointer;user-select:none">المندوب <span id="a-sort-captain">↕</span></th><th class="mob-hide" onclick="setAPISort('current_branch')" style="cursor:pointer;user-select:none">الفرع الحالي <span id="a-sort-current_branch">↕</span></th><th class="mob-hide" onclick="setAPISort('responsible_branch')" style="cursor:pointer;user-select:none">الفرع المسؤول <span id="a-sort-responsible_branch">↕</span></th><th class="mob-hide" onclick="setAPISort('government')" style="cursor:pointer;user-select:none">المحافظة <span id="a-sort-government">↕</span></th><th class="mob-hide" onclick="setAPISort('area')" style="cursor:pointer;user-select:none">المنطقة <span id="a-sort-area">↕</span></th>
             <th onclick="setAPISort('status')" style="cursor:pointer;user-select:none">الحالة <span id="a-sort-status">↕</span></th><th onclick="setAPISort('delay_days')" style="cursor:pointer;user-select:none">التأخير <span id="a-sort-delay_days">↓</span></th><th class="mob-hide" onclick="setAPISort('cr_result')" style="cursor:pointer;user-select:none">نتيجة التواصل <span id="a-sort-cr_result">↕</span></th><th class="mob-hide" onclick="setAPISort('cr_note')" style="cursor:pointer;user-select:none">ملاحظة <span id="a-sort-cr_note">↕</span></th>
             <th>واتساب</th><th class="mob-hide">حفظ</th>
           </tr></thead>
-          <tbody id="a-tbody"><tr><td colspan="18" style="text-align:center;padding:36px;color:var(--mute)">🔗 اضغط "جلب الآن" أو أعد إعدادات API من تبويب "رفع البيانات"</td></tr></tbody>
+          <tbody id="a-tbody"><tr><td colspan="19" style="text-align:center;padding:36px;color:var(--mute)">🔗 اضغط "جلب الآن" أو أعد إعدادات API من تبويب "رفع البيانات"</td></tr></tbody>
         </table>
       </div>
       <div style="padding:10px 16px;border-top:1px solid var(--rim);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -8094,6 +8094,14 @@ async function fetchAPIShipments(){
     // so the initial fetch already captures everything.
 
     rawData=[...rawByCode.values()];
+    // تشخيص: طباعة حقول أول سجل لمعرفة بنية الـ API الفعلية
+    if(rawData.length>0){
+      const sample=rawData[0];
+      const branchKeys=Object.keys(sample).filter(k=>/branch|فرع|resp|assign|owner|account/i.test(k));
+      console.log('[API FIELD DIAGNOSIS] Branch-related fields:',branchKeys);
+      console.log('[API FIELD DIAGNOSIS] First record keys:',Object.keys(sample));
+      console.log('[API FIELD DIAGNOSIS] First record sample:',sample);
+    }
 
     if(!rawData.length){
       if(el)el.textContent='⚠️ لا بيانات في رد API';
@@ -8545,6 +8553,7 @@ function renderAPIShipments(){
       if(aSortKey==='customer_phone')return String(a.customer_phone||'');
       if(aSortKey==='captain')return String(a.captain||'');
       if(aSortKey==='current_branch')return String(a.current_branch||'');
+      if(aSortKey==='responsible_branch')return String(a.responsible_branch||'');
       if(aSortKey==='government')return String(a.government||'');
       if(aSortKey==='area')return String(a.area||'');
       if(aSortKey==='status')return String(a.status||'');
@@ -8561,6 +8570,7 @@ function renderAPIShipments(){
       if(aSortKey==='customer_phone')return String(b.customer_phone||'');
       if(aSortKey==='captain')return String(b.captain||'');
       if(aSortKey==='current_branch')return String(b.current_branch||'');
+      if(aSortKey==='responsible_branch')return String(b.responsible_branch||'');
       if(aSortKey==='government')return String(b.government||'');
       if(aSortKey==='area')return String(b.area||'');
       if(aSortKey==='status')return String(b.status||'');
@@ -8602,7 +8612,7 @@ function renderAPIShipments(){
 
   const tbody=document.getElementById('a-tbody');
   if(!page.length){
-    tbody.innerHTML=`<tr><td colspan="18" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج — اضغط "جلب الآن" لجلب البيانات من API</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج — اضغط "جلب الآن" لجلب البيانات من API</td></tr>`;
     const allEl=document.getElementById('achk-all');
     if(allEl)allEl.checked=false;
     buildAPIPgn(total,totalP);
@@ -8629,10 +8639,8 @@ function renderAPIShipments(){
       <td class="mob-hide" style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.receiver_name||''}">${s.receiver_name||'—'}</td>
       <td class="mob-hide" style="font-family:var(--mono);font-size:11px">${ph?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
       <td class="mob-hide" style="color:var(--white);font-size:11px">${s.captain||'—'}${s.captain_phone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${s.captain_phone}</div>`:''}</td>
-      <td class="mob-hide" style="font-size:11px">
-        <span style="color:var(--mute)">${s.current_branch||'—'}</span>
-        ${s.responsible_branch&&s.responsible_branch!==s.current_branch?`<div style="font-size:9px;color:var(--blu);margin-top:2px">📌 ${s.responsible_branch}</div>`:''}
-      </td>
+      <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
+      <td class="mob-hide" style="font-size:11px;color:var(--blu)">${s.responsible_branch||'—'}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.area||'—'}</td>
       <td>${stBadge(s.status)}</td>
