@@ -2760,6 +2760,56 @@ async function loadShipments(){
   }catch(e){setSyncState('err','خطأ');toast('خطأ: '+e.message,'e');}
 }
 
+// ── بناء بيانات "في الشركة" و"التحويلات" من apiShipments بدون طلب شبكي ──
+function renderReturnsFromAPI(){
+  if(!apiShipments.length)return;
+  const inCompany=apiShipments.filter(s=>{
+    const st=String(s.status||'').trim();
+    const raw=String(s.raw_status||'').trim();
+    return st==='in_company'||raw.includes('في الشركة')||raw.includes('بالشركة')||raw.includes('company');
+  });
+  if(!inCompany.length)return;
+  returns_data=inCompany.map(s=>({
+    id:s.id||s.tracking_code,
+    location:'in_warehouse',reason:'other',
+    created_at:s.fetched_at||new Date().toISOString(),
+    delay_days:Number(s.delay_days)||0,
+    city:String(s.government||s.area||'—').trim(),
+    branch:String(s.current_branch||'—').trim(),
+    status_text:String(s.raw_status||'في الشركة').trim(),
+    shipments:{tracking_code:s.tracking_code||'—',customer_name:s.customer_name||'—',customer_phone:s.customer_phone||'—'},
+    drivers:{name:String(s.captain||s.driver_name||'—').trim()}
+  }));
+  try{renderReturns();}catch(_){}
+}
+function renderTransfersFromAPI(){
+  if(!apiShipments.length)return;
+  const transferred=apiShipments.filter(s=>{
+    const st=String(s.status||'').trim();
+    const raw=String(s.raw_status||'').trim();
+    return st==='transferred'||raw.includes('محول')||raw.includes('تحويل');
+  });
+  if(!transferred.length)return;
+  transfers_data=transferred.map((s,i)=>({
+    id:s.id||s.tracking_code,
+    trip_id:String(s.current_branch||'بدون-فرع'),
+    shipment_code:s.tracking_code||'—',
+    customer_name:s.customer_name||'—',
+    city:String(s.government||s.area||'—').trim(),
+    branch:String(s.current_branch||'—').trim(),
+    from_branch:String(s.responsible_branch||s.current_branch||'—').trim(),
+    to_branch:String(s.current_branch||'—').trim(),
+    delay_days:Number(s.delay_days)||0,
+    status:'pending',
+    created_at:s.fetched_at||new Date().toISOString(),
+    source:'api'
+  }));
+  transferTripGroups=groupByTrip(transfers_data);
+  transferTripOrder=Object.keys(transferTripGroups).sort((a,b)=>String(b).localeCompare(String(a),'ar'));
+  transferExpandedTrips=new Set();
+  try{renderTransfers();}catch(_){}
+}
+
 async function fetchAllBranchDelayedRows(baseUrl,token,minDelay){
   const cleanBase=String(baseUrl||'').replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
   let allRows=[];
@@ -2786,11 +2836,17 @@ async function loadReturns(){
   const cfg=getBranchApiConfig();
   const EXTERNAL_DELAYED_API=cfg.url;
   const MIN_COMPANY_DELAY=2;
+  // إذا لم يكن هناك رابط فرع مخصص — استخدم بيانات API الطرود مباشرة
+  const DEFAULT_BRANCH_URL='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
+  const hasCustomBranchUrl=EXTERNAL_DELAYED_API&&EXTERNAL_DELAYED_API!==DEFAULT_BRANCH_URL&&!EXTERNAL_DELAYED_API.includes('/with-captain');
+  if(!hasCustomBranchUrl){
+    renderReturnsFromAPI();
+    return;
+  }
   try{
     const listEl=document.getElementById('returns-list');
     if(listEl)listEl.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
     setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...','info','r');
-    // Branch follow-up "في الشركة": start delay from 2 days.
     const token=cfg.token;
     const rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
     const inCompanyRows=rows.filter(r=>{
@@ -2969,6 +3025,13 @@ async function loadTransfers(){
   const EXTERNAL_DELAYED_API=cfg.url;
   const MIN_TRANSFER_DELAY=2;
   const BRANCH_API_FETCH_MIN=2;
+  // إذا لم يكن هناك رابط فرع مخصص — استخدم بيانات API الطرود مباشرة
+  const DEFAULT_BRANCH_URL='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
+  const hasCustomBranchUrl=EXTERNAL_DELAYED_API&&EXTERNAL_DELAYED_API!==DEFAULT_BRANCH_URL&&!EXTERNAL_DELAYED_API.includes('/with-captain');
+  if(!hasCustomBranchUrl){
+    renderTransfersFromAPI();
+    return;
+  }
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
   try{
@@ -8277,7 +8340,8 @@ async function fetchAPIShipments(){
     toast(`✅ ${apiShipments.length} طرد من API`,'s');
     // العمليات الثقيلة — مؤجلة لإعطاء المتصفح فرصة للتنفس (مهم على الجوال)
     setTimeout(()=>{try{updateKPIs();renderHome();}catch(_){}}, 120);
-    setTimeout(()=>{try{loadReturns();loadTransfers();}catch(_){}}, 600);
+    // loadReturns/loadTransfers تُعاد من apiShipments مباشرة — لا حاجة لاستدعاء API ثانٍ هنا
+    setTimeout(()=>{try{renderReturnsFromAPI();renderTransfersFromAPI();}catch(_){}}, 400);
     setTimeout(()=>{try{renderStaff();}catch(_){}}, 1200);
     setTimeout(()=>{try{refreshDischargeScoresFromBackend(apiShipments);}catch(_){}}, 2000);
 
