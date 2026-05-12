@@ -2693,7 +2693,7 @@ async function loadAll(){
     ]);
     shipments=sh; drivers_db=dr; branches=br; regions=re; stores=st;
     contacted=new Set(ct.map(r=>r.shipment_id));
-    contact_results_db=crdb||[];
+    contact_results_db=crdb||[];_crMap=null;
     if(tpls.length) WA_TPLS=tpls;
     cfg.forEach(r=>{
       if(r.key==='critDays')CFG.critDays=parseInt(r.value)||15;
@@ -2853,7 +2853,6 @@ async function loadReturns(){
       }
     }
   }
-  try{renderControlTowerStats();}catch(_){}
 }
 function transferDelayFromRow(r){
   const raw=r?.delay_days??r?.delay??r?.days_delayed??r?.delayed_days??0;
@@ -3270,15 +3269,26 @@ function resolveCaptainPhoneStrict(s){
 }
 
 // Contact Result helpers — Supabase first, localStorage fallback
+let _crMap=null,_crMapLen=-1;
+function _buildCrMap(){
+  if(_crMap&&_crMapLen===contact_results_db.length)return _crMap;
+  _crMap=new Map();
+  (contact_results_db||[]).forEach(r=>{
+    const sid=String(r.shipment_id||'').trim();
+    const tc=String(r.tracking_code||'').trim();
+    const val={result:r.result||'',note:r.note||'',by:r.updated_by||''};
+    if(sid)_crMap.set(sid,val);
+    if(tc&&tc!==sid)_crMap.set(tc,val);
+  });
+  _crMapLen=contact_results_db.length;
+  return _crMap;
+}
 function getCR(sid){
   const sidStr=String(sid||'').trim();
   const sidAsCode=sidStr.startsWith('api_')?sidStr.slice(4):sidStr.startsWith('ret_')?sidStr.slice(4):sidStr;
-  const db=contact_results_db.find(r=>
-    String(r.shipment_id||'')===sidStr
-    || String(r.tracking_code||'')===sidStr
-    || (sidAsCode&&String(r.tracking_code||'')===sidAsCode)
-  );
-  if(db)return{result:db.result||'',note:db.note||'',by:db.updated_by||''};
+  const m=_buildCrMap();
+  const db=m.get(sidStr)||m.get(sidAsCode);
+  if(db)return db;
   const local=localStorage.getItem('cr_'+sidStr)||localStorage.getItem('cr_'+sidAsCode)||'';
   return{result:local,note:localStorage.getItem('note_'+sidStr)||localStorage.getItem('note_'+sidAsCode)||'',by:''};
 }
@@ -6413,7 +6423,7 @@ async function clearAllContactResults(){
     const r=await fetch(`${SB}/rest/v1/contact_results?id=not.is.null`,{method:'DELETE',headers:{...H,'Prefer':'return=representation'}});
     if(!r.ok){const e=await r.text();throw new Error(e);}
     const deleted=await r.json();
-    contact_results_db=[];
+    contact_results_db=[];_crMap=null;
     toast(`🗑️ تم حذف ${Array.isArray(deleted)?deleted.length:0} سجل تتبع`,'w');
     renderStaff();renderShipments();
   }catch(e){toast('خطأ: '+e.message,'e');}
@@ -6883,7 +6893,7 @@ async function renderStaff(){
   // Always refresh contact results from Supabase so manager sees latest employee activity
   try{
     const fresh=await sb('contact_results','GET',null,'?select=*&order=shipment_id');
-    if(Array.isArray(fresh))contact_results_db=fresh;
+    if(Array.isArray(fresh)){contact_results_db=fresh;_crMap=null;}
   }catch(e){console.warn('CR refresh failed:',e);}
 
   let serverStaffBoard=null;
@@ -7655,7 +7665,10 @@ function reconcileApiProcessedFromStatus(nextShipments){
   persistApiProcessedCodes();
 }
 
+let _apiFetchInProgress=false;
 async function fetchAPIShipments(){
+  if(_apiFetchInProgress){toast('جارٍ الجلب بالفعل — انتظر...','w');return;}
+  _apiFetchInProgress=true;
   try{window._ctDischargeBackend=null;}catch(_){}
   // Try to get API settings from the upload page inputs or from saved settings
   let url=document.getElementById('api-url2')?.value?.trim()||document.getElementById('api-url')?.value?.trim()||'';
@@ -8182,29 +8195,21 @@ async function fetchAPIShipments(){
     if(tbApiEl)tbApiEl.textContent=apiShipments.length;
 
     // In manual Excel only mode, API fetch does not write into main shipments table.
+    // كتابة Supabase في الخلفية — لا تحجب الـ UI (كانت تستغرق 10-20 ثانية على iOS)
     if(!MANUAL_EXCEL_SHIPMENTS_ONLY){
-    try{
-      const mapped=apiShipments.map(s=>{
-        const rec={
-          tracking_code:s.tracking_code,
-          customer_name:s.client_name||s.receiver_name||'—',
-          customer_phone:s.customer_phone,
-          status:s.status,
-          delay_days:s.delay_days,
-          upload_date:new Date().toISOString().split('T')[0]
-        };
-        if(s.driver_id) rec.driver_id=s.driver_id;
-        return rec;
-      });
-      for(let i=0;i<mapped.length;i+=100){
-          const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{
-          method:'POST',
-          headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
-          body:JSON.stringify(mapped.slice(i,i+100))
-        });
-          if(!res.ok){const err=await res.text();throw new Error('فشل تحديث shipments: '+err.substring(0,120));}
-      }
-    }catch(e){console.warn('API->Supabase sync',e);}
+      setTimeout(async()=>{
+        try{
+          const mapped=apiShipments.map(s=>{
+            const rec={tracking_code:s.tracking_code,customer_name:s.client_name||s.receiver_name||'—',customer_phone:s.customer_phone,status:s.status,delay_days:s.delay_days,upload_date:new Date().toISOString().split('T')[0]};
+            if(s.driver_id)rec.driver_id=s.driver_id;
+            return rec;
+          });
+          for(let i=0;i<mapped.length;i+=100){
+            const res=await fetch(`${SB}/rest/v1/shipments?on_conflict=tracking_code`,{method:'POST',headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(mapped.slice(i,i+100))});
+            if(!res.ok){const err=await res.text();throw new Error('فشل تحديث shipments: '+err.substring(0,120));}
+          }
+        }catch(e){console.warn('API->Supabase sync',e);}
+      },3000);
     }
 
     // الرسم الأساسي — فوري
@@ -8223,6 +8228,8 @@ async function fetchAPIShipments(){
     if(dot)dot.className='sync-dot err';
     if(stEl)stEl.textContent='خطأ في الاتصال';
     toast('خطأ API: '+e.message,'e');
+  }finally{
+    _apiFetchInProgress=false;
   }
 }
 
