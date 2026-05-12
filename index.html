@@ -1549,7 +1549,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <tr>
             <th><input type="checkbox" id="achk-all" onchange="toggleAllAPIFiltered(this.checked)"></th>
             <th class="mob-hide">#</th><th onclick="setAPISort('tracking_code')" style="cursor:pointer;user-select:none">الكود <span id="a-sort-tracking_code">↕</span></th><th class="mob-hide" onclick="setAPISort('assigned_to')" style="cursor:pointer;user-select:none">المسند إلى <span id="a-sort-assigned_to">↕</span></th><th onclick="setAPISort('client_name')" style="cursor:pointer;user-select:none">المتجر / العميل <span id="a-sort-client_name">↕</span></th><th class="mob-hide" onclick="setAPISort('receiver_name')" style="cursor:pointer;user-select:none">المستلم <span id="a-sort-receiver_name">↕</span></th><th class="mob-hide" onclick="setAPISort('customer_phone')" style="cursor:pointer;user-select:none">هاتف المستلم <span id="a-sort-customer_phone">↕</span></th>
-            <th class="mob-hide" onclick="setAPISort('captain')" style="cursor:pointer;user-select:none">المندوب <span id="a-sort-captain">↕</span></th><th class="mob-hide" onclick="setAPISort('current_branch')" style="cursor:pointer;user-select:none">الفرع الحالي <span id="a-sort-current_branch">↕</span></th><th class="mob-hide" onclick="setAPISort('responsible_branch')" style="cursor:pointer;user-select:none">الفرع المسؤول <span id="a-sort-responsible_branch">↕</span></th><th class="mob-hide" onclick="setAPISort('government')" style="cursor:pointer;user-select:none">المحافظة <span id="a-sort-government">↕</span></th><th class="mob-hide" onclick="setAPISort('area')" style="cursor:pointer;user-select:none">المنطقة <span id="a-sort-area">↕</span></th>
+            <th class="mob-hide" onclick="setAPISort('captain')" style="cursor:pointer;user-select:none">المندوب <span id="a-sort-captain">↕</span></th><th class="mob-hide" onclick="setAPISort('current_branch')" style="cursor:pointer;user-select:none">الفرع الحالي <span id="a-sort-current_branch">↕</span></th><th class="mob-hide api-resp-branch-th" onclick="setAPISort('responsible_branch')" style="cursor:pointer;user-select:none;display:none">الفرع المسؤول <span id="a-sort-responsible_branch">↕</span></th><th class="mob-hide" onclick="setAPISort('government')" style="cursor:pointer;user-select:none">المحافظة <span id="a-sort-government">↕</span></th><th class="mob-hide" onclick="setAPISort('area')" style="cursor:pointer;user-select:none">المنطقة <span id="a-sort-area">↕</span></th>
             <th onclick="setAPISort('status')" style="cursor:pointer;user-select:none">الحالة <span id="a-sort-status">↕</span></th><th onclick="setAPISort('delay_days')" style="cursor:pointer;user-select:none">التأخير <span id="a-sort-delay_days">↓</span></th><th class="mob-hide" onclick="setAPISort('cr_result')" style="cursor:pointer;user-select:none">نتيجة التواصل <span id="a-sort-cr_result">↕</span></th><th class="mob-hide" onclick="setAPISort('cr_note')" style="cursor:pointer;user-select:none">ملاحظة <span id="a-sort-cr_note">↕</span></th>
             <th>واتساب</th><th class="mob-hide">حفظ</th>
           </tr></thead>
@@ -6334,15 +6334,15 @@ const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
 async function apiFetch(baseUrl,token,cursor,timeoutMs=20000){
   const cleanToken=token?token.replace(/^(Bearer|Token)\s*/i,'').trim():'';
   const reqUrl=String(baseUrl||'').trim();
-  // استخدم الـ controller الخاص بالجلب الحالي إن وُجد، وإلا أنشئ واحداً مؤقتاً
   const ctrl=_apiFetchController||new AbortController();
   const tid=setTimeout(()=>ctrl.abort(),timeoutMs);
   try{
-    // For Algoriza backoffice API, send token exactly as X-API-TOKEN (as required by curl).
-    if(reqUrl.includes('backoffice.nawris.algoriza.com')){
+    // الصفحة الأولى (بدون cursor): جرّب مباشرة أولاً
+    // الصفحات التالية (مع cursor): استخدم proxy مباشرة لتجنب CORS preflight
+    const isCursorPage=Boolean(cursor&&String(cursor).trim());
+    if(!isCursorPage&&reqUrl.includes('backoffice.nawris.algoriza.com')){
       try{
         const u=new URL(reqUrl,window.location.origin);
-        if(cursor)u.searchParams.set('cursor',String(cursor));
         const directRes=await fetch(u.toString(),{
           method:'GET',
           headers:{'Accept':'application/json',...(cleanToken?{'X-API-TOKEN':cleanToken}:{})},
@@ -6353,6 +6353,7 @@ async function apiFetch(baseUrl,token,cursor,timeoutMs=20000){
         if(directRes.status!==401){clearTimeout(tid);return directRes;}
       }catch(e){if(e.name==='AbortError')throw e;}
     }
+    // proxy — يستخدم دائماً للصفحات ذات cursor
     const body={url:reqUrl,token:cleanToken};
     if(cursor)body.cursor=cursor;
     const res=await fetch(PROXY,{
@@ -8145,10 +8146,7 @@ async function fetchAPIShipments(){
     if(!hasDelay){
       effectiveUrl.searchParams.set('delay_days','2');
     }
-    // طلب أقصى عدد ممكن من السجلات في كل صفحة
-    if(!effectiveUrl.searchParams.has('per_page')&&!effectiveUrl.searchParams.has('limit')&&!effectiveUrl.searchParams.has('page_size')){
-      effectiveUrl.searchParams.set('per_page','100');
-    }
+    // per_page محذوف — قد يُسبب مشاكل مع بعض الـ APIs
     const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
 
@@ -8669,6 +8667,13 @@ function renderAPIShipments(){
   apiFilteredData=list.slice();
   apiFilteredIds=apiFilteredData.map(s=>String(s.id));
 
+  // إظهار/إخفاء عمود الفرع المسؤول بناءً على وجود بيانات فيه
+  const hasRespBranch=apiShipments.some(s=>String(s.responsible_branch||'').trim());
+  const showRB=d=>{ try{document.querySelectorAll('.api-resp-branch-th,.api-resp-branch-td').forEach(el=>el.style.display=d);}catch(_){} };
+  showRB(hasRespBranch?'':'none');
+  const colspan=hasRespBranch?19:18;
+  document.querySelectorAll('#a-tbody tr td[colspan]').forEach(td=>td.setAttribute('colspan',String(colspan)));
+
   const total=list.length,totalP=Math.max(1,Math.ceil(total/aPER));
   if(aPage>totalP)aPage=1;
   const page=list.slice((aPage-1)*aPER,aPage*aPER);
@@ -8704,7 +8709,7 @@ function renderAPIShipments(){
       <td class="mob-hide" style="font-family:var(--mono);font-size:11px">${ph?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
       <td class="mob-hide" style="color:var(--white);font-size:11px">${s.captain||'—'}${s.captain_phone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${s.captain_phone}</div>`:''}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
-      <td class="mob-hide" style="font-size:11px;color:var(--blu)">${s.responsible_branch||'—'}</td>
+      <td class="mob-hide api-resp-branch-td" style="font-size:11px;color:var(--blu);display:none">${s.responsible_branch||'—'}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.area||'—'}</td>
       <td>${stBadge(s.status)}</td>
