@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -7668,8 +7668,11 @@ function reconcileApiProcessedFromStatus(nextShipments){
       }
     }
   });
-  try{sessionStorage.setItem('api_status_snapshot',JSON.stringify(nextSnap));}catch(_){}
-  persistApiProcessedCodes();
+  // مؤجل — كتابة sessionStorage/localStorage لا تحجب المعالجة
+  setTimeout(()=>{
+    try{sessionStorage.setItem('api_status_snapshot',JSON.stringify(nextSnap));}catch(_){}
+    persistApiProcessedCodes();
+  },200);
 }
 
 let _apiFetchInProgress=false;
@@ -8173,14 +8176,15 @@ async function fetchAPIShipments(){
     // ── MATCH CAPTAIN PHONES FROM drivers_db ──
     enrichAPICaptainPhones();
 
-    // Save to localStorage for persistence
-    persistAPIShipmentsCache();
-
     // Log this fetch
     const logEntry={time:new Date().toLocaleString('ar-LY'),count:apiShipments.length,status:'success'};
     apiFetchLog.unshift(logEntry);
     if(apiFetchLog.length>20)apiFetchLog=apiFetchLog.slice(0,20);
-    localStorage.setItem('api_fetch_log',JSON.stringify(apiFetchLog));
+    // مؤجل: كتابة localStorage الثقيلة لا تحجب الـ UI
+    setTimeout(()=>{
+      try{persistAPIShipmentsCache();}catch(_){}
+      try{localStorage.setItem('api_fetch_log',JSON.stringify(apiFetchLog));}catch(_){}
+    },500);
 
     // Update UI
     if(el)el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${apiShipments.length} طرد — ${new Date().toLocaleTimeString('ar-LY')}</span>`;
@@ -8908,108 +8912,36 @@ async function moveAPIToMain(s){
 // ── ENRICH CAPTAIN PHONES FROM DRIVERS DB ──
 function enrichAPICaptainPhones(){
   if(!apiShipments.length||!drivers_db.length)return;
-  const NOISE_NAME_TOKENS=new Set(['كابتن','الكابتن','مندوب','المندوب','سائق','السائق','mr','mrs','dr']);
-  const cleanCaptainName=(v)=>{
-    return normalizeIdentityText(v)
-      .replace(/[^0-9a-z\u0600-\u06ff\s]/gi,'')
-      .replace(/\s+/g,' ')
-      .trim();
-  };
-  const tokenizeCaptainName=(v)=>{
-    return cleanCaptainName(v)
-      .split(/\s+/)
-      .filter(Boolean)
-      .filter(t=>!NOISE_NAME_TOKENS.has(t));
-  };
-  const canonicalCaptainName=(v)=>tokenizeCaptainName(v).join(' ');
-  const isPlaceholderCaptain=(v)=>{
-    const t=canonicalCaptainName(v)||cleanCaptainName(v);
-    return !t
-      || t==='undefined'
-      || t==='null'
-      || t==='-'
-      || t==='—'
-      || t==='غير محدد'
-      || t==='لا يوجد';
-  };
-
-  const pickDriver=(list)=>{
-    if(!Array.isArray(list)||!list.length)return null;
-    return list.find(d=>normPhone(d?.phone||''))||list[0]||null;
-  };
-
-  // Build lookup maps with both raw and canonical names.
-  const byName={};
-  const byNameCanonical={};
+  const norm=(v)=>normalizeIdentityText(v).replace(/\s+/g,' ').trim();
+  const byExact={},byCanonical={},byFirst={},byLast={};
   drivers_db.forEach(d=>{
     if(!d?.name)return;
-    const rawName=String(d.name).trim();
-    if(!rawName)return;
-    byName[rawName]=d;
-    const canonicalName=canonicalCaptainName(rawName);
-    if(canonicalName){
-      if(!byNameCanonical[canonicalName])byNameCanonical[canonicalName]=[];
-      byNameCanonical[canonicalName].push(d);
-    }
+    const raw=String(d.name).trim();if(!raw)return;
+    byExact[raw]=d;
+    const can=norm(raw);if(!can)return;
+    if(!byCanonical[can])byCanonical[can]=[];
+    byCanonical[can].push(d);
+    const parts=can.split(/\s+/).filter(Boolean);
+    if(parts[0]){if(!byFirst[parts[0]])byFirst[parts[0]]=[];byFirst[parts[0]].push(d);}
+    const last=parts[parts.length-1];
+    if(last&&last!==parts[0]){if(!byLast[last])byLast[last]=[];byLast[last].push(d);}
   });
-
-  let matched=0,unmatched=[];
+  const pick=(arr)=>Array.isArray(arr)?(arr.find(d=>normPhone(d?.phone||''))||arr[0]||null):null;
+  let matched=0;
   apiShipments.forEach(s=>{
-    if(isPlaceholderCaptain(s.captain))return;
     const cap=String(s.captain||'').trim();
-    const capCanonical=canonicalCaptainName(cap);
-    if(!capCanonical)return;
-    // 1. Exact match
-    let drv=byName[cap];
-    // 1.1 Exact canonical match
-    if(!drv)drv=pickDriver(byNameCanonical[capCanonical]);
-    // 2. Fuzzy: API name contains DB name or vice versa
+    if(!cap||cap==='—'||cap==='undefined'||cap==='null'||cap==='غير محدد')return;
+    if(s.captain_phone)return;
+    const can=norm(cap);if(!can)return;
+    let drv=byExact[cap]||pick(byCanonical[can]);
     if(!drv){
-      const dk=Object.keys(byNameCanonical).find(k=>{
-        if(!k||k.length<3||capCanonical.length<3)return false;
-        return k.includes(capCanonical)||capCanonical.includes(k);
-      });
-      if(dk)drv=pickDriver(byNameCanonical[dk]);
+      const parts=can.split(/\s+/).filter(Boolean);
+      drv=pick(byFirst[parts[0]])||pick(byLast[parts[parts.length-1]]);
     }
-    // 3. Fuzzy: strip spaces, try first/last name
-    if(!drv){
-      const capParts=capCanonical.split(/\s+/).filter(Boolean);
-      if(capParts.length>=2){
-        const dk=Object.keys(byNameCanonical).find(k=>{
-          const kParts=String(k).split(/\s+/).filter(Boolean);
-          if(!kParts.length)return false;
-          return capParts[0]===kParts[0] || capParts[capParts.length-1]===kParts[kParts.length-1];
-        });
-        if(dk)drv=pickDriver(byNameCanonical[dk]);
-      }
-    }
-    // 4. Single-token fallback: if uniquely mapped to one driver token.
-    if(!drv){
-      const capParts=capCanonical.split(/\s+/).filter(Boolean);
-      if(capParts.length===1){
-        const token=capParts[0];
-        const candidates=drivers_db.filter(d=>{
-          const dParts=tokenizeCaptainName(d?.name||'');
-          return dParts.includes(token);
-        });
-        if(candidates.length===1)drv=candidates[0];
-      }
-    }
-    if(drv&&drv.phone){
-      s.captain_phone=normPhone(drv.phone)||drv.phone;
-      s.driver_id=drv.id;
-      matched++;
-    } else {
-      if(!unmatched.includes(cap))unmatched.push(cap);
-    }
+    if(drv?.phone){s.captain_phone=normPhone(drv.phone)||drv.phone;s.driver_id=drv.id;matched++;}
   });
-  if(matched>0)console.log(`✅ API captain phone match: ${matched} matched`);
-  if(unmatched.length>0){
-    console.warn(`⚠️ Unmatched captains (${unmatched.length}): ${unmatched.join(' | ')}`,unmatched);
-  }
+  if(matched>0)console.log('captains matched: '+matched);
 }
-
-// ── AUTO-SYNC: Fetch API on page load if settings exist ──
 async function autoSyncAPI(){
   try{
     const cfg=await sb('settings','GET',null,'?select=key,value');
