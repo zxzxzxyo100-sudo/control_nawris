@@ -8207,14 +8207,16 @@ async function fetchAPIShipments(){
     }catch(e){console.warn('API->Supabase sync',e);}
     }
 
+    // الرسم الأساسي — فوري
     renderAPIShipments();
     updateAPIKPIs();
     renderAPIFetchLog();
-    updateKPIs();
-    renderHome();
-    renderStaff();
-    refreshDischargeScoresFromBackend(apiShipments);
     toast(`✅ ${apiShipments.length} طرد من API`,'s');
+    // العمليات الثقيلة — مؤجلة لإعطاء المتصفح فرصة للتنفس (مهم على الجوال)
+    setTimeout(()=>{try{updateKPIs();renderHome();}catch(_){}}, 120);
+    setTimeout(()=>{try{loadReturns();loadTransfers();}catch(_){}}, 600);
+    setTimeout(()=>{try{renderStaff();}catch(_){}}, 1200);
+    setTimeout(()=>{try{refreshDischargeScoresFromBackend(apiShipments);}catch(_){}}, 2000);
 
   }catch(e){
     if(el)el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
