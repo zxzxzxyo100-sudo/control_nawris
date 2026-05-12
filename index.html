@@ -1464,6 +1464,15 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         </div>
       </div>
       <div id="api2-status" style="font-size:11px;color:var(--mute);margin-top:6px"></div>
+      <div id="api-progress-wrap" style="display:none;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mute);margin-bottom:3px">
+          <span id="api-progress-label">جارٍ المعالجة...</span>
+          <span id="api-progress-pct">0٪</span>
+        </div>
+        <div style="background:var(--bg4);border-radius:99px;height:6px;overflow:hidden;border:1px solid var(--rim)">
+          <div id="api-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--pur),var(--blu));border-radius:99px;width:0%;transition:width .2s ease"></div>
+        </div>
+      </div>
     </div>
 
     <!-- KPI Cards -->
@@ -6254,7 +6263,8 @@ const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
 async function apiFetch(baseUrl,token,cursor,timeoutMs=20000){
   const cleanToken=token?token.replace(/^(Bearer|Token)\s*/i,'').trim():'';
   const reqUrl=String(baseUrl||'').trim();
-  const ctrl=new AbortController();
+  // استخدم الـ controller الخاص بالجلب الحالي إن وُجد، وإلا أنشئ واحداً مؤقتاً
+  const ctrl=_apiFetchController||new AbortController();
   const tid=setTimeout(()=>ctrl.abort(),timeoutMs);
   try{
     // For Algoriza backoffice API, send token exactly as X-API-TOKEN (as required by curl).
@@ -7676,8 +7686,15 @@ function reconcileApiProcessedFromStatus(nextShipments){
 }
 
 let _apiFetchInProgress=false;
+let _apiFetchController=null; // AbortController للجلب الحالي
 async function fetchAPIShipments(){
-  if(_apiFetchInProgress){toast('جارٍ الجلب بالفعل — انتظر...','w');return;}
+  // إلغاء أي جلب سابق لم ينته
+  if(_apiFetchController){try{_apiFetchController.abort();}catch(_){}}
+  if(_apiFetchInProgress){
+    // انتظر 300ms حتى ينتهي الجلب السابق من الإغلاق
+    await new Promise(r=>setTimeout(r,300));
+  }
+  _apiFetchController=new AbortController();
   _apiFetchInProgress=true;
   try{window._ctDischargeBackend=null;}catch(_){}
   // Try to get API settings from the upload page inputs or from saved settings
@@ -8043,16 +8060,6 @@ async function fetchAPIShipments(){
     // so the initial fetch already captures everything.
 
     rawData=[...rawByCode.values()];
-    try{
-      const rawRCodes=rawData
-        .map(r=>String(r?.code??r?.tracking_code??r?.trackingCode??'').trim().toUpperCase())
-        .filter(c=>/R$/i.test(c));
-      console.log('[API RAW DEBUG]',{
-        total_raw_items:rawData.length,
-        r_suffix_count:rawRCodes.length,
-        r_suffix_sample:rawRCodes.slice(0,40)
-      });
-    }catch(_){}
 
     if(!rawData.length){
       if(el)el.textContent='⚠️ لا بيانات في رد API';
@@ -8062,69 +8069,71 @@ async function fetchAPIShipments(){
     }
 
     const stMap={'مع المندوب':'with_driver','في الشركة':'in_company','delivered':'delivered','مرتجع':'returned','متأخر':'delayed','مؤجلة مع المندوب':'with_driver','تم التسليم':'delivered','محول':'transferred'};
-    // Fuzzy status resolver for Arabic statuses
     function resolveStatus(raw){
       if(!raw)return 'with_driver';
       const s=String(raw).trim();
       if(stMap[s])return stMap[s];
-      // Partial match
       if(s.includes('مرتجع')||s.includes('إرجاع')||s.includes('القاء'))return 'returned';
       if(s.includes('مندوب'))return 'with_driver';
       if(s.includes('شركة')||s.includes('مخزن'))return 'in_company';
       if(s.includes('تسليم')||s.includes('delivered'))return 'delivered';
       if(s.includes('محول')||s.includes('تحويل'))return 'transferred';
       if(s.includes('متأخر')||s.includes('مؤجل'))return 'delayed';
-      return s; // Keep original if no match
+      return s;
     }
+
+    // ── معالجة تدريجية على دفعات — تمنع تجميد المتصفح ──
+    const PROC_CHUNK=50; // 50 سجل كل دفعة
+    const progWrap=document.getElementById('api-progress-wrap');
+    const progBar=document.getElementById('api-progress-bar');
+    const progPct=document.getElementById('api-progress-pct');
+    const progLbl=document.getElementById('api-progress-label');
+    if(progWrap)progWrap.style.display='block';
+
     const seen2=new Set();
     apiShipments=[];
+    const fetchedAt=new Date().toISOString();
 
-    for(const [i,r] of rawData.entries()){
+    const processRow=(r,i)=>{
       const code=pickTrackingCode(r,i);
-      if(seen2.has(code))continue;seen2.add(code);
-
+      if(!code||seen2.has(code))return;
+      seen2.add(code);
       const days=parseInt(r.delay_days||r[delayField]||r['عدد الايام المتأخرة']||r['التأخير']||0)||0;
       const clientName=String(r.client_name||r.customer_name||r.name||r['العميل']||r['المرسل']||'—').trim();
       const receiverName=String(r.receiver_name||r['اسم المستلم']||'').trim();
       const receiverPhone=String(r.receiver_phone||r.customer_phone||r.phone||r['رقم المستلم 1']||r['هاتف العميل']||'—').trim();
-      let captain=String(
-        r.captain||r.driver_name||r.driver||r.courier||r.courier_name||r.delivery_man||r.assignee||r.agent_name
-        ||r['المندوب']||r['اسم المندوب']||r['مندوب التوصيل']||r['السائق']||r['اسم السائق']||r['مندوب']||''
-      ).trim();
-      try{
-        if(!captain&&r.driver&&typeof r.driver==='object')captain=String(r.driver.name||r.driver.full_name||'').trim();
-      }catch(e){}
+      let captain=String(r.captain||r.driver_name||r.driver||r.courier||r.courier_name||r.delivery_man||r.assignee||r.agent_name||r['المندوب']||r['اسم المندوب']||r['مندوب التوصيل']||r['السائق']||r['اسم السائق']||r['مندوب']||'').trim();
+      try{if(!captain&&r.driver&&typeof r.driver==='object')captain=String(r.driver.name||r.driver.full_name||'').trim();}catch(_){}
       const currentBranch=String(r.current_branch||r.branch_name||r['الفرع الحالى']||r['الفرع']||'').trim();
-      const government=String(r.government||r['المحافظة']||'').trim();
-      const area=String(r.area||r.region_name||r['المنطقة']||'').trim();
-      const rawStatus=r.status||r['الحالة']||'with_driver';
-      const clientId=r.client_id||'';
-
       apiShipments.push({
-        id:'api_'+code,
-        tracking_code:code,
-        client_name:clientName,
-        client_id:clientId,
-        receiver_name:receiverName,
-        customer_name:receiverName||clientName,
-        customer_phone:receiverPhone,
-        captain:captain,
-        driver_name:captain,
-        captain_phone:'',
+        id:'api_'+code,tracking_code:code,
+        client_name:clientName,client_id:r.client_id||'',
+        receiver_name:receiverName,customer_name:receiverName||clientName,customer_phone:receiverPhone,
+        captain,driver_name:captain,captain_phone:'',
         current_branch:currentBranch,
-        government:government,
-        area:area,
-        raw_status:rawStatus,
-        status:resolveStatus(rawStatus),
-        delay_days:days,
-        source:'api',
-        fetched_at:new Date().toISOString(),
+        government:String(r.government||r['المحافظة']||'').trim(),
+        area:String(r.area||r.region_name||r['المنطقة']||'').trim(),
+        raw_status:r.status||r['الحالة']||'with_driver',
+        status:resolveStatus(r.status||r['الحالة']||''),
+        delay_days:days,source:'api',fetched_at:fetchedAt,
         return_transition_ms:pickReturnTransitionMsFromRow(r),
         assigned_staff:resolveApiShipmentAssignedStaff(r,code),
-        rep_commission:null,
-        branch_commission:null
+        rep_commission:null,branch_commission:null
       });
+    };
+
+    // معالجة دفعة دفعة مع إعطاء المتصفح وقت للتنفس بين كل دفعة
+    for(let ci=0;ci<rawData.length;ci+=PROC_CHUNK){
+      const chunk=rawData.slice(ci,ci+PROC_CHUNK);
+      chunk.forEach((r,j)=>processRow(r,ci+j));
+      const pct=Math.min(100,Math.round((ci+PROC_CHUNK)/rawData.length*100));
+      if(progBar)progBar.style.width=pct+'%';
+      if(progPct)progPct.textContent=pct+'٪';
+      if(progLbl)progLbl.textContent=`معالجة ${Math.min(ci+PROC_CHUNK,rawData.length)} / ${rawData.length} طرد`;
+      if(el)el.textContent=`⏳ معالجة ${Math.min(ci+PROC_CHUNK,rawData.length)}/${rawData.length}...`;
+      await new Promise(r=>setTimeout(r,0)); // تنفس للمتصفح بين كل دفعة
     }
+    if(progWrap)progWrap.style.display='none';
     try{
       const mappedRCodes=apiShipments
         .map(s=>String(s?.tracking_code||'').trim().toUpperCase())
@@ -8231,6 +8240,9 @@ async function fetchAPIShipments(){
     toast('خطأ API: '+e.message,'e');
   }finally{
     _apiFetchInProgress=false;
+    _apiFetchController=null;
+    const pw=document.getElementById('api-progress-wrap');
+    if(pw)pw.style.display='none';
   }
 }
 
