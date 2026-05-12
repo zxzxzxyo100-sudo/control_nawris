@@ -2849,20 +2849,18 @@ async function fetchAllBranchDelayedRows(baseUrl,token,minDelay){
 
 async function loadReturns(){
   const cfg=getBranchApiConfig();
-  const EXTERNAL_DELAYED_API=cfg.url;
   const MIN_COMPANY_DELAY=2;
-  // إذا لم يكن هناك رابط فرع مخصص — استخدم بيانات API الطرود مباشرة
-  const DEFAULT_BRANCH_URL='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
-  const hasCustomBranchUrl=EXTERNAL_DELAYED_API&&EXTERNAL_DELAYED_API!==DEFAULT_BRANCH_URL&&!EXTERNAL_DELAYED_API.includes('/with-captain');
-  if(!hasCustomBranchUrl){
-    renderReturnsFromAPI();
-    return;
-  }
+  // اشتقاق رابط الفروع من الرابط الرئيسي (حذف /with-captain)
+  const derivedBranchUrl=_deriveBranchUrl(cfg.url);
+  const EXTERNAL_DELAYED_API=derivedBranchUrl||cfg.url;
+  if(!EXTERNAL_DELAYED_API){renderReturnsFromAPI();return;}
   try{
     const listEl=document.getElementById('returns-list');
     if(listEl)listEl.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
     setBranchApiStatus('⏳ جارٍ جلب بيانات "في الشركة"...','info','r');
-    const token=cfg.token;
+    // استخدم token الفروع أو token الـ API الرئيسي كاحتياطي
+    const mainToken=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
+    const token=cfg.token||mainToken;
     const rows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,MIN_COMPANY_DELAY);
     const inCompanyRows=rows.filter(r=>{
       const d=parseInt(r?.delay_days||r?.delay||0)||0;
@@ -3037,21 +3035,17 @@ function transferBroadFilter(r,minDelay){
 }
 async function loadTransfers(){
   const cfg=getBranchApiConfig();
-  const EXTERNAL_DELAYED_API=cfg.url;
   const MIN_TRANSFER_DELAY=2;
   const BRANCH_API_FETCH_MIN=2;
-  // إذا لم يكن هناك رابط فرع مخصص — استخدم بيانات API الطرود مباشرة
-  const DEFAULT_BRANCH_URL='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
-  const hasCustomBranchUrl=EXTERNAL_DELAYED_API&&EXTERNAL_DELAYED_API!==DEFAULT_BRANCH_URL&&!EXTERNAL_DELAYED_API.includes('/with-captain');
-  if(!hasCustomBranchUrl){
-    renderTransfersFromAPI();
-    return;
-  }
+  const derivedBranchUrl=_deriveBranchUrl(cfg.url);
+  const EXTERNAL_DELAYED_API=derivedBranchUrl||cfg.url;
+  if(!EXTERNAL_DELAYED_API){renderTransfersFromAPI();return;}
   const table=document.getElementById('transfers-table');
   if(table)table.innerHTML='<div class="branch-skeleton"></div><div class="branch-skeleton"></div><div class="branch-skeleton"></div>';
   try{
     setBranchApiStatus('⏳ جارٍ جلب بيانات "التحويلات"...','info','t');
-    const token=cfg.token;
+    const mainToken=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
+    const token=cfg.token||mainToken;
     const apiRows=await fetchAllBranchDelayedRows(EXTERNAL_DELAYED_API,token,BRANCH_API_FETCH_MIN);
     let transferRows=apiRows.filter(r=>transferStrictFilter(r,MIN_TRANSFER_DELAY));
     let transferTier='';
@@ -6383,6 +6377,21 @@ async function apiFetch(baseUrl,token,cursor,timeoutMs=20000){
     clearTimeout(tid);
     throw e;
   }
+}
+// اشتقاق رابط الفروع من الرابط الرئيسي — يحذف /with-captain ليجلب جميع الحالات
+function _deriveBranchUrl(mainUrl){
+  if(!mainUrl)return'';
+  try{
+    const u=new URL(mainUrl);
+    // إذا كان الرابط يحتوي /with-captain أو /with_captain أزله للحصول على الرابط الأشمل
+    if(u.pathname.includes('with-captain')||u.pathname.includes('with_captain')){
+      u.pathname=u.pathname.replace(/\/with-captain|\/with_captain/gi,'');
+      u.searchParams.delete('cursor');
+      return u.toString();
+    }
+    // الرابط بالفعل مناسب للفروع
+    return mainUrl;
+  }catch(_){return mainUrl;}
 }
 function getBranchApiConfig(){
   const defaultUrl='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
