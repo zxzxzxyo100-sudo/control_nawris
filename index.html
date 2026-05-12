@@ -8026,21 +8026,9 @@ async function fetchAPIShipments(){
     const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
 
-    // Always sweep key delay thresholds to catch high-delay shipments (e.g. R-codes at 300+ days).
-    // The API may filter by exact delay_days value, so we must request each threshold explicitly.
-    // Run unconditionally — even when user provides delay_days in the URL.
-    if(rawByCode.size>0){
-      const sizeBefore=rawByCode.size;
-      const sweepDelays=[400,350,300,250,200,150,100,75,60,50,40,35,30,25,20,15,10,7,5,4,3].filter(d=>d!==startDelay);
-      if(el)el.textContent=`⏳ جلب دفعات إضافية (${sweepDelays.length} عتبة تأخير)…`;
-      for(const d of sweepDelays){
-        const sweepUrl=new URL(parsedBaseUrl.toString());
-        sweepUrl.searchParams.set('delay_days',String(d));
-        await fetchAllPagesForBase(sweepUrl.toString(),`تأخير ${d}ي`);
-      }
-      const newFromSweep=rawByCode.size-sizeBefore;
-      if(newFromSweep>0)console.log(`[API SWEEP] Found ${newFromSweep} additional shipments from delay sweep`);
-    }
+    // Delay sweep disabled — was sending 20+ sequential API requests causing page freeze.
+    // API endpoint /with-captain?delay_days=N returns all orders with delay >= N (cumulative),
+    // so the initial fetch already captures everything.
 
     rawData=[...rawByCode.values()];
     try{
