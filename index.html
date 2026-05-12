@@ -8003,8 +8003,8 @@ async function fetchAPIShipments(){
     const parsedBaseUrl=new URL(normalizedBaseUrl,window.location.origin);
     const delayParamRaw=String(parsedBaseUrl.searchParams.get('delay_days')||'').trim();
     const parsedDelay=/^\d+$/.test(delayParamRaw)?parseInt(delayParamRaw,10):null;
-    const MAX_PAGES=25; // حد أقصى 25 صفحة = ~2500 طرد — يمنع التعليق على الجوال
-    const FETCH_DEADLINE=Date.now()+55000; // حد زمني كلي 55 ثانية للجلب كله
+    const MAX_PAGES=60; // 60 صفحة × 100 = 6000 طرد كحد أقصى
+    const FETCH_DEADLINE=Date.now()+90000; // 90 ثانية حد كلي
     const delayOfRaw=(it)=>parseInt(it?.delay_days||it?.[delayField]||it?.delay||0)||0;
 
     const appendUniqueItems=(items)=>{
@@ -8080,8 +8080,11 @@ async function fetchAPIShipments(){
     const effectiveUrl=new URL(parsedBaseUrl.toString());
     const hasDelay=effectiveUrl.searchParams.getAll('delay_days').some(v=>String(v||'').trim()!=='');
     if(!hasDelay){
-      // Backward-compatible default only when user didn't provide delay_days explicitly.
       effectiveUrl.searchParams.set('delay_days','2');
+    }
+    // طلب أقصى عدد ممكن من السجلات في كل صفحة
+    if(!effectiveUrl.searchParams.has('per_page')&&!effectiveUrl.searchParams.has('limit')&&!effectiveUrl.searchParams.has('page_size')){
+      effectiveUrl.searchParams.set('per_page','100');
     }
     const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
@@ -8136,12 +8139,18 @@ async function fetchAPIShipments(){
       let captain=String(r.captain||r.driver_name||r.driver||r.courier||r.courier_name||r.delivery_man||r.assignee||r.agent_name||r['المندوب']||r['اسم المندوب']||r['مندوب التوصيل']||r['السائق']||r['اسم السائق']||r['مندوب']||'').trim();
       try{if(!captain&&r.driver&&typeof r.driver==='object')captain=String(r.driver.name||r.driver.full_name||'').trim();}catch(_){}
       const currentBranch=String(r.current_branch||r.branch_name||r['الفرع الحالى']||r['الفرع']||'').trim();
+      const responsibleBranch=String(
+        r.responsible_branch||r.responsible_branch_name||r.assigned_branch||r.assigned_branch_name||
+        r.owner_branch||r.accountable_branch||r.source_branch||r.branch_responsible||
+        r['الفرع المسؤول']||r['الفرع المسئول']||r['فرع المسؤول']||r['فرع الاستلام']||''
+      ).trim();
       apiShipments.push({
         id:'api_'+code,tracking_code:code,
         client_name:clientName,client_id:r.client_id||'',
         receiver_name:receiverName,customer_name:receiverName||clientName,customer_phone:receiverPhone,
         captain,driver_name:captain,captain_phone:'',
         current_branch:currentBranch,
+        responsible_branch:responsibleBranch,
         government:String(r.government||r['المحافظة']||'').trim(),
         area:String(r.area||r.region_name||r['المنطقة']||'').trim(),
         raw_status:r.status||r['الحالة']||'with_driver',
@@ -8405,7 +8414,7 @@ function renderAPIShipments(){
 
   // Build filter dropdowns
   const caps=[...new Set(apiShipments.map(s=>s.captain).filter(Boolean))].sort();
-  const brs=[...new Set(apiShipments.map(s=>s.current_branch).filter(Boolean))].sort();
+  const brs=[...new Set(apiShipments.flatMap(s=>[s.current_branch,s.responsible_branch]).filter(Boolean))].sort();
   const govs=[...new Set(apiShipments.map(s=>s.government).filter(Boolean))].sort();
   const capEl=document.getElementById('a-fcap');
   if(capEl&&!fcap){capEl.innerHTML='<option value="">كل المناديب</option>'+caps.map(c=>`<option>${c}</option>`).join('');}
@@ -8495,7 +8504,10 @@ function renderAPIShipments(){
     if(fd&&cls(s.delay_days)!==fd)return false;
     if(fst&&s.status!==fst)return false;
     if(fcap&&normalizeIdentityText(s.captain||'')!==normalizeIdentityText(fcap))return false;
-    if(fbr&&normalizeIdentityText(s.current_branch||'')!==normalizeIdentityText(fbr))return false;
+    if(fbr){
+      const nb=normalizeIdentityText(fbr);
+      if(normalizeIdentityText(s.current_branch||'')!==nb&&normalizeIdentityText(s.responsible_branch||'')!==nb)return false;
+    }
     if(fgov&&normalizeIdentityText(s.government||'')!==normalizeIdentityText(fgov))return false;
     if(femp&&String(assignments[s.tracking_code]||'').trim()!==String(femp).trim())return false;
     if(fdays){
@@ -8509,7 +8521,7 @@ function renderAPIShipments(){
     }
     if(q){
       const asg=String(assignments[s.tracking_code]||'').trim();
-      const haystack=normalizeIdentityText(`${s.tracking_code} ${s.client_name} ${s.receiver_name} ${s.captain} ${s.customer_phone} ${s.current_branch} ${s.government} ${s.area} ${asg}`);
+      const haystack=normalizeIdentityText(`${s.tracking_code} ${s.client_name} ${s.receiver_name} ${s.captain} ${s.customer_phone} ${s.current_branch} ${s.responsible_branch||''} ${s.government} ${s.area} ${asg}`);
       const codeNorm=normalizeIdentityText(s.tracking_code||'');
       const qCompact=q.replace(/[^a-z0-9]/g,'');
       const codeCompact=codeNorm.replace(/[^a-z0-9]/g,'');
@@ -8617,7 +8629,10 @@ function renderAPIShipments(){
       <td class="mob-hide" style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.receiver_name||''}">${s.receiver_name||'—'}</td>
       <td class="mob-hide" style="font-family:var(--mono);font-size:11px">${ph?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
       <td class="mob-hide" style="color:var(--white);font-size:11px">${s.captain||'—'}${s.captain_phone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${s.captain_phone}</div>`:''}</td>
-      <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
+      <td class="mob-hide" style="font-size:11px">
+        <span style="color:var(--mute)">${s.current_branch||'—'}</span>
+        ${s.responsible_branch&&s.responsible_branch!==s.current_branch?`<div style="font-size:9px;color:var(--blu);margin-top:2px">📌 ${s.responsible_branch}</div>`:''}
+      </td>
       <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
       <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.area||'—'}</td>
       <td>${stBadge(s.status)}</td>
