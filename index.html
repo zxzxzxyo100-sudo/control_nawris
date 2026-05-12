@@ -4248,26 +4248,34 @@ function renderHomeBranchKPIs(){
   }
 }
 
+let _homeLastRender=0;
+let _homeLastDataLen=-1;
 function renderHome(){
-  updateKPIs();
+  const now=Date.now();
+  const dataLen=apiShipments.length+shipments.length;
+  const stale=now-_homeLastRender>30000||dataLen!==_homeLastDataLen;
+  _homeLastRender=now;_homeLastDataLen=dataLen;
+
+  // التحديثات السريعة دائماً
   const h=new Date().getHours();
   const userName=CU?.name||'';
   const greet=h<12?'صباح الخير':h<17?'مساء الخير':'مساء النور';
   document.getElementById('greeting').textContent=`${greet} ${userName} 👋`;
-  // Update hero date with elegant format
   try{
     const dateEl=document.getElementById('hero-date');
-    if(dateEl){
-      const now=new Date();
-      dateEl.textContent=new Intl.DateTimeFormat('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(now);
-    }
+    if(dateEl)dateEl.textContent=new Intl.DateTimeFormat('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(new Date());
   }catch(e){}
-  // Use API shipments for leaderboards (more data)
-  const apiCrit=apiShipments.filter(s=>cls(s.delay_days)!=='ok');
-  const apiAll=apiShipments.length?apiCrit:shipments.filter(s=>cls(s.delay_days)==='critical');
-  renderLB('area-lb',apiAll,'government','#ff3a5c');
-  renderLBCaptain('drv-lb',apiShipments);
-  renderHomeBranchKPIs();
+
+  // الحسابات الثقيلة فقط إذا تغيرت البيانات أو مرت 30 ثانية
+  if(stale){
+    updateKPIs();
+    const apiCrit=apiShipments.filter(s=>cls(s.delay_days)!=='ok');
+    const apiAll=apiShipments.length?apiCrit:shipments.filter(s=>cls(s.delay_days)==='critical');
+    renderLB('area-lb',apiAll,'government','#ff3a5c');
+    renderLBCaptain('drv-lb',apiShipments);
+    renderHomeBranchKPIs();
+    setTimeout(()=>{try{renderControlTowerStats();}catch(_){}},0);
+  }
 }
 function renderLBCaptain(id,data){
   const map={};
@@ -6504,10 +6512,17 @@ function setAlpha(l){
   renderShipments();
 }
 
+let _activeTabId=null;
+let _activeTabEl=null;
+let _staffLastRender=0;
+const STAFF_STALE_MS=60000; // إعادة رسم متابعة الموظفين كل دقيقة فقط
+
 function gTab(id){
   if(id==='api-shipments')id='shipments';
   if(id==='branches-followup')id='returns';
   if(id==='service-kpi'||id==='commission-admin')id='home';
+
+  // ── 1. تحديث شريط التنقل (سريع) ──
   document.querySelectorAll('#nav-tabs .sb-item').forEach(t=>{
     const tId=t.dataset.tab;
     const active=id==='upload' ? tId==='master' : tId===id;
@@ -6517,25 +6532,41 @@ function gTab(id){
     const branchesItem=document.querySelector('#nav-tabs .sb-item[data-tab="branches-followup"]');
     if(branchesItem)branchesItem.classList.add('on');
   }
-  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('on');p.style.display='none';});
-  const pg=document.getElementById('tab-'+id);
-  if(pg){pg.classList.add('on');pg.style.display='block';}
-  // Close sidebar on mobile after navigation
+
+  // ── 2. إخفاء التبويب القديم وإظهار الجديد (CSS فقط — فوري) ──
+  const isSameTab=(id===_activeTabId);
+  if(_activeTabEl&&!isSameTab){_activeTabEl.classList.remove('on');_activeTabEl.style.display='none';}
+  _activeTabId=id;
+  _activeTabEl=document.getElementById('tab-'+id);
+  if(_activeTabEl){_activeTabEl.classList.add('on');_activeTabEl.style.display='block';}
+
   if(window.innerWidth<=900)closeSidebar();
+
+  // ── 3. تأجيل الرسم بعد الرسم البصري (requestAnimationFrame) ──
   const renders={
-    home:renderHome,
+    home:()=>renderHome(),
     shipments:()=>switchUnifiedShipmentsSource('api'),
-    drivers:renderDrivers,
-    returns:renderReturns,
-    transfers:renderTransfers,
-    whatsapp:renderWA,
-    reports:genDaily,
-    staff:()=>{sfPage=1;renderStaff();},
+    drivers:()=>renderDrivers(),
+    returns:()=>renderReturns(),
+    transfers:()=>renderTransfers(),
+    whatsapp:()=>renderWA(),
+    reports:()=>genDaily(),
+    staff:()=>{
+      const now=Date.now();
+      sfPage=1;
+      // تخطي إعادة الرسم إذا تم مؤخراً وبيانات لم تتغير
+      if(!isSameTab||now-_staffLastRender>STAFF_STALE_MS){
+        _staffLastRender=now;
+        renderStaff();
+      }
+    },
     master:()=>{setMasterSeg(masterSeg);renderMasterContent();setTimeout(renderStatusLists,100);loadDbStats();},
-    upload:()=>{loadDbStats();},
-    users:renderUsersPage,
+    upload:()=>loadDbStats(),
+    users:()=>renderUsersPage(),
   };
-  if(renders[id])renders[id]();
+  if(renders[id]){
+    requestAnimationFrame(()=>{try{renders[id]();}catch(e){console.warn('gTab render',e);}});
+  }
 
   // Keep branch submenu state in sync with active page.
   if(id==='returns'){
