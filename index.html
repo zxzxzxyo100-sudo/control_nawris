@@ -6251,34 +6251,41 @@ async function uploadShipments(rows,forceStatus){
 // ══════════════════════════════════════════
 // CORS proxy via Cloudflare Worker — sends cursor separately to avoid encoding issues
 const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
-async function apiFetch(baseUrl,token,cursor){
+async function apiFetch(baseUrl,token,cursor,timeoutMs=20000){
   const cleanToken=token?token.replace(/^(Bearer|Token)\s*/i,'').trim():'';
   const reqUrl=String(baseUrl||'').trim();
-  // For Algoriza backoffice API, send token exactly as X-API-TOKEN (as required by curl).
-  if(reqUrl.includes('backoffice.nawris.algoriza.com')){
-    try{
-      const u=new URL(reqUrl,window.location.origin);
-      if(cursor)u.searchParams.set('cursor',String(cursor));
-      const directRes=await fetch(u.toString(),{
-        method:'GET',
-        headers:{
-          'Accept':'application/json',
-          ...(cleanToken?{'X-API-TOKEN':cleanToken}:{})
-        },
-        credentials:'omit'
-      });
-      // Some environments reject direct calls; fallback to proxy for resiliency.
-      if(directRes.ok)return directRes;
-      if(directRes.status!==401)return directRes;
-    }catch(_){}
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),timeoutMs);
+  try{
+    // For Algoriza backoffice API, send token exactly as X-API-TOKEN (as required by curl).
+    if(reqUrl.includes('backoffice.nawris.algoriza.com')){
+      try{
+        const u=new URL(reqUrl,window.location.origin);
+        if(cursor)u.searchParams.set('cursor',String(cursor));
+        const directRes=await fetch(u.toString(),{
+          method:'GET',
+          headers:{'Accept':'application/json',...(cleanToken?{'X-API-TOKEN':cleanToken}:{})},
+          credentials:'omit',
+          signal:ctrl.signal
+        });
+        if(directRes.ok){clearTimeout(tid);return directRes;}
+        if(directRes.status!==401){clearTimeout(tid);return directRes;}
+      }catch(e){if(e.name==='AbortError')throw e;}
+    }
+    const body={url:reqUrl,token:cleanToken};
+    if(cursor)body.cursor=cursor;
+    const res=await fetch(PROXY,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(body),
+      signal:ctrl.signal
+    });
+    clearTimeout(tid);
+    return res;
+  }catch(e){
+    clearTimeout(tid);
+    throw e;
   }
-  const body={url:reqUrl,token:cleanToken};
-  if(cursor)body.cursor=cursor;
-  return await fetch(PROXY,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify(body)
-  });
 }
 function getBranchApiConfig(){
   const defaultUrl='https://backoffice.nawris.algoriza.com/external-api/orders/delayed';
@@ -7945,7 +7952,8 @@ async function fetchAPIShipments(){
     const parsedBaseUrl=new URL(normalizedBaseUrl,window.location.origin);
     const delayParamRaw=String(parsedBaseUrl.searchParams.get('delay_days')||'').trim();
     const parsedDelay=/^\d+$/.test(delayParamRaw)?parseInt(delayParamRaw,10):null;
-    const MAX_PAGES=500; // safety limit for very large APIs
+    const MAX_PAGES=25; // حد أقصى 25 صفحة = ~2500 طرد — يمنع التعليق على الجوال
+    const FETCH_DEADLINE=Date.now()+55000; // حد زمني كلي 55 ثانية للجلب كله
     const delayOfRaw=(it)=>parseInt(it?.delay_days||it?.[delayField]||it?.delay||0)||0;
 
     const appendUniqueItems=(items)=>{
@@ -8011,6 +8019,7 @@ async function fetchAPIShipments(){
         console.log(`${label} | Page ${pageNum}: ${pageData.length} items, ${newCount} new keys, total: ${rawByCode.size}, next_cursor: ${nextCursor?'yes':'no'}, next_url: ${nextPageUrl?'yes':'no'}, via: ${pageResult.mode}`);
 
         if(!pageData.length)break;
+        if(Date.now()>FETCH_DEADLINE){console.warn('API fetch: deadline reached, stopping pagination');break;}
       }while((nextPageUrl||nextCursor)&&pageNum<MAX_PAGES);
       return dayRawCount;
     };
