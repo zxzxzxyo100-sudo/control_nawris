@@ -2762,13 +2762,21 @@ async function loadShipments(){
 
 // ── بناء بيانات "في الشركة" و"التحويلات" من apiShipments بدون طلب شبكي ──
 function renderReturnsFromAPI(){
-  if(!apiShipments.length)return;
+  const el=document.getElementById('returns-tbody');
+  if(!apiShipments.length){
+    if(el)el.innerHTML='<tr><td colspan="10" style="text-align:center;padding:36px;color:var(--mute)">اجلب طرود API أولاً لملء هذا التبويب.</td></tr>';
+    return;
+  }
   const inCompany=apiShipments.filter(s=>{
     const st=String(s.status||'').trim();
     const raw=String(s.raw_status||'').trim();
-    return st==='in_company'||raw.includes('في الشركة')||raw.includes('بالشركة')||raw.includes('company');
+    return st==='in_company'||raw.includes('في الشركة')||raw.includes('بالشركة')||raw.includes('company')||raw.includes('في الشركه');
   });
-  if(!inCompany.length)return;
+  if(!inCompany.length){
+    // API /with-captain لا يُرجع حالات "في الشركة" — بيّن للمستخدم
+    if(el)el.innerHTML='<tr><td colspan="10" style="text-align:center;padding:36px;color:var(--mute)">⚠️ لا توجد طرود بحالة «في الشركة» في بيانات الـ API الحالية.<br><small style="color:var(--dim)">endpoint /with-captain يُرجع طرود «مع المندوب» فقط. اربط API منفصل لمتابعة الفروع.</small></td></tr>';
+    return;
+  }
   returns_data=inCompany.map(s=>({
     id:s.id||s.tracking_code,
     location:'in_warehouse',reason:'other',
@@ -2783,13 +2791,20 @@ function renderReturnsFromAPI(){
   try{renderReturns();}catch(_){}
 }
 function renderTransfersFromAPI(){
-  if(!apiShipments.length)return;
+  const container=document.getElementById('transfers-table');
+  if(!apiShipments.length){
+    if(container)container.innerHTML='<div class="tr-empty">اجلب طرود API أولاً لملء هذا التبويب.</div>';
+    return;
+  }
   const transferred=apiShipments.filter(s=>{
     const st=String(s.status||'').trim();
     const raw=String(s.raw_status||'').trim();
     return st==='transferred'||raw.includes('محول')||raw.includes('تحويل');
   });
-  if(!transferred.length)return;
+  if(!transferred.length){
+    if(container)container.innerHTML='<div class="tr-empty" style="padding:36px;text-align:center;color:var(--mute)">⚠️ لا توجد طرود بحالة «محول» في بيانات الـ API الحالية.<br><small style="color:var(--dim)">اربط API منفصل لمتابعة التحويلات بين الفروع.</small></div>';
+    return;
+  }
   transfers_data=transferred.map((s,i)=>({
     id:s.id||s.tracking_code,
     trip_id:String(s.current_branch||'بدون-فرع'),
@@ -7012,10 +7027,8 @@ async function renderStaff(){
   try{
     const ym=currentMonthKey();
     const r=await fetch(`${LOG_API_BASE}/staff_leaderboard.php?month=${encodeURIComponent(ym)}`,{credentials:'same-origin'});
-    if(r.ok){
-      const j=await r.json();
-      if(j&&j.success)serverStaffBoard=j;
-    }
+    if(r.ok){const j=await r.json();if(j&&j.success)serverStaffBoard=j;}
+    // 401/404 = الملف غير موجود — تجاهل بصمت واستخدم الحساب المحلي
   }catch(_){}
 
   const crLabels={delivered:'✅ تم التسليم',solved:'✅ تم الحل',contacted:'📞 تم التواصل',no_answer:'📵 لا يرد',pending:'⏳ قيد المتابعة'};
