@@ -2572,10 +2572,10 @@ async function startApp(){
   removeDeprecatedTabs();
   mountUnifiedApiIntoShipments();
   loadCachedAPIShipments();
-  // Auto-sync API shipments after drivers are loaded
-  setTimeout(autoSyncAPI,1500);
+  // عرض البيانات المخزّنة فوراً، ثم autoSyncAPI يجلب الجديدة
   loadCachedAPIShipments();
-  switchUnifiedShipmentsSource('api');
+  renderAPIShipments();
+  setTimeout(autoSyncAPI,800);
 }
 
 function removeDeprecatedTabs(){
@@ -7024,12 +7024,7 @@ async function renderStaff(){
   }catch(e){console.warn('CR refresh failed:',e);}
 
   let serverStaffBoard=null;
-  try{
-    const ym=currentMonthKey();
-    const r=await fetch(`${LOG_API_BASE}/staff_leaderboard.php?month=${encodeURIComponent(ym)}`,{credentials:'same-origin'});
-    if(r.ok){const j=await r.json();if(j&&j.success)serverStaffBoard=j;}
-    // 401/404 = الملف غير موجود — تجاهل بصمت واستخدم الحساب المحلي
-  }catch(_){}
+  // staff_leaderboard.php غير موجود على هذا السيرفر — نستخدم الحساب المحلي مباشرة
 
   const crLabels={delivered:'✅ تم التسليم',solved:'✅ تم الحل',contacted:'📞 تم التواصل',no_answer:'📵 لا يرد',pending:'⏳ قيد المتابعة'};
   const assignments=getAPIAssignments();
@@ -9110,8 +9105,9 @@ async function autoSyncAPI(){
     if(interval>0){
       const iv=document.getElementById('api-interval2');if(iv)iv.value=interval;
     }
-    // Auto-fetch on load
+    // Auto-fetch on load — الجلب الوحيد عند الإقلاع
     await fetchAPIShipments();
+    unifiedApiFetched=true;
     // Set auto-refresh timer
     if(interval>0){
       if(autoFetchTimer2)clearInterval(autoFetchTimer2);
