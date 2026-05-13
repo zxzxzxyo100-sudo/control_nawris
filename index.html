@@ -5216,23 +5216,29 @@ function _getApiProcessedSnapshotCache(){
 }
 async function _loadProcessedFromSupabase(){
   try{
-    const keyList=_allProcessedKeys.map(k=>`"${k}"`).join(',');
     const rows=await sb('settings','GET',null,`?key=in.(${_allProcessedKeys.join(',')})&select=key,value`);
     rows.forEach(r=>{
-      const local=localStorage.getItem(r.key);
-      if(r.key.includes('seen_codes')){
-        const remote=JSON.parse(r.value||'[]');
-        const localArr=JSON.parse(local||'[]');
-        const merged=[...new Set([...localArr,...remote])];
-        localStorage.setItem(r.key,JSON.stringify(merged));
-      }else{
-        const remote=JSON.parse(r.value||'{}');
-        const localObj=JSON.parse(local||'{}');
-        const merged={...remote,...localObj};
-        localStorage.setItem(r.key,JSON.stringify(merged));
-      }
+      try{
+        const local=localStorage.getItem(r.key);
+        if(r.key.includes('seen_codes')){
+          const remote=JSON.parse(r.value||'[]');
+          const localArr=JSON.parse(local||'[]');
+          let merged=[...new Set([...localArr,...remote])];
+          if(merged.length>3000)merged=merged.slice(-3000);
+          safeLocalStorageSetForQuota(r.key,JSON.stringify(merged));
+        }else{
+          const remote=JSON.parse(r.value||'{}');
+          const localObj=JSON.parse(local||'{}');
+          const merged={...remote,...localObj};
+          const keys=Object.keys(merged);
+          const pruned=keys.length>500
+            ?Object.fromEntries(keys.slice(-500).map(k=>[k,merged[k]]))
+            :merged;
+          safeLocalStorageSetForQuota(r.key,JSON.stringify(pruned));
+        }
+      }catch(innerErr){console.warn('skip key',r.key,innerErr?.name);}
     });
-  }catch(e){console.warn('Failed to load processed from Supabase:',e);}
+  }catch(e){console.warn('Failed to load processed from Supabase:',e?.name||e);}
 }
 
 // Event delegation for returns contact results & notes
@@ -6357,23 +6363,7 @@ async function apiFetch(baseUrl,token,cursor,timeoutMs=20000){
   const ctrl=_apiFetchController||new AbortController();
   const tid=setTimeout(()=>ctrl.abort(),timeoutMs);
   try{
-    // الصفحة الأولى (بدون cursor): جرّب مباشرة أولاً
-    // الصفحات التالية (مع cursor): استخدم proxy مباشرة لتجنب CORS preflight
-    const isCursorPage=Boolean(cursor&&String(cursor).trim());
-    if(!isCursorPage&&reqUrl.includes('backoffice.nawris.algoriza.com')){
-      try{
-        const u=new URL(reqUrl,window.location.origin);
-        const directRes=await fetch(u.toString(),{
-          method:'GET',
-          headers:{'Accept':'application/json',...(cleanToken?{'X-API-TOKEN':cleanToken}:{})},
-          credentials:'omit',
-          signal:ctrl.signal
-        });
-        if(directRes.ok){clearTimeout(tid);return directRes;}
-        if(directRes.status!==401){clearTimeout(tid);return directRes;}
-      }catch(e){if(e.name==='AbortError')throw e;}
-    }
-    // proxy — يستخدم دائماً للصفحات ذات cursor
+    // جميع الطلبات عبر الـ proxy — الطلب المباشر يفشل دائماً بسبب CORS
     const body={url:reqUrl,token:cleanToken};
     if(cursor)body.cursor=cursor;
     const res=await fetch(PROXY,{
