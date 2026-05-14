@@ -970,7 +970,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <svg class="kcard-sparkline" id="sp-total" viewBox="0 0 120 36" preserveAspectRatio="none"><polyline points="0,30 20,24 40,26 60,18 80,20 100,12 120,8"/></svg>
       </div>
       <div class="kcard red" onclick="goShipments('delay','critical')">
-        <div class="kcard-header"><div class="klbl">حرج +15 يوم</div><span class="pulse-dot"></span></div>
+        <div class="kcard-header"><div class="klbl">حرج +8 يوم</div><span class="pulse-dot"></span></div>
         <div class="kval" id="k-crit">0</div>
         <div class="kcard-actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg> تدخل فوري</div>
         <svg class="kcard-sparkline" id="sp-crit" viewBox="0 0 120 36" preserveAspectRatio="none"><polyline points="0,8 20,12 40,10 60,14 80,12 100,16 120,18"/></svg>
@@ -1035,7 +1035,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       </div>
       <div class="api-kgrid" id="h-api-kpis">
         <div class="api-kcard pur" onclick="goAPIShipments('','')"><div class="klbl">إجمالي API</div><div class="kval" id="h-ak-total">0</div></div>
-        <div class="api-kcard red" onclick="goAPIShipments('delay','critical')"><div class="kcard-header"><div class="klbl">حرج +15 يوم</div><span class="pulse-dot"></span></div><div class="kval" id="h-ak-crit">0</div></div>
+        <div class="api-kcard red" onclick="goAPIShipments('delay','critical')"><div class="kcard-header"><div class="klbl">حرج +8 يوم</div><span class="pulse-dot"></span></div><div class="kval" id="h-ak-crit">0</div></div>
         <div class="api-kcard gold" onclick="goAPIShipments('delay','warning')"><div class="klbl">متأخر 2+ يوم</div><div class="kval" id="h-ak-warn">0</div></div>
         <div class="api-kcard grn" onclick="goAPIShipments('status','with_driver')"><div class="klbl">مع المندوب</div><div class="kval" id="h-ak-driver">0</div></div>
         <div class="api-kcard orn" onclick="goAPIShipments('status','returned')"><div class="klbl">مرتجع</div><div class="kval" id="h-ak-ret">0</div></div>
@@ -1088,7 +1088,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <div class="fbar" style="margin-top:6px;flex-wrap:wrap">
       <select class="fi" id="s-fd" onchange="renderShipments()" style="min-width:120px">
         <option value="">كل التأخير</option>
-        <option value="critical">🔴 +15 يوم</option>
+        <option value="critical">🔴 +8 يوم</option>
         <option value="warning">🟡 متأخر 2+ يوم</option>
         <option value="ok">🟢 في الموعد</option>
       </select>
@@ -1182,7 +1182,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <!-- KPI -->
     <div class="kgrid" style="margin-bottom:16px">
       <div class="kcard pur"><div class="klbl">إجمالي المناديب</div><div class="kval" id="dk-total">0</div></div>
-      <div class="kcard red"><div class="klbl">حرج +15 يوم</div><div class="kval" id="dk-crit">0</div></div>
+      <div class="kcard red"><div class="klbl">حرج +8 يوم</div><div class="kval" id="dk-crit">0</div></div>
       <div class="kcard gold"><div class="klbl">تحذير</div><div class="kval" id="dk-warn">0</div></div>
       <div class="kcard grn"><div class="klbl">طبيعي</div><div class="kval" id="dk-ok">0</div></div>
     </div>
@@ -1478,7 +1478,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
     <!-- KPI Cards -->
     <div class="kgrid" style="margin-bottom:16px">
       <div class="kcard pur" id="ak-card-total"><div class="klbl" id="ak-lbl-total">إجمالي الطرود</div><div class="kval" id="ak-total">0</div></div>
-      <div class="kcard red" id="ak-card-crit"><div class="klbl" id="ak-lbl-crit">حرج +15 يوم</div><div class="kval" id="ak-crit">0</div></div>
+      <div class="kcard red" id="ak-card-crit"><div class="klbl" id="ak-lbl-crit">حرج +8 يوم</div><div class="kval" id="ak-crit">0</div></div>
       <div class="kcard gold" id="ak-card-warn"><div class="klbl" id="ak-lbl-warn">متأخر 2+ يوم</div><div class="kval" id="ak-warn">0</div></div>
       <div class="kcard grn" id="ak-card-ok"><div class="klbl" id="ak-lbl-ok">في الموعد</div><div class="kval" id="ak-ok">0</div></div>
       <div class="kcard blu" id="ak-card-driver"><div class="klbl" id="ak-lbl-driver">مع المندوب</div><div class="kval" id="ak-driver">0</div></div>
@@ -1507,7 +1507,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <input class="fi fi-grow" id="a-q" type="text" placeholder="🔍 كود، متجر، مستلم، مندوب، فرع، محافظة، مسند…" oninput="renderAPIShipments()" style="width:100%;min-width:0;box-sizing:border-box">
         <select class="fi" id="a-fd" onchange="renderAPIShipments()" style="min-width:120px">
           <option value="">كل التأخير</option>
-          <option value="critical">🔴 +15 يوم</option>
+          <option value="critical">🔴 +8 يوم</option>
           <option value="warning">🟡 متأخر 2+ يوم</option>
           <option value="ok">🟢 في الموعد</option>
         </select>
@@ -1641,7 +1641,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
           <div class="fg"><label class="fl">الفلتر</label>
             <select class="fi" style="width:100%" id="bulk-f">
               <option value="all">كل المناديب</option>
-              <option value="critical">المتأخرون +15 يوم</option>
+              <option value="critical">المتأخرون +8 يوم</option>
               <option value="warning">المتأخرون 2+ يوم</option>
               <option value="company">في الشركة (مدير الفرع)</option>
             </select>
@@ -2345,7 +2345,7 @@ let tSortKey='route';
 let tSortDir='asc';
 let autoFetchTimer=null;
 let staffLogState={packageId:'',trackingCode:'',storeName:'',all:[],shown:5};
-let CFG={critDays:3,warnDays:2,discount:50,company:'النورس للشحن',mgrPhone:''};
+let CFG={critDays:8,warnDays:2,discount:50,company:'النورس للشحن',mgrPhone:''};
 let WA_TPLS=[
   {id:'reminder',name:'تذكير بالتسليم',tag:'عام',body:'السلام عليكم {اسم} 👋\nتذكير من {شركة}\n\nلديك {طرود} طرد متأخر\nأعلى تأخير: {أيام} يوم\n\n📦 أكواد الطرود:\n{أكواد}\n\n⚠️ يرجى اتخاذ إجراء فوري\nشكراً'},
   {id:'urgent',name:'تنبيه عاجل',tag:'عاجل',body:'🚨 تنبيه عاجل — {شركة}\n\nالأخ {اسم}\nلديك {طرود} طرد في وضع حرج ({أيام} يوم)\n\n📦 أكواد الطرود الحرجة:\n{أكواد}\n\nيرجى التواصل فوراً مع المشرف\n— إدارة {شركة}'},
@@ -2704,8 +2704,9 @@ async function loadAll(){
     contacted=new Set(ct.map(r=>r.shipment_id));
     contact_results_db=crdb||[];_crMap=null;
     if(tpls.length) WA_TPLS=tpls;
+    const _hasCritDays=cfg.some(r=>r.key==='critDays');
     cfg.forEach(r=>{
-      if(r.key==='critDays')CFG.critDays=parseInt(r.value)||15;
+      if(r.key==='critDays')CFG.critDays=parseInt(r.value)||8;
       if(r.key==='warnDays')CFG.warnDays=parseInt(r.value)||7;
       if(r.key==='company')CFG.company=r.value;
       if(r.key==='mgrPhone')CFG.mgrPhone=r.value;
@@ -2737,6 +2738,11 @@ async function loadAll(){
         }catch(e){console.warn('users sync parse error',e);}
       }
     });
+    // تحديث critDays في Supabase إذا كانت القيمة القديمة (15) أو غير موجودة
+    if(!_hasCritDays||CFG.critDays>=15){
+      CFG.critDays=8;
+      sbUp('settings',[{key:'critDays',value:'8'}]).catch(()=>{});
+    }
     buildDropdowns();refreshAll();
     setSyncState('ok','متصل');
     loadAssignmentsFromSupabase().then(()=>{
@@ -8430,14 +8436,14 @@ function updateAPIKPIs(){
   const setDisp=(id,v)=>{const x=document.getElementById(id);if(x)x.style.display=v;};
   if(isEmployee){
     setTxt('ak-lbl-total','الأكواد المسندة لي');
-    setTxt('ak-lbl-crit','حرج +15 يوم');
+    setTxt('ak-lbl-crit','حرج +8 يوم');
     setTxt('ak-lbl-driver','مع المندوب');
     setTxt('ak-lbl-ok','راجع');
     setDisp('ak-card-warn','none');
     setDisp('ak-card-ret','none');
   }else{
     setTxt('ak-lbl-total','إجمالي الطرود');
-    setTxt('ak-lbl-crit','حرج +15 يوم');
+    setTxt('ak-lbl-crit','حرج +8 يوم');
     setTxt('ak-lbl-warn','متأخر 2+ يوم');
     setTxt('ak-lbl-ok','في الموعد');
     setTxt('ak-lbl-driver','مع المندوب');
