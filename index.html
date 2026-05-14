@@ -2244,15 +2244,16 @@ const MANAGER_TABS = ALL_TAB_IDS; // managers get all
 // Default users (seed)
 const DEFAULT_USERS = {
   'mohamed': {pass:'admin123',role:'manager',name:'محمد سعد',phone:'',email:'',status:'active',perms:ALL_TAB_IDS},
+  'ali_ams': {pass:'ali123',role:'employee',name:'علي امسيلخ',phone:'',email:'',status:'active',perms:['home','shipments','api-shipments','branches','staff']},
 };
 
 // قائمة المستخدمين المسموح بهم — تنظيف لمرة واحدة يحذف أي مستخدم اسمه ليس هنا
-const ALLOWED_USER_NAMES = ['محمد سعد','عبد الله الفرجاني','حسن القبالي','حسن المقرحي','حمزة المقرحي'];
-const USERS_CLEANUP_KEY = 'nawris_users_cleanup_v2';
+const ALLOWED_USER_NAMES = ['محمد سعد','عبد الله الفرجاني','حسن القبالي','حسن المقرحي','حمزة المقرحي','علي امسيلخ'];
+const USERS_CLEANUP_KEY = 'nawris_users_cleanup_v3';
 
 // قائمة حظر دائمة — هؤلاء المستخدمون يُحذفون دائماً من المنظومة (مستخدمون + إسنادات + كل التبويبات)
 // تطبَّق في كل تحميل ولا تتأثر بأي مفاتيح cleanup
-const BLOCKED_USER_NAMES = ['أحمد علي','احمد علي','عبد الرحمن ابوزيد','عبدالرحمن ابوزيد','عبد الرحمن أبوزيد','عبدالرحمن أبوزيد','فاطمة','فاطمة محمد','علي امسيلخ','علي أمسيلخ','موظف المتابعه','موظف المتابعة'];
+const BLOCKED_USER_NAMES = ['أحمد علي','احمد علي','عبد الرحمن ابوزيد','عبدالرحمن ابوزيد','عبد الرحمن أبوزيد','عبدالرحمن أبوزيد','فاطمة','فاطمة محمد','موظف المتابعه','موظف المتابعة'];
 function _normName(s){return String(s||'').replace(/\s+/g,' ').trim();}
 function isBlockedUserName(name){
   const n=_normName(name);
