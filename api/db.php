@@ -23,12 +23,25 @@ function crm_pdo(): PDO
     $user = getenv('DB_USER') ?: 'root';
     $pass = getenv('DB_PASS') ?: '';
 
-    $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $name);
+    $dsn = sprintf(
+        'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+        $host, $port, $name
+    );
+
     $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::ATTR_PERSISTENT         => false, // true only if behind connection pooler (pgBouncer/ProxySQL)
+        PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
     ]);
+
+    // Session-level performance hints — keeps query planner honest on large tables
+    $pdo->exec("SET
+        SESSION query_cache_type      = 0,
+        SESSION innodb_lock_wait_timeout = 10,
+        SESSION group_concat_max_len  = 1000000
+    ");
 
     return $pdo;
 }

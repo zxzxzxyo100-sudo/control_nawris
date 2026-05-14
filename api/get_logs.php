@@ -23,26 +23,39 @@ $packageId = preg_replace('/[^0-9]/', '', $packageRaw);
 try {
     $pdo = crm_pdo();
 
+    // Use range instead of DATE() so the index on created_at is actually used.
+    // DATE(created_at) = 'X'  →  full table scan (function prevents index seek)
+    // created_at >= 'X 00:00:00' AND created_at < 'X+1 00:00:00'  →  index range scan
+    $dateStart = $date . ' 00:00:00';
+    $dateEnd   = date('Y-m-d', strtotime($date . ' +1 day')) . ' 00:00:00';
+
     if ($packageId !== '') {
         $stmt = $pdo->prepare(
             'SELECT id, package_id, employee_id, employee_name, action_type, status, created_at
              FROM package_logs
              WHERE package_id = :package_id
-               AND DATE(created_at) = :date
+               AND created_at >= :date_start
+               AND created_at <  :date_end
              ORDER BY created_at DESC'
         );
         $stmt->execute([
             ':package_id' => $packageId,
-            ':date' => $date,
+            ':date_start' => $dateStart,
+            ':date_end'   => $dateEnd,
         ]);
     } else {
         $stmt = $pdo->prepare(
             'SELECT id, package_id, employee_id, employee_name, action_type, status, created_at
              FROM package_logs
-             WHERE DATE(created_at) = :date
-             ORDER BY created_at DESC'
+             WHERE created_at >= :date_start
+               AND created_at <  :date_end
+             ORDER BY created_at DESC
+             LIMIT 2000'
         );
-        $stmt->execute([':date' => $date]);
+        $stmt->execute([
+            ':date_start' => $dateStart,
+            ':date_end'   => $dateEnd,
+        ]);
     }
 
     $logs = $stmt->fetchAll();
