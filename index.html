@@ -2831,7 +2831,7 @@ async function fetchAllBranchDelayedRows(baseUrl,token,minDelay){
   let allRows=[];
   let nextCursor='';
   let page=0;
-  const MAX_PAGES=300;
+  const MAX_PAGES=25; // 25 × 100 = 2500 سجل كحد أقصى — يمنع استنزاف الذاكرة على الجوال
   do{
     page++;
     const u=new URL(cleanBase,window.location.origin);
@@ -9118,8 +9118,10 @@ async function autoSyncAPI(){
     // Auto-fetch on load — الجلب الوحيد عند الإقلاع
     await fetchAPIShipments();
     unifiedApiFetched=true;
-    // renderReturnsFromAPI/renderTransfersFromAPI already called inside fetchAPIShipments (400ms)
-    // Do NOT call loadReturns/loadTransfers here — they trigger heavy multi-page API fetches that crash iOS
+    // جلب بيانات الفروع تلقائياً بعد 4 ثوانٍ — يُعطي المتصفح وقتاً كافياً للرسم قبل الجلب
+    // MAX_PAGES محدود بـ 25 صفحة لتجنب استنزاف الذاكرة على الجوال
+    setTimeout(()=>{try{loadReturns();}catch(_){}},4000);
+    setTimeout(()=>{try{loadTransfers();}catch(_){}},7000);
     // Set auto-refresh timer
     if(interval>0){
       if(autoFetchTimer2)clearInterval(autoFetchTimer2);
