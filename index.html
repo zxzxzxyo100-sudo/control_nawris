@@ -7650,6 +7650,8 @@ let unifiedApiMounted=false, unifiedApiFetched=false;
 let apiFetchLog=[];
 let aSortKey='delay_days', aSortDir='desc';
 let apiFilteredData=[], apiFilteredIds=[], apiLastSelectedSid='';
+// Cache للـ dropdowns — يُعاد البناء فقط عند تغيير البيانات
+let _apiDropdownsLen=-1;
 let apiProcessedCodes=new Set();
 try{apiProcessedCodes=new Set(JSON.parse(sessionStorage.getItem('api_processed_codes')||'[]'));}catch(_){apiProcessedCodes=new Set();}
 
@@ -8164,7 +8166,6 @@ async function fetchAPIShipments(){
         nextPageUrl=getNextPageUrl(json,pageUrl)||getNextPageByNumber(json,pageUrl)||'';
         dayRawCount+=pageData.length;
         const newCount=appendUniqueItems(pageData);
-        console.log(`${label} | Page ${pageNum}: ${pageData.length} items, ${newCount} new keys, total: ${rawByCode.size}, next_cursor: ${nextCursor?'yes':'no'}, next_url: ${nextPageUrl?'yes':'no'}, via: ${pageResult.mode}`);
 
         if(!pageData.length)break;
         if(Date.now()>FETCH_DEADLINE){console.warn('API fetch: deadline reached, stopping pagination');break;}
@@ -8189,14 +8190,6 @@ async function fetchAPIShipments(){
     // so the initial fetch already captures everything.
 
     rawData=[...rawByCode.values()];
-    // تشخيص: طباعة حقول أول سجل لمعرفة بنية الـ API الفعلية
-    if(rawData.length>0){
-      const sample=rawData[0];
-      const branchKeys=Object.keys(sample).filter(k=>/branch|فرع|resp|assign|owner|account/i.test(k));
-      console.log('[API FIELD DIAGNOSIS] Branch-related fields:',branchKeys);
-      console.log('[API FIELD DIAGNOSIS] First record keys:',Object.keys(sample));
-      console.log('[API FIELD DIAGNOSIS] First record sample:',sample);
-    }
 
     if(!rawData.length){
       if(el)el.textContent='⚠️ لا بيانات في رد API';
@@ -8277,16 +8270,6 @@ async function fetchAPIShipments(){
       await new Promise(r=>setTimeout(r,0)); // تنفس للمتصفح بين كل دفعة
     }
     if(progWrap)progWrap.style.display='none';
-    try{
-      const mappedRCodes=apiShipments
-        .map(s=>String(s?.tracking_code||'').trim().toUpperCase())
-        .filter(c=>/R$/i.test(c));
-      console.log('[API MAPPED DEBUG]',{
-        total_mapped_items:apiShipments.length,
-        r_suffix_count:mappedRCodes.length,
-        r_suffix_sample:mappedRCodes.slice(0,40)
-      });
-    }catch(_){}
     reconcileApiProcessedFromStatus(apiShipments);
     // Clean stale returned codes from processed list so R-codes always show.
     apiShipments.forEach(s=>{
@@ -8516,20 +8499,23 @@ function renderAPIShipments(){
     });
   }
 
-  // Build filter dropdowns
-  const caps=[...new Set(apiShipments.map(s=>s.captain).filter(Boolean))].sort();
-  const brs=[...new Set(apiShipments.flatMap(s=>[s.current_branch,s.responsible_branch]).filter(Boolean))].sort();
-  const govs=[...new Set(apiShipments.map(s=>s.government).filter(Boolean))].sort();
-  const capEl=document.getElementById('a-fcap');
-  if(capEl&&!fcap){capEl.innerHTML='<option value="">كل المناديب</option>'+caps.map(c=>`<option>${c}</option>`).join('');}
-  const brEl=document.getElementById('a-fbr');
-  if(brEl&&!fbr){brEl.innerHTML='<option value="">كل الفروع</option>'+brs.map(b=>`<option>${b}</option>`).join('');}
-  const govEl=document.getElementById('a-fgov');
-  if(govEl&&!fgov){govEl.innerHTML='<option value="">كل المحافظات</option>'+govs.map(g=>`<option>${g}</option>`).join('');}
-  const empEl=document.getElementById('a-femp');
-  if(empEl&&!femp){
-    const emps=Object.entries(USERS).filter(([,u])=>u.status!=='inactive').map(([,u])=>u.name);
-    empEl.innerHTML='<option value="">كل الموظفين</option>'+emps.map(e=>`<option>${e}</option>`).join('');
+  // Build filter dropdowns — يُعاد البناء فقط عند تغيير حجم البيانات (cache)
+  if(_apiDropdownsLen!==apiShipments.length){
+    _apiDropdownsLen=apiShipments.length;
+    const caps=[...new Set(apiShipments.map(s=>s.captain).filter(Boolean))].sort();
+    const brs=[...new Set(apiShipments.flatMap(s=>[s.current_branch,s.responsible_branch]).filter(Boolean))].sort();
+    const govs=[...new Set(apiShipments.map(s=>s.government).filter(Boolean))].sort();
+    const capEl=document.getElementById('a-fcap');
+    if(capEl)capEl.innerHTML='<option value="">كل المناديب</option>'+caps.map(c=>`<option>${c}</option>`).join('');
+    const brEl=document.getElementById('a-fbr');
+    if(brEl)brEl.innerHTML='<option value="">كل الفروع</option>'+brs.map(b=>`<option>${b}</option>`).join('');
+    const govEl=document.getElementById('a-fgov');
+    if(govEl)govEl.innerHTML='<option value="">كل المحافظات</option>'+govs.map(g=>`<option>${g}</option>`).join('');
+    const empEl=document.getElementById('a-femp');
+    if(empEl){
+      const emps=Object.entries(USERS).filter(([,u])=>u.status!=='inactive').map(([,u])=>u.name);
+      empEl.innerHTML='<option value="">كل الموظفين</option>'+emps.map(e=>`<option>${e}</option>`).join('');
+    }
   }
 
   const myName=CU?.name||'';
@@ -8680,24 +8666,6 @@ function renderAPIShipments(){
     return aSortDir==='asc'?cmp:-cmp;
   });
   updateAPISortHeaderIcons();
-  try{
-    const allRCodes=apiShipments
-      .map(s=>String(s?.tracking_code||'').trim().toUpperCase())
-      .filter(c=>/R$/i.test(c));
-    const visibleRCodes=list
-      .map(s=>String(s?.tracking_code||'').trim().toUpperCase())
-      .filter(c=>/R$/i.test(c));
-    const visibleSet=new Set(visibleRCodes);
-    const hiddenRCodes=allRCodes.filter(c=>!visibleSet.has(c));
-    console.log('[API TABLE DEBUG]',{
-      api_total:apiShipments.length,
-      table_filtered_total:list.length,
-      all_r_suffix_count:allRCodes.length,
-      visible_r_suffix_count:visibleRCodes.length,
-      hidden_r_suffix_count:hiddenRCodes.length,
-      hidden_r_suffix_sample:hiddenRCodes.slice(0,40)
-    });
-  }catch(_){}
   apiFilteredData=list.slice();
   apiFilteredIds=apiFilteredData.map(s=>String(s.id));
 
@@ -9109,7 +9077,6 @@ function enrichAPICaptainPhones(){
     }
     if(drv?.phone){s.captain_phone=normPhone(drv.phone)||drv.phone;s.driver_id=drv.id;matched++;}
   });
-  if(matched>0)console.log('captains matched: '+matched);
 }
 async function autoSyncAPI(){
   try{
