@@ -2904,7 +2904,13 @@ async function loadReturns(_retryCount){
     const last=document.getElementById('returns-last-sync');if(last)last.textContent=syncTxt;
     const live=document.getElementById('returns-live-state');if(live)live.textContent='Connected';
     const conn=document.getElementById('returns-conn-badge');if(conn){conn.className='badge b-grn';conn.textContent='✅ Connected';}
-    setBranchApiStatus(`✅ في الشركة: تم جلب ${returns_data.length} سجل (من ${rows.length} من API)`,'ok','r');
+    if(!returns_data.length&&rows.length){
+      // الـ API لا يحتوي حالة "في الشركة" — اعرض من apiShipments مباشرة
+      setBranchApiStatus('⚠️ الـ API لا يحتوي حالة "في الشركة" — يُعرض من بيانات الطرود المحملة','info','r');
+      renderReturnsFromAPI();
+    }else{
+      setBranchApiStatus(`✅ في الشركة: تم جلب ${returns_data.length} سجل (من ${rows.length} من API)`,'ok','r');
+    }
   }catch(e){
     console.warn('returns api',e);
     try{
@@ -3128,7 +3134,9 @@ async function loadTransfers(_retryCount){
     const conn=document.getElementById('transfers-conn-badge');if(conn){conn.className='badge b-grn';conn.textContent='✅ Connected';}
     const tierNote=transferTier==='broad'?' — عرض موسّع (فرع مسؤول/مرسل ≠ فرع حالي)':transferTier==='relaxed'?' — بفلتر موسّع للحقول/الحالة':'';
     if(!transfers_data.length&&apiRows.length){
-      setBranchApiStatus(`⚠️ وصل ${apiRows.length} سجل من API — لا تحويل يطابق الشروط (تأخير ≥${MIN_TRANSFER_DELAY} يوم، فرعان مختلفان). افتح F12 وابحث عن حقول الفرع في أول سجل.`,'info','t');
+      // الـ API لا يحتوي حقول الفرع المطلوبة — اعرض من apiShipments مباشرة
+      setBranchApiStatus('⚠️ الـ API لا يحتوي بيانات تحويل — يُعرض من بيانات الطرود المحملة','info','t');
+      renderTransfersFromAPI();
     }else{
       setBranchApiStatus(`✅ التحويلات: تم جلب ${transfers_data.length} سجل (من ${apiRows.length} من API)${tierNote}`,'ok','t');
     }
@@ -9125,9 +9133,8 @@ async function autoSyncAPI(){
     await fetchAPIShipments();
     unifiedApiFetched=true;
     // جلب بيانات الفروع تلقائياً بعد 4 ثوانٍ — يُعطي المتصفح وقتاً كافياً للرسم قبل الجلب
-    // MAX_PAGES محدود بـ 25 صفحة لتجنب استنزاف الذاكرة على الجوال
-    setTimeout(()=>{try{loadReturns();}catch(_){}},4000);
-    setTimeout(()=>{try{loadTransfers();}catch(_){}},7000);
+    // بيانات الفروع تُعرض من apiShipments داخل fetchAPIShipments (400ms)
+    // لا استدعاء تلقائي لـ loadReturns/loadTransfers — يسبب انهيار الصفحة على الجوال
     // Set auto-refresh timer
     if(interval>0){
       if(autoFetchTimer2)clearInterval(autoFetchTimer2);
