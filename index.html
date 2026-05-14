@@ -8176,13 +8176,12 @@ async function fetchAPIShipments(){
     // Performance: fetch a single delayed stream,
     // then paginate cursors only. Keep shipments API isolated from branch/transfers sources.
     const effectiveUrl=new URL(parsedBaseUrl.toString());
-    // delay_days=0 — يجلب جميع الطرود من يوم 0 حتى 300+ يوم تأخير
     const hasDelay=effectiveUrl.searchParams.getAll('delay_days').some(v=>String(v||'').trim()!=='');
     if(!hasDelay){
-      effectiveUrl.searchParams.set('delay_days','0');
+      effectiveUrl.searchParams.set('delay_days','2');
     }
     // per_page محذوف — قد يُسبب مشاكل مع بعض الـ APIs
-    const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'0'),10)||0;
+    const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
 
     // Delay sweep disabled — was sending 20+ sequential API requests causing page freeze.
