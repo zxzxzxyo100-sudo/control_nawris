@@ -17,11 +17,13 @@ function crm_pdo(): PDO
         return $pdo;
     }
 
-    $host = getenv('DB_HOST') ?: '127.0.0.1';
+    // ── Hostinger MySQL credentials ───────────────────────────────────────────
+    // غيّر هذه القيم لتطابق إعدادات قاعدة بياناتك على Hostinger
+    $host = getenv('DB_HOST') ?: 'localhost';
     $port = getenv('DB_PORT') ?: '3306';
-    $name = getenv('DB_NAME') ?: 'logistics_crm';
-    $user = getenv('DB_USER') ?: 'root';
-    $pass = getenv('DB_PASS') ?: '';
+    $name = getenv('DB_NAME') ?: 'u495355717_ZIDON';   // ← اسم قاعدة البيانات
+    $user = getenv('DB_USER') ?: 'u495355717_zxzxzxyol00'; // ← اسم المستخدم
+    $pass = getenv('DB_PASS') ?: 'ziDONA11';                    // ← كلمة المرور التي أنشأتها
 
     $dsn = sprintf(
         'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',

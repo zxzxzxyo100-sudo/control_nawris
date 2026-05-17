@@ -571,6 +571,9 @@ html.light .ct-card{background:#fff;border-color:var(--rim);box-shadow:var(--sha
 
 /* ── TABLE ── */
 .tw{overflow-x:auto;overflow-y:hidden;border-radius:var(--r);border:1px solid var(--rim2);-webkit-overflow-scrolling:touch;background:var(--bg2)}
+#api-tw{overflow-y:auto;height:clamp(320px,calc(100vh - 370px),740px);}
+#s-tw{overflow-y:auto;height:clamp(320px,calc(100vh - 440px),740px);}
+#api-tw thead th,#s-tw thead th{position:sticky;top:0;z-index:2;background:var(--bg2);}
 table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
 thead th{background:linear-gradient(to left,#f8fafc,#f1f5f9);padding:13px 16px;text-align:right;font-size:var(--fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:#475569;border-bottom:2px solid #e2e8f0;white-space:nowrap;font-family:var(--mono)}
 tbody td{padding:13px 16px;border-bottom:1px solid #e8eef5;color:#334155;white-space:nowrap;vertical-align:middle;transition:background .15s;font-family:var(--ar-font);font-size:var(--fs-sm)}
@@ -1082,7 +1085,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       <div class="seg" data-seg="late">🔴 متأخرة <span class="seg-n" id="sn-late">0</span></div>
     </div>
     <div class="fbar">
-      <input class="fi fi-grow" id="s-q" type="text" placeholder="🔍 بحث بالكود، العميل، المندوب..." oninput="renderShipments()">
+      <input class="fi fi-grow" id="s-q" type="text" placeholder="🔍 بحث بالكود، العميل، المندوب..." oninput="_dRShip()">
       <button class="btn btn-ghost btn-sm" onclick="resetAllFilters()" title="مسح كل الفلاتر">✕ مسح الفلاتر</button>
     </div>
     <div class="fbar" style="margin-top:6px;flex-wrap:wrap">
@@ -1134,7 +1137,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
         <span style="font-size:13px;font-weight:700">الطرود</span>
         <span class="badge b-red" id="s-cnt">0</span>
       </div>
-      <div class="tw">
+      <div class="tw" id="s-tw">
         <table>
           <thead>
           <tr>
@@ -1504,7 +1507,7 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
       </div>
       <div class="flt-drawer-body" style="width:100%;box-sizing:border-box">
         <p style="font-size:10px;color:var(--dim);line-height:1.5;margin:0">«كل التأخير» = تصنيف (حرج/تحذير/موعد). «أيام التأخير» = نطاق رقمي. يمكن الجمع بينهما لتضييق أدق.</p>
-        <input class="fi fi-grow" id="a-q" type="text" placeholder="🔍 كود، متجر، مستلم، مندوب، فرع، محافظة، مسند…" oninput="renderAPIShipments()" style="width:100%;min-width:0;box-sizing:border-box">
+        <input class="fi fi-grow" id="a-q" type="text" placeholder="🔍 كود، متجر، مستلم، مندوب، فرع، محافظة، مسند…" oninput="_dRAPI()" style="width:100%;min-width:0;box-sizing:border-box">
         <select class="fi" id="a-fd" onchange="renderAPIShipments()" style="min-width:120px">
           <option value="">كل التأخير</option>
           <option value="critical">🔴 +8 يوم</option>
@@ -2201,11 +2204,12 @@ body:has(#staging-banner) #login-screen{padding-top:32px}
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-const SB = 'https://kdlcoqcwqlxawejxfjss.supabase.co';
-const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbGNvcWN3cWx4YXdlanhmanNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MzU0NzIsImV4cCI6MjA5MDIxMTQ3Mn0.rlxHDrJagHk8EiPsdVPy62bDicPXhwjZn0g6cdVQkv0';
+const SB = 'https://nawris.nawras-ly.com/api';
+const SK = 'NAWRIS_SECRET_2025';
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 const LOG_API_BASE = 'api';
-const MANUAL_EXCEL_SHIPMENTS_ONLY = true; // keep main shipments table sourced only from manual Excel upload
+const MANUAL_EXCEL_SHIPMENTS_ONLY = true;
+const DB_DISABLED = true; // ← قاعدة البيانات معطّلة — يعمل من الـ API الخارجي + localStorage فقط // keep main shipments table sourced only from manual Excel upload
 
 /** إعدادات عمولات الطرود (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
 let CommissionCfg = { unitBase: 100, repPercent: 5, branchPercent: 2, ratioMin: 0.25, ratioMax: 1 };
@@ -2399,16 +2403,17 @@ function closeSidebar(){
 // SUPABASE
 // ══════════════════════════════════════════
 async function sb(table,method='GET',body=null,params=''){
+  if(DB_DISABLED)return method==='GET'?[]:true;
   const r=await fetch(`${SB}/rest/v1/${table}${params}`,{method,headers:H,body:body?JSON.stringify(body):null});
   if(!r.ok){const e=await r.text();throw new Error(e);}
   return method==='GET'?r.json():true;
 }
 async function sbAll(table,baseParams=''){
+  if(DB_DISABLED)return [];
   let all=[];
   const batchSize=1000;
   for(let page=0;;page++){
     const url=new URL(`${SB}/rest/v1/${table}`);
-    // Parse existing params
     if(baseParams){
       const qIdx=baseParams.indexOf('?');
       const paramStr=qIdx>=0?baseParams.substring(qIdx+1):baseParams;
@@ -2427,12 +2432,14 @@ async function sbAll(table,baseParams=''){
   return all;
 }
 async function sbUp(table,data,conflict='merge-duplicates'){
+  if(DB_DISABLED)return true;
   const prefer=conflict==='ignore'?'resolution=ignore-duplicates,return=minimal':'resolution=merge-duplicates,return=minimal';
   const r=await fetch(`${SB}/rest/v1/${table}`,{method:'POST',headers:{...H,'Prefer':prefer},body:JSON.stringify(Array.isArray(data)?data:[data])});
   if(!r.ok){const e=await r.text();throw new Error(e);}
   return true;
 }
 async function sbCount(table){
+  if(DB_DISABLED)return 0;
   const r=await fetch(`${SB}/rest/v1/${table}?select=id`,{headers:{...H,'Prefer':'count=exact','Range':'0-0'}});
   const cr=r.headers.get('content-range');
   if(cr){const m=cr.match(/\/(\d+)/);if(m)return parseInt(m[1]);}
@@ -3461,43 +3468,52 @@ async function saveCR(sid,result,note){
   const trackingCode=String(s?.tracking_code||sidAsCode||'').trim();
   const payload={shipment_id:sidStr,tracking_code:trackingCode,result:result||'',note:note||'',updated_by:userName};
   try{
-    // Find existing by shipment_id OR tracking_code to keep same parcel in one row
     const existing=contact_results_db.find(r=>
       String(r.shipment_id||'')===sidStr
-      || (trackingCode&&String(r.tracking_code||'')===trackingCode)
+      ||(trackingCode&&String(r.tracking_code||'')===trackingCode)
     );
-    let r;
     const prevResult=String(existing?.result||getCR(sidStr).result||'').trim();
+
+    if(DB_DISABLED){
+      // ── localStorage فقط — بدون قاعدة بيانات ──────────────────────────────
+      if(existing){existing.shipment_id=sidStr;existing.tracking_code=trackingCode;existing.result=result;existing.note=note;existing.updated_by=userName;}
+      else contact_results_db.push(payload);
+      _crMap=null; // أعد بناء الـ cache في المرة القادمة
+      try{
+        localStorage.setItem('cr_'+sidStr,String(result||''));
+        localStorage.setItem('note_'+sidStr,String(note||''));
+        if(trackingCode){
+          localStorage.setItem('cr_'+trackingCode,String(result||''));
+          localStorage.setItem('note_'+trackingCode,String(note||''));
+        }
+      }catch(_){}
+      if(s)writeCrSnap(sid,s);
+      if(result==='contacted'&&prevResult!=='contacted')registerMonthlyContacted(userName,trackingCode||sidStr);
+      await logPackageAction({packageId:trackingCode||sidStr,actionType:'follow_up_update',status:result||'none'});
+      return true;
+    }
+
+    let r;
     if(existing){
-      // Record exists → PATCH by id (most reliable)
       r=await fetch(`${SB}/rest/v1/contact_results?id=eq.${encodeURIComponent(String(existing.id||''))}`,{
-        method:'PATCH',
-        headers:{...H,'Prefer':'return=minimal'},
+        method:'PATCH',headers:{...H,'Prefer':'return=minimal'},
         body:JSON.stringify({shipment_id:sidStr,tracking_code:trackingCode,result:result||'',note:note||'',updated_by:userName})
       });
     } else {
-      // No record yet → try INSERT, fallback to PATCH if duplicate
       r=await fetch(`${SB}/rest/v1/contact_results`,{
-        method:'POST',
-        headers:{...H,'Prefer':'return=minimal'},
-        body:JSON.stringify(payload)
+        method:'POST',headers:{...H,'Prefer':'return=minimal'},body:JSON.stringify(payload)
       });
-      // If INSERT hit unique constraint (23505), fall back to PATCH
       if(!r.ok){
         const errTxt=await r.text();
         if(errTxt.includes('23505')||errTxt.includes('duplic')){
           r=await fetch(`${SB}/rest/v1/contact_results?tracking_code=eq.${encodeURIComponent(trackingCode)}`,{
-            method:'PATCH',
-            headers:{...H,'Prefer':'return=minimal'},
+            method:'PATCH',headers:{...H,'Prefer':'return=minimal'},
             body:JSON.stringify({shipment_id:sidStr,tracking_code:trackingCode,result:result||'',note:note||'',updated_by:userName})
           });
-        } else {
-          toast('خطأ في حفظ النتيجة: '+errTxt.substring(0,60),'e');return false;
-        }
+        } else {toast('خطأ في حفظ النتيجة: '+errTxt.substring(0,60),'e');return false;}
       }
     }
     if(!r.ok){const e=await r.text();toast('خطأ في حفظ النتيجة: '+e.substring(0,60),'e');return false;}
-    // Update local cache
     if(existing){existing.shipment_id=sidStr;existing.tracking_code=trackingCode;existing.result=result;existing.note=note;existing.updated_by=userName;}
     else contact_results_db.push(payload);
     try{
@@ -3509,14 +3525,8 @@ async function saveCR(sid,result,note){
       }
     }catch(_){}
     if(s)writeCrSnap(sid,s);
-    if(result==='contacted'&&prevResult!=='contacted'){
-      registerMonthlyContacted(userName,trackingCode||sidStr);
-    }
-    await logPackageAction({
-      packageId:trackingCode||sidStr,
-      actionType:'follow_up_update',
-      status:result||'none'
-    });
+    if(result==='contacted'&&prevResult!=='contacted')registerMonthlyContacted(userName,trackingCode||sidStr);
+    await logPackageAction({packageId:trackingCode||sidStr,actionType:'follow_up_update',status:result||'none'});
     return true;
   }catch(e){console.error('saveCR exception:',e);toast('خطأ في الحفظ','e');return false;}
 }
@@ -4569,104 +4579,23 @@ function renderShipments(){
     return sSortDir==='asc'?cmp:-cmp;
   });
   updateShipSortHeaderIcons();
-  const total=list.length,totalP=Math.max(1,Math.ceil(total/PER));
-  if(sPage>totalP)sPage=1;
-  const page=list.slice((sPage-1)*PER,sPage*PER);
-  document.getElementById('s-cnt').textContent=total+' طرد';
-  const tbody=document.getElementById('s-tbody');
-  if(!page.length){tbody.innerHTML=`<tr><td colspan="17" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج</td></tr>`;buildPgn(total,totalP);return;}
-  tbody.innerHTML=page.map((s,idx)=>{
-    const sid=String(s.id).replace(/"/g,'&quot;');
-    const crData=getCR(s.id);
-    const note=(crData.note||localStorage.getItem('note_'+s.id)||'').replace(/"/g,'&quot;');
-    const att=parseInt(localStorage.getItem('att_'+s.id)||'0');
-    const lct=localStorage.getItem('lct_'+s.id)||'';
-    const cResult=crData.result;
-    // Enrich driver phone from drivers_db if missing
-    const drv=drivers_db.find(d=>d.id===s.driver_id || d.name===s.driver_name)||{};
-    const drvPhone=drv.phone||s.driver_phone||'';
-    const brn=branches.find(b=>b.id===s.current_branch_id || b.name===s.branch_name)||{};
-    const respBranch=s.responsible_branch||localStorage.getItem('rb_'+s.id)||localStorage.getItem('rb_'+s.tracking_code)||'';
-    return`<tr class="pr" data-sid="${sid}" style="${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
-      <td onclick="event.stopPropagation()"><input type="checkbox" data-sid="${sid}" ${checked.has(String(s.id))?'checked':''} onchange="this.checked?checked.add(this.dataset.sid):checked.delete(this.dataset.sid)"></td>
-      <td style="color:var(--dim);font-size:10px;text-align:center">${(sPage-1)*PER+idx+1}</td>
-      <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
-      <td style="color:var(--white);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis" title="${s.customer_name||''}">${s.customer_name||'—'}</td>
-      <td style="font-family:var(--mono);font-size:11px">${s.customer_phone&&s.customer_phone!=='—'?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
-      <td style="color:var(--white)">${s.driver_name||'—'}${drvPhone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${drvPhone}</div>`:''}</td>
-      <td style="font-size:11px;color:var(--mute)">${brn.name||s.branch_name||'—'}</td>
-      <td style="font-size:11px;color:var(--pale)">${respBranch||'—'}</td>
-      <td>${dBadge(s.delay_days)}</td>
-      <td>${stBadge(s.status)}</td>
-      <td onclick="event.stopPropagation()"><select class="cr-sel" data-sid="${sid}" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--white);font-family:var(--font)">
-        <option value="" ${!cResult?'selected':''}>—</option>
-        <option value="solved" ${cResult==='solved'?'selected':''}>✅ تم الحل</option>
-        <option value="contacted" ${cResult==='contacted'?'selected':''}>📞 تم التواصل</option>
-        <option value="no_answer" ${cResult==='no_answer'?'selected':''}>📵 لا يرد</option>
-        <option value="pending" ${cResult==='pending'?'selected':''}>⏳ قيد المتابعة</option>
-      </select></td>
-      <td style="font-size:10px;color:var(--mute);white-space:nowrap">${lct||ctBadge(s.id)}</td>
-      <td style="text-align:center"><span class="badge ${att>2?'b-red':att>0?'b-gold':'b-dim'}" style="font-family:var(--mono)">${att}</span></td>
-      <td onclick="event.stopPropagation()"><input type="text" value="${note}" placeholder="ملاحظة..." data-sid="${sid}" class="note-inp" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--white);font-family:var(--font);width:110px"></td>
-      <td onclick="event.stopPropagation()"><button class="btn btn-wa btn-sm" data-a="wa" data-sid="${sid}" style="font-size:11px;padding:4px 9px">💬 واتساب</button></td>
-      <td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-sm" data-a="save" data-sid="${sid}" style="font-size:11px;padding:4px 9px">💾</button></td>
-      <td onclick="event.stopPropagation()"><button class="btn btn-red btn-sm" data-a="del" data-sid="${sid}" style="font-size:11px;padding:4px 9px">🗑️</button></td>
-    </tr>`;
-  }).join('');
-  if(!tbody._del){
-    tbody._del=true;
-    tbody.addEventListener('click',async e=>{
-      const btn=e.target.closest('[data-a]');
-      const row=e.target.closest('.pr');
-      if(btn){
-        e.stopPropagation();
-        const sid=btn.dataset.sid,a=btn.dataset.a;
-        if(a==='wa'){
-          const att=parseInt(localStorage.getItem('att_'+sid)||'0')+1;
-          localStorage.setItem('att_'+sid,att);
-          localStorage.setItem('lct_'+sid,new Date().toLocaleString('ar-LY',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}));
-          doWA(sid);
-        } else if(a==='save'){
-          const ni=row?.querySelector('.note-inp');
-          const cr=row?.querySelector('.cr-sel');
-          const noteVal=ni?ni.value:'';
-          const crVal=cr?cr.value:'';
-          const ok=await saveCR(sid,crVal,noteVal);
-          if(ok){
-          markCt(sid);
-          btn.textContent='✅';setTimeout(()=>btn.textContent='💾',1500);
-          }
-        } else if(a==='del'){
-          if(!confirm('هل تريد حذف هذا الطرد؟'))return;
-          deleteShipment(sid);
-        } else if(a==='detail') openDetail(sid);
-        else if(a==='return') openRetModal(sid);
-      } else if(row&&!e.target.closest('input')&&!e.target.closest('textarea')&&!e.target.closest('select')) openDetail(row.dataset.sid);
-    });
-    tbody.addEventListener('change',async e=>{
-      const cr=e.target.closest('.cr-sel');
-      if(cr){
-        const row=cr.closest('.pr');
-        const ni=row?.querySelector('.note-inp');
-        await saveCR(cr.dataset.sid,cr.value,ni?ni.value:getCR(cr.dataset.sid).note);
-      }
-    });
-  }
-  buildPgn(total,totalP);
+  document.getElementById('s-cnt').textContent=list.length+' طرد';
+  const _swrap=document.getElementById('s-tw');
+  if(_swrap)_swrap.scrollTop=0;
+  _sVS.rows=list;
+  _initShipVS();
+  _sVSPaint();
+  const _spgi=document.getElementById('s-pginfo');
+  if(_spgi)_spgi.textContent=list.length>0?list.length+' طرد':'لا نتائج';
 }
 function toggleAll(el){document.querySelectorAll('#s-tbody input[type=checkbox]').forEach(cb=>{cb.checked=el.checked;el.checked?checked.add(cb.dataset.sid):checked.delete(cb.dataset.sid);});}
-function buildPgn(total,totalP){
-  const info=document.getElementById('s-pginfo'),pgn=document.getElementById('s-pgn');
-  if(total>0){const s=(sPage-1)*PER+1,e=Math.min(sPage*PER,total);info.textContent=`${s}–${e} من ${total} طرد`;}
-  else info.textContent='لا نتائج';
-  pgn.innerHTML='';
-  for(let i=Math.max(1,sPage-2);i<=Math.min(totalP,sPage+2);i++){
-    const b=document.createElement('button');
-    b.className='pgbtn'+(i===sPage?' on':'');b.textContent=i;
-    b.onclick=()=>{sPage=i;renderShipments();};pgn.appendChild(b);
-  }
+function buildPgn(total){
+  const info=document.getElementById('s-pginfo');
+  if(info)info.textContent=total>0?total+' طرد':'لا نتائج';
+  const pgn=document.getElementById('s-pgn');
+  if(pgn)pgn.innerHTML='';
 }
-function changePerPage(val){PER=parseInt(val)||25;sPage=1;renderShipments();}
+function changePerPage(val){}
 
 const BO_ORDER_BASE='https://backoffice.nawris.algoriza.com/orders/';
 function boEscHtml(t){return String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
@@ -7042,62 +6971,124 @@ function sendToBranchManager(sid){
 // STAFF TRACKER
 // ══════════════════════════════════════════
 async function renderStaff(){
-  // Always refresh contact results from Supabase so manager sees latest employee activity
-  try{
-    const fresh=await sb('contact_results','GET',null,'?select=*&order=shipment_id');
-    if(Array.isArray(fresh)){contact_results_db=fresh;_crMap=null;}
-  }catch(e){console.warn('CR refresh failed:',e);}
+  // ── جلب contact_results في الخلفية — لا يوقف الرسم ──────────────────────
+  // يُجلب فقط إذا مضى أكثر من 45 ثانية على آخر جلب
+  const _now=Date.now();
+  if(!DB_DISABLED&&_now-_crFetchedAt>45000){
+    _crFetchedAt=_now;
+    sb('contact_results','GET',null,'?select=*&order=shipment_id').then(fresh=>{
+      if(Array.isArray(fresh)){contact_results_db=fresh;_crMap=null;}
+    }).catch(e=>console.warn('CR refresh failed:',e));
+  }
 
   let serverStaffBoard=null;
-  // staff_leaderboard.php غير موجود على هذا السيرفر — نستخدم الحساب المحلي مباشرة
-
   const crLabels={delivered:'✅ تم التسليم',solved:'✅ تم الحل',contacted:'📞 تم التواصل',no_answer:'📵 لا يرد',pending:'⏳ قيد المتابعة'};
   const assignments=getAPIAssignments();
 
-  // Rebuild live package rows (API only) for employee performance metrics.
-  const apiRows=apiShipments.map(s=>{
+  // ── Init empStats ─────────────────────────────────────────────────────────
+  const empStats={};
+  Object.entries(USERS).forEach(([,u])=>{
+    if(!u||u.status==='inactive')return;
+    empStats[u.name]={name:u.name,role:u.role,followed:0,solved:0,contacted:0,no_answer:0,pending:0,items:[]};
+  });
+
+  // ── دورة واحدة على apiShipments تجمع كل الحسبات دفعة واحدة ───────────────
+  // كانت 5 دورات منفصلة — أصبحت دورة واحدة: توفير ~5× في وقت المعالجة
+  const _apiRows=[];
+  const capMap={};
+  const assignEmpStats={};
+  const presentCodes=new Set();
+  let totalFollowed=0,totalSolved=0,totalContacted=0,totalNoAnswer=0,totalPending=0,totalNone=0;
+  let assignedCount=0;
+
+  for(const s of apiShipments){
     const cr=getCR(s.id);
     const effectiveResult=isProcessedShipmentForStaff(s)?'solved':(cr.result||'');
     const rawBy=String(cr.by||(assignments[s.tracking_code]||'')).trim();
     const canon=resolveCanonicalActiveEmployeeName(rawBy)||resolveCanonicalActiveEmployeeName(assignments[s.tracking_code]||'');
-    return{
-      code:s.tracking_code||'—',
-      crResult:effectiveResult,
-      crNote:cr.note||'',
-      crBy:canon||'—',
-      src:'API'
-    };
-  });
-  let packageRows=[...apiRows];
-  // Ensure manager sees today's employee work even if API parcel list
-  // is not yet refreshed on this device.
+    const cl=cls(s.delay_days);
+
+    presentCodes.add(String(s.tracking_code||''));
+
+    // → صفوف الطرود
+    _apiRows.push({code:s.tracking_code||'—',crResult:effectiveResult,crNote:cr.note||'',crBy:canon||'—',src:'API'});
+
+    // → الإجماليات
+    if(effectiveResult){
+      totalFollowed++;
+      if(effectiveResult==='solved')totalSolved++;
+      else if(effectiveResult==='contacted')totalContacted++;
+      else if(effectiveResult==='no_answer')totalNoAnswer++;
+      else if(effectiveResult==='pending')totalPending++;
+    }else totalNone++;
+
+    // → إحصاء الموظفين
+    if(canon&&canon!=='—'&&empStats[canon]){
+      if(effectiveResult){
+        empStats[canon].followed++;
+        if(effectiveResult==='solved')empStats[canon].solved++;
+        else if(effectiveResult==='contacted')empStats[canon].contacted++;
+        else if(effectiveResult==='no_answer')empStats[canon].no_answer++;
+        else if(effectiveResult==='pending')empStats[canon].pending++;
+      }
+      empStats[canon].items.push({code:s.tracking_code||'—',result:effectiveResult||'',note:cr.note||'',src:'API'});
+    }
+
+    // → أداء المناديب
+    const capKey=s.captain||'غير محدد';
+    if(!capMap[capKey])capMap[capKey]={name:capKey,total:0,critical:0,warning:0,ok:0,returned:0,branch:s.current_branch||''};
+    capMap[capKey].total++;
+    if(cl==='critical')capMap[capKey].critical++;
+    else if(cl==='warning')capMap[capKey].warning++;
+    else capMap[capKey].ok++;
+    if(s.status==='returned')capMap[capKey].returned++;
+
+    // → ملخص الإسناد
+    const assignedEmp=assignments[s.tracking_code];
+    if(assignedEmp&&isAssignableEmployeeName(assignedEmp)){
+      assignedCount++;
+      if(!assignEmpStats[assignedEmp])assignEmpStats[assignedEmp]={name:assignedEmp,total:0,crit:0,warn:0,done:0,pending:0,noAnswer:0};
+      assignEmpStats[assignedEmp].total++;
+      if(cl==='critical')assignEmpStats[assignedEmp].crit++;
+      else if(cl==='warning')assignEmpStats[assignedEmp].warn++;
+      const r2=cr.result;
+      if(r2==='solved'||r2==='contacted')assignEmpStats[assignedEmp].done++;
+      else if(r2==='pending')assignEmpStats[assignedEmp].pending++;
+      else if(r2==='no_answer')assignEmpStats[assignedEmp].noAnswer++;
+    }
+  }
+
+  // ── طرود اليوم من contact_results غير موجودة في API الحالية ─────────────
   const todayIso=getTodayISO();
-  const presentCodes=new Set(packageRows.map(r=>String(r.code||'').trim()).filter(Boolean));
+  let packageRows=_apiRows;
   const todayCR=(Array.isArray(contact_results_db)?contact_results_db:[]).filter(r=>{
     const code=String(r.tracking_code||'').trim();
     if(!code||presentCodes.has(code))return false;
     const ts=String(r.updated_at||r.created_at||'').trim();
     return ts&&ts.slice(0,10)===todayIso;
-  }).map(r=>({
-    code:String(r.tracking_code||'').trim()||'—',
-    crResult:r.result||'',
-    crNote:r.note||'',
-    crBy:resolveCanonicalActiveEmployeeName(r.updated_by)||'—',
-    src:'API'
-  }));
-  if(todayCR.length)packageRows=packageRows.concat(todayCR);
-
-  // Count only from current API package rows
-  let totalFollowed=0,totalSolved=0,totalContacted=0,totalNoAnswer=0,totalPending=0,totalNone=0;
-  packageRows.forEach(p=>{
-    if(p.crResult){
+  }).map(r=>{
+    const emp=resolveCanonicalActiveEmployeeName(r.updated_by)||'—';
+    const res=r.result||'';
+    if(res){
       totalFollowed++;
-      if(p.crResult==='solved')totalSolved++;
-      else if(p.crResult==='contacted')totalContacted++;
-      else if(p.crResult==='no_answer')totalNoAnswer++;
-      else if(p.crResult==='pending')totalPending++;
-    } else totalNone++;
+      if(res==='solved')totalSolved++;
+      else if(res==='contacted')totalContacted++;
+      else if(res==='no_answer')totalNoAnswer++;
+      else if(res==='pending')totalPending++;
+    }else totalNone++;
+    if(emp&&emp!=='—'&&empStats[emp]){
+      if(res){
+        empStats[emp].followed++;
+        if(res==='solved')empStats[emp].solved++;
+        else if(res==='contacted')empStats[emp].contacted++;
+        else if(res==='no_answer')empStats[emp].no_answer++;
+        else if(res==='pending')empStats[emp].pending++;
+      }
+      empStats[emp].items.push({code:String(r.tracking_code||'').trim()||'—',result:res,note:r.note||'',src:'API'});
+    }
+    return{code:String(r.tracking_code||'').trim()||'—',crResult:res,crNote:r.note||'',crBy:emp,src:'API'};
   });
+  if(todayCR.length)packageRows=[...packageRows,...todayCR];
 
   const combinedTotal=packageRows.length;
 
@@ -7224,7 +7215,7 @@ async function renderStaff(){
     <div style="background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--mute);font-family:var(--mono)">${totalNone}</div><div style="font-size:11px;color:var(--mute)">بدون متابعة</div></div>
   `;
 
-  // ── API Captains Performance ──
+  // ── API Captains Performance (capMap بُني في الدورة الواحدة أعلاه) ────────
   const capEl=document.getElementById('staff-api-captains');
   const capTotal=document.getElementById('staff-api-total');
   if(capEl){
@@ -7233,17 +7224,6 @@ async function renderStaff(){
       if(capTotal)capTotal.textContent='0 طرد';
     } else {
       if(capTotal)capTotal.textContent=apiShipments.length+' طرد';
-      const capMap={};
-      apiShipments.forEach(s=>{
-        const k=s.captain||'غير محدد';
-        if(!capMap[k])capMap[k]={name:k,total:0,critical:0,warning:0,ok:0,returned:0,branch:s.current_branch||''};
-        capMap[k].total++;
-        const cl=cls(s.delay_days);
-        if(cl==='critical')capMap[k].critical++;
-        else if(cl==='warning')capMap[k].warning++;
-        else capMap[k].ok++;
-        if(s.status==='returned')capMap[k].returned++;
-      });
       const sorted=Object.values(capMap).sort((a,b)=>b.critical-a.critical||b.total-a.total);
       capEl.innerHTML=`<div class="tw"><table>
         <thead><tr><th>المندوب</th><th>الإجمالي</th><th style="color:var(--red)">🔴 حرج</th><th style="color:var(--gold)">🟡 تحذير</th><th style="color:var(--grn)">🟢 في الموعد</th><th style="color:var(--orn)">↩️ مرتجع</th><th>نسبة التسليم</th></tr></thead>
@@ -7264,29 +7244,11 @@ async function renderStaff(){
     }
   }
 
-  // ── Employee Assignment Summary ──
+  // ── Employee Assignment Summary (assignEmpStats بُني في الدورة الواحدة) ───
   const assignStatsEl=document.getElementById('staff-assign-stats');
   if(assignStatsEl){
-    const a=getAPIAssignments();
-    const empStats={};
-    Object.values(USERS).forEach(u=>{
-      if(u.role==='manager')return;
-      empStats[u.name]={name:u.name,total:0,crit:0,warn:0,done:0,pending:0,noAnswer:0};
-    });
-    apiShipments.forEach(s=>{
-      const emp=a[s.tracking_code];
-      if(!emp||!isAssignableEmployeeName(emp))return;
-      if(!empStats[emp])empStats[emp]={name:emp,total:0,crit:0,warn:0,done:0,pending:0,noAnswer:0};
-      empStats[emp].total++;
-      if(cls(s.delay_days)==='critical')empStats[emp].crit++;
-      else if(cls(s.delay_days)==='warning')empStats[emp].warn++;
-      const cr=getCR(s.id);
-      if(cr.result==='solved'||cr.result==='contacted')empStats[emp].done++;
-      else if(cr.result==='pending')empStats[emp].pending++;
-      else if(cr.result==='no_answer')empStats[emp].noAnswer++;
-    });
-    const rows=Object.values(empStats).filter(e=>e.total>0&&isAssignableEmployeeName(e.name)).sort((a,b)=>b.total-a.total);
-    const unassigned=apiShipments.filter(s=>!a[s.tracking_code]).length;
+    const unassigned=apiShipments.length-assignedCount;
+    const rows=Object.values(assignEmpStats).filter(e=>e.total>0&&isAssignableEmployeeName(e.name)).sort((a,b)=>b.total-a.total);
     if(!rows.length&&!unassigned){
       assignStatsEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--mute)">لم يتم توزيع الطرود بعد — اذهب لتبويب طرود API ← توزيع الطرود</div>';
     } else {
@@ -7540,16 +7502,16 @@ function renderStaffShipments(){
       <td class="mob-hide"><span style="font-size:11px;font-weight:600;color:${s.crBy&&s.crBy!=='—'?'var(--grn)':'var(--dim)'}">${s.crBy&&s.crBy!=='—'?'👤 '+s.crBy:'—'}</span></td>
     </tr>`;
   }).join('');
-  tbody.querySelectorAll('.sf-log-row').forEach(row=>{
-    row.addEventListener('click',ev=>{
-      const t=ev.target;
-      if(t&&t.closest&&t.closest('a'))return;
-      const pid=row.getAttribute('data-package-id')||'';
-      const pcode=row.getAttribute('data-package-code')||'';
-      const pstore=row.getAttribute('data-package-store')||'';
-      openPackageLogsModal(pid,pcode,pstore);
+  // listener واحد على tbody بدل listener لكل صف — يُضاف مرة واحدة فقط
+  if(!tbody._sfDlg){
+    tbody._sfDlg=true;
+    tbody.addEventListener('click',ev=>{
+      if(ev.target.closest('a'))return;
+      const row=ev.target.closest('.sf-log-row');
+      if(!row)return;
+      openPackageLogsModal(row.dataset.packageId||'',row.dataset.packageCode||'',row.dataset.packageStore||'');
     });
-  });
+  }
 }
 function setStaffSort(key){
   if(sfSortKey===key)sfSortDir=sfSortDir==='asc'?'desc':'asc';
@@ -7657,6 +7619,7 @@ try{apiProcessedCodes=new Set(JSON.parse(sessionStorage.getItem('api_processed_c
 
 let sfPage=1;
 let sfSortKey='delay', sfSortDir='desc';
+let _crFetchedAt=0; // timestamp of last contact_results fetch — prevents blocking re-fetch on every tab switch
 
 function resetAPIFilters(){
   ['a-q','a-fd','a-fst','a-fdays','a-fcap','a-fbr','a-fgov','a-femp'].forEach(id=>{
@@ -7816,14 +7779,15 @@ function reconcileApiProcessedFromStatus(nextShipments){
 }
 
 let _apiFetchInProgress=false;
-let _apiFetchController=null; // AbortController للجلب الحالي
+let _apiFetchController=null;
+let _apiFetchGen=0; // incremented on every new fetch; stale processing loops compare against this to bail early
 async function fetchAPIShipments(){
-  // إلغاء أي جلب سابق لم ينته
   if(_apiFetchController){try{_apiFetchController.abort();}catch(_){}}
   if(_apiFetchInProgress){
-    // انتظر 300ms حتى ينتهي الجلب السابق من الإغلاق
     await new Promise(r=>setTimeout(r,300));
+    if(_apiFetchInProgress)return; // still running after wait → bail, don't interleave
   }
+  const myGen=++_apiFetchGen; // capture this call's generation
   _apiFetchController=new AbortController();
   _apiFetchInProgress=true;
   try{window._ctDischargeBackend=null;}catch(_){}
@@ -8211,22 +8175,52 @@ async function fetchAPIShipments(){
       return s;
     }
 
-    // ── معالجة تدريجية على دفعات — تمنع تجميد المتصفح ──
-    const PROC_CHUNK=50; // 50 سجل كل دفعة
+    // ── SINGLE-PASS PROCESSING ────────────────────────────────────────────────
+    // Build drivers lookup index ONCE before the loop (O(d), not O(n×d))
+    const _dNorm=(v)=>normalizeIdentityText(v).replace(/\s+/g,' ').trim();
+    const _dByExact={},_dByCanonical={},_dByFirst={},_dByLast={};
+    drivers_db.forEach(d=>{
+      if(!d?.name)return;
+      const raw=String(d.name).trim();if(!raw)return;
+      _dByExact[raw]=d;
+      const can=_dNorm(raw);if(!can)return;
+      if(!_dByCanonical[can])_dByCanonical[can]=[];
+      _dByCanonical[can].push(d);
+      const pts=can.split(/\s+/).filter(Boolean);
+      if(pts[0]){if(!_dByFirst[pts[0]])_dByFirst[pts[0]]=[];_dByFirst[pts[0]].push(d);}
+      const last=pts[pts.length-1];
+      if(last&&last!==pts[0]){if(!_dByLast[last])_dByLast[last]=[];_dByLast[last].push(d);}
+    });
+    const _pickDrv=(arr)=>Array.isArray(arr)?(arr.find(d=>normPhone(d?.phone||''))||arr[0]||null):null;
+
+    // Load previous status snapshot for status-change reconciliation
+    let _prevSnap={};
+    try{_prevSnap=JSON.parse(sessionStorage.getItem('api_status_snapshot')||'{}')||{};}catch(_){_prevSnap={};}
+    const _nextSnap={};
+
+    // Prepare snapshot cache (will be written deferred)
+    const _apiCache=_getApiProcessedSnapshotCache();
+    const _snapAt=Date.now();
+    const apiCurrentCodes=new Set();
+
+    // Show chunked-processing progress bar
     const progWrap=document.getElementById('api-progress-wrap');
     const progBar=document.getElementById('api-progress-bar');
     const progPct=document.getElementById('api-progress-pct');
     const progLbl=document.getElementById('api-progress-label');
     if(progWrap)progWrap.style.display='block';
 
-    const seen2=new Set();
+    // Map<tracking_code, shipment_object>: .set() overwrites any prior entry with the same key in O(1),
+    // making deduplication unconditional regardless of how many times the same code appears in rawData.
+    const _apiShipMap=new Map();
     apiShipments=[];
     const fetchedAt=new Date().toISOString();
 
     const processRow=(r,i)=>{
       const code=pickTrackingCode(r,i);
-      if(!code||seen2.has(code))return;
-      seen2.add(code);
+      if(!code)return;
+
+      // ── field extraction ──────────────────────────────────────────────────
       const days=parseInt(r.delay_days||r[delayField]||r['عدد الايام المتأخرة']||r['التأخير']||0)||0;
       const clientName=String(r.client_name||r.customer_name||r.name||r['العميل']||r['المرسل']||'—').trim();
       const receiverName=String(r.receiver_name||r['اسم المستلم']||'').trim();
@@ -8239,98 +8233,108 @@ async function fetchAPIShipments(){
         r.owner_branch||r.accountable_branch||r.source_branch||r.branch_responsible||
         r['الفرع المسؤول']||r['الفرع المسئول']||r['فرع المسؤول']||r['فرع الاستلام']||''
       ).trim();
-      apiShipments.push({
+      const status=resolveStatus(r.status||r['الحالة']||'');
+
+      // ── captain phone lookup — O(1) map lookup, no separate pass ─────────
+      let captainPhone='';let drvId=undefined;
+      if(captain&&captain!=='—'){
+        const can=_dNorm(captain);
+        const drv=_dByExact[captain]||_pickDrv(_dByCanonical[can])||_pickDrv(_dByFirst[can.split(/\s+/)[0]])||_pickDrv(_dByLast[can.split(/\s+/).pop()]);
+        if(drv?.phone){captainPhone=normPhone(drv.phone)||drv.phone;drvId=drv.id;}
+      }
+
+      _apiShipMap.set(code,{
         id:'api_'+code,tracking_code:code,
         client_name:clientName,client_id:r.client_id||'',
         receiver_name:receiverName,customer_name:receiverName||clientName,customer_phone:receiverPhone,
-        captain,driver_name:captain,captain_phone:'',
-        current_branch:currentBranch,
-        responsible_branch:responsibleBranch,
+        captain,driver_name:captain,captain_phone:captainPhone,driver_id:drvId,
+        current_branch:currentBranch,responsible_branch:responsibleBranch,
         government:String(r.government||r['المحافظة']||'').trim(),
         area:String(r.area||r.region_name||r['المنطقة']||'').trim(),
         raw_status:r.status||r['الحالة']||'with_driver',
-        status:resolveStatus(r.status||r['الحالة']||''),
-        delay_days:days,source:'api',fetched_at:fetchedAt,
+        status,delay_days:days,source:'api',fetched_at:fetchedAt,
         return_transition_ms:pickReturnTransitionMsFromRow(r),
         assigned_staff:resolveApiShipmentAssignedStaff(r,code),
         rep_commission:null,branch_commission:null
       });
+
+      // ── merged: snapshot cache + code tracking ────────────────────────────
+      apiCurrentCodes.add(code);
+      _apiCache[code]={c:clientName,r:receiverName,p:receiverPhone,k:captain,b:currentBranch,g:String(r.government||r['المحافظة']||'').trim(),a:String(r.area||r.region_name||r['المنطقة']||'').trim(),d:days,t:status,at:_snapAt};
+      _nextSnap[code]=status;
+
+      // ── merged: status-change reconciliation ──────────────────────────────
+      const prevSt=String(_prevSnap[code]||'').trim().toLowerCase();
+      if((prevSt&&prevSt!==status)||status==='delivered'||status==='processed')apiProcessedCodes.add(code);
+      if(status==='returned')apiProcessedCodes.delete(code);
     };
 
-    // معالجة دفعة دفعة مع إعطاء المتصفح وقت للتنفس بين كل دفعة
-    for(let ci=0;ci<rawData.length;ci+=PROC_CHUNK){
-      const chunk=rawData.slice(ci,ci+PROC_CHUNK);
-      chunk.forEach((r,j)=>processRow(r,ci+j));
-      const pct=Math.min(100,Math.round((ci+PROC_CHUNK)/rawData.length*100));
-      if(progBar)progBar.style.width=pct+'%';
-      if(progPct)progPct.textContent=pct+'٪';
-      if(progLbl)progLbl.textContent=`معالجة ${Math.min(ci+PROC_CHUNK,rawData.length)} / ${rawData.length} طرد`;
-      if(el)el.textContent=`⏳ معالجة ${Math.min(ci+PROC_CHUNK,rawData.length)}/${rawData.length}...`;
-      await new Promise(r=>setTimeout(r,0)); // تنفس للمتصفح بين كل دفعة
-    }
-    if(progWrap)progWrap.style.display='none';
-    reconcileApiProcessedFromStatus(apiShipments);
-    // Clean stale returned codes from processed list so R-codes always show.
-    apiShipments.forEach(s=>{
-      if(s.status==='returned')apiProcessedCodes.delete(String(s.tracking_code||''));
-    });
-    persistApiProcessedCodes();
-
-    // ── Snapshot: track API shipment codes for processed detection (مضغوط + حد حجم — يتجنب امتلاء localStorage) ──
-    const apiCurrentCodes=new Set(apiShipments.map(s=>s.tracking_code).filter(Boolean));
-    const apiCache=_getApiProcessedSnapshotCache();
-    const _snapAt=Date.now();
-    apiShipments.forEach(s=>{
-      if(s.tracking_code)apiCache[s.tracking_code]={
-        c:s.client_name||'',r:s.receiver_name||'',p:s.customer_phone||'',
-        k:s.captain||'',b:s.current_branch||'',g:s.government||'',a:s.area||'',
-        d:s.delay_days||0,t:s.status||'',at:_snapAt
-      };
-    });
-    const prunedSnap=_pruneApiSnapshotCacheObject(apiCache,apiCurrentCodes,_MAX_API_SNAPSHOT_KEYS);
-    if(!safeLocalStorageSetForQuota('api_shipments_cache',JSON.stringify(prunedSnap),e=>console.warn('api_shipments_cache',e))){
-      try{ toast('تنبيه: تعذر حفظ لقطة «المعالجة» — مساحة المتصفح ممتلئة. من الإعدادات: امسح بيانات nawris أو افتح بمتصفح/وضع خاص.','w');}catch(_){}
-    }
-    try{
-      const prev=JSON.parse(localStorage.getItem('api_seen_codes')||'[]');
-      const pArr=Array.isArray(prev)?prev:[];
-      let merged=[...new Set([...pArr,...[...apiCurrentCodes]])];
-      if(merged.length>_MAX_API_SEEN_CODES) merged=merged.slice(-_MAX_API_SEEN_CODES);
-      if(!safeLocalStorageSetForQuota('api_seen_codes',JSON.stringify(merged),e=>console.warn('api_seen_codes',e))){
-        try{localStorage.setItem('api_seen_codes',JSON.stringify(merged.slice(-2000)));}catch(e2){console.warn('api_seen_codes fallback',e2);}
+    // ── Single synchronous pass — pure JS (no DOM), < 50ms for 5,000 records ──
+    // الـ setTimeout كان يضيف 63 وقفة لـ 5000 طرد — حذفناها وأبقينا yield واحدة في الأخير
+    if(progBar)progBar.style.width='0%';
+    for(let i=0;i<rawData.length;i++){
+      processRow(rawData[i],i);
+      // فحص الإلغاء + تحديث شريط التقدم كل 500 صف فقط (بدل كل 80)
+      if(i%500===0){
+        if(_apiFetchGen!==myGen)return;
+        const pct=Math.round(i/rawData.length*100);
+        if(progBar)progBar.style.width=pct+'%';
+        if(progPct)progPct.textContent=pct+'٪';
+        if(progLbl)progLbl.textContent=`معالجة ${i} / ${rawData.length} طرد`;
+        if(el)el.textContent=`⏳ معالجة ${i}/${rawData.length}...`;
       }
-    }catch(e0){ console.warn('api_seen merge',e0); }
-    _syncApiProcessedToSupabase();
+    }
+    if(_apiFetchGen!==myGen)return;
+    if(progBar)progBar.style.width='100%';
+    if(progPct)progPct.textContent='100٪';
+    // yield واحدة تُعطي المتصفح فرصة للتنفس قبل الرسم
+    await new Promise(r=>setTimeout(r,0));
 
-    // Always show full API data by default after each sync.
-    apiSeg='all';
-    document.querySelectorAll('[data-aseg]').forEach(el=>el.classList.toggle('on',el.dataset.aseg==='all'));
-    resetAPIFilters();
+    // Materialise the deduplicated array — Map guarantees one entry per tracking_code
+    apiShipments=Array.from(_apiShipMap.values());
+    if(progWrap)progWrap.style.display='none';
 
-    // ── MATCH CAPTAIN PHONES FROM drivers_db ──
-    enrichAPICaptainPhones();
-
-    // Log this fetch
-    const logEntry={time:new Date().toLocaleString('ar-LY'),count:apiShipments.length,status:'success'};
-    apiFetchLog.unshift(logEntry);
-    if(apiFetchLog.length>20)apiFetchLog=apiFetchLog.slice(0,20);
-    // مؤجل: كتابة localStorage الثقيلة لا تحجب الـ UI
+    // ── All heavy storage writes deferred — do not block first paint ─────────
     setTimeout(()=>{
+      try{sessionStorage.setItem('api_status_snapshot',JSON.stringify(_nextSnap));}catch(_){}
+      persistApiProcessedCodes();
+      const prunedSnap=_pruneApiSnapshotCacheObject(_apiCache,apiCurrentCodes,_MAX_API_SNAPSHOT_KEYS);
+      if(!safeLocalStorageSetForQuota('api_shipments_cache',JSON.stringify(prunedSnap),e=>console.warn('api_shipments_cache',e))){
+        try{toast('تنبيه: تعذر حفظ لقطة «المعالجة» — مساحة المتصفح ممتلئة.','w');}catch(_){}
+      }
+      try{
+        const prev=JSON.parse(localStorage.getItem('api_seen_codes')||'[]');
+        let merged=[...new Set([...(Array.isArray(prev)?prev:[]),...apiCurrentCodes])];
+        if(merged.length>_MAX_API_SEEN_CODES)merged=merged.slice(-_MAX_API_SEEN_CODES);
+        if(!safeLocalStorageSetForQuota('api_seen_codes',JSON.stringify(merged),e=>console.warn('api_seen_codes',e))){
+          try{localStorage.setItem('api_seen_codes',JSON.stringify(merged.slice(-2000)));}catch(e2){console.warn('api_seen_codes fallback',e2);}
+        }
+      }catch(e0){console.warn('api_seen merge',e0);}
+      _syncApiProcessedToSupabase();
       try{persistAPIShipmentsCache();}catch(_){}
       try{localStorage.setItem('api_fetch_log',JSON.stringify(apiFetchLog));}catch(_){}
     },500);
 
-    // Update UI
-    if(el)el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${apiShipments.length} طرد — ${new Date().toLocaleTimeString('ar-LY')}</span>`;
+    // Reset view to "all" segment
+    apiSeg='all';
+    document.querySelectorAll('[data-aseg]').forEach(el=>el.classList.toggle('on',el.dataset.aseg==='all'));
+    resetAPIFilters();
+
+    // Update status indicators immediately
+    const _total=apiShipments.length;
+    if(el)el.innerHTML=`<span style="color:var(--grn)">✅ تم جلب ${_total} طرد — ${new Date().toLocaleTimeString('ar-LY')}</span>`;
     if(dot)dot.className='sync-dot';
-    if(stEl)stEl.textContent='متصل — '+apiShipments.length+' طرد';
+    if(stEl)stEl.textContent='متصل — '+_total+' طرد';
     const apiLastFetchEl=document.getElementById('api-last-fetch');
     if(apiLastFetchEl)apiLastFetchEl.textContent='آخر جلب: '+new Date().toLocaleTimeString('ar-LY');
     const tbApiEl=document.getElementById('tb-api');
-    if(tbApiEl)tbApiEl.textContent=apiShipments.length;
+    if(tbApiEl)tbApiEl.textContent=_total;
 
-    // In manual Excel only mode, API fetch does not write into main shipments table.
-    // كتابة Supabase في الخلفية — لا تحجب الـ UI (كانت تستغرق 10-20 ثانية على iOS)
+    const logEntry={time:new Date().toLocaleString('ar-LY'),count:_total,status:'success'};
+    apiFetchLog.unshift(logEntry);
+    if(apiFetchLog.length>20)apiFetchLog=apiFetchLog.slice(0,20);
+
+    // Supabase sync in background (3s delay keeps it off the critical path)
     if(!MANUAL_EXCEL_SHIPMENTS_ONLY){
       setTimeout(async()=>{
         try{
@@ -8347,17 +8351,17 @@ async function fetchAPIShipments(){
       },3000);
     }
 
-    // الرسم الأساسي — فوري
-    renderAPIShipments();
-    updateAPIKPIs();
-    renderAPIFetchLog();
-    toast(`✅ ${apiShipments.length} طرد من API`,'s');
-    // العمليات الثقيلة — مؤجلة لإعطاء المتصفح فرصة للتنفس (مهم على الجوال)
-    setTimeout(()=>{try{updateKPIs();renderHome();}catch(_){}}, 120);
-    // loadReturns/loadTransfers تُعاد من apiShipments مباشرة — لا حاجة لاستدعاء API ثانٍ هنا
-    setTimeout(()=>{try{renderReturnsFromAPI();renderTransfersFromAPI();}catch(_){}}, 400);
-    setTimeout(()=>{try{renderStaff();}catch(_){}}, 1200);
-    setTimeout(()=>{try{refreshDischargeScoresFromBackend(apiShipments);}catch(_){}}, 2000);
+    // ── First paint via requestAnimationFrame — frees main thread for a browser paint cycle first ──
+    requestAnimationFrame(()=>{
+      renderAPIShipments();
+      updateAPIKPIs();
+      renderAPIFetchLog();
+      toast(`✅ ${_total} طرد من API`,'s');
+    });
+    setTimeout(()=>{try{updateKPIs();renderHome();}catch(_){}},120);
+    setTimeout(()=>{try{renderReturnsFromAPI();renderTransfersFromAPI();}catch(_){}},400);
+    setTimeout(()=>{try{renderStaff();}catch(_){}},1200);
+    setTimeout(()=>{try{refreshDischargeScoresFromBackend(apiShipments);}catch(_){}},2000);
 
   }catch(e){
     if(el)el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
@@ -8477,6 +8481,267 @@ function renderAPIFetchLog(){
       <span style="color:${l.status==='success'?'var(--grn)':'var(--red)'}">${l.count} طرد ${l.status==='success'?'✅':'❌'}</span>
     </div>
   `).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PERFORMANCE ENGINE — Virtual Scroll + Debounce + Targeted Row Patch
+// ══════════════════════════════════════════════════════════════════════════════
+function _debounce(fn,ms){let t;return function(){const a=arguments;clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
+const _dRAPI=_debounce(renderAPIShipments,300);
+const _dRShip=_debounce(renderShipments,300);
+
+let _apiHasRespBranch=false;
+
+// ── API TABLE: Row Builder ────────────────────────────────────────────────────
+function _buildAPIRow(s,idx,assignments,myName){
+  const sid=String(s.id).replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  const tc=String(s.tracking_code||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  const crData=getCR(s.tracking_code);
+  const note=(crData.note||'').replace(/"/g,'&quot;');
+  const cResult=crData.result;
+  const ph=s.customer_phone&&s.customer_phone!=='—'&&s.customer_phone!=='undefined';
+  const assignedTo=assignments[s.tracking_code]||'';
+  const assignCell=assignedTo
+    ?`<span class="badge b-grn" style="font-size:10px">${assignedTo}</span><button class="btn btn-ghost btn-sm" data-a="undo-assign" data-code="${tc}" style="font-size:10px;padding:2px 6px;margin-inline-start:4px">↩</button>`
+    :`<span class="badge b-dim" style="font-size:10px">⏳ غير مسند</span>`;
+  const rbDisp=_apiHasRespBranch?'':'none';
+  return`<tr class="pr" data-asid="${sid}" style="cursor:pointer;${assignedTo?'background:rgba(58,201,120,.08);':''}${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}${assignedTo===myName?';border-right:2px solid var(--pur)':''}">
+      <td><input type="checkbox" data-asid="${sid}" ${apiChecked.has(sid)?'checked':''} style="width:16px;height:16px"></td>
+      <td class="mob-hide" style="color:var(--dim);font-size:10px;text-align:center">${idx+1}</td>
+      <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
+      <td class="mob-hide">${assignCell}</td>
+      <td style="color:var(--white);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.client_name||''}">${s.client_name||'—'}</td>
+      <td class="mob-hide" style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.receiver_name||''}">${s.receiver_name||'—'}</td>
+      <td class="mob-hide" style="font-family:var(--mono);font-size:11px">${ph?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
+      <td class="mob-hide" style="color:var(--white);font-size:11px">${s.captain||'—'}${s.captain_phone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${s.captain_phone}</div>`:''}</td>
+      <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
+      <td class="mob-hide api-resp-branch-td" style="font-size:11px;color:var(--blu);display:${rbDisp}">${s.responsible_branch||'—'}</td>
+      <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
+      <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.area||'—'}</td>
+      <td>${stBadge(s.status)}</td>
+      <td>${dBadge(s.delay_days)}</td>
+      <td class="mob-hide"><select class="acr-sel" data-asid="${sid}" data-code="${tc}" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--white);font-family:var(--font)">
+        <option value="" ${!cResult?'selected':''}>—</option>
+        <option value="solved" ${cResult==='solved'?'selected':''}>✅ تم الحل</option>
+        <option value="contacted" ${cResult==='contacted'?'selected':''}>📞 تم التواصل</option>
+        <option value="no_answer" ${cResult==='no_answer'?'selected':''}>📵 لا يرد</option>
+        <option value="pending" ${cResult==='pending'?'selected':''}>⏳ قيد المتابعة</option>
+      </select></td>
+      <td class="mob-hide"><input type="text" value="${note}" placeholder="ملاحظة..." data-asid="${sid}" data-code="${tc}" class="anote-inp" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--white);font-family:var(--font);width:100px"></td>
+      <td style="white-space:nowrap"><div style="display:flex;gap:3px">${ph?`<button class="btn btn-wa btn-sm" data-a="wa-receiver" style="font-size:10px;padding:3px 6px" title="واتساب للمستلم">📱</button>`:''}${s.captain_phone?`<button class="btn btn-ghost btn-sm" data-a="wa-captain" style="font-size:10px;padding:3px 6px;border-color:var(--wa);color:var(--wa)" title="واتساب المندوب">🚗</button>`:''}</div></td>
+      <td class="mob-hide"><button class="btn btn-ghost btn-sm" data-a="save-row" style="font-size:11px;padding:4px 9px">💾</button></td>
+    </tr>`;
+}
+
+// ── API TABLE: Virtual Scroll State ──────────────────────────────────────────
+const _aVS={rows:[],rowH:38,BUF:10,rafId:null,_cal:false};
+
+function _aVSPaint(){
+  const wrap=document.getElementById('api-tw');
+  const tbody=document.getElementById('a-tbody');
+  if(!wrap||!tbody)return;
+  const total=_aVS.rows.length;
+  const assignments=getAPIAssignments();
+  const myName=CU?.name||'';
+  // Capture any unsaved note text before wiping the DOM
+  const dirty={};
+  tbody.querySelectorAll('.anote-inp').forEach(i=>{if(i.value!==i.defaultValue)dirty[i.dataset.code]=i.value;});
+  if(!total){
+    tbody.innerHTML=`<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج — اضغط "جلب الآن" لجلب البيانات من API</td></tr>`;
+    _ensureAPIDlg(tbody);return;
+  }
+  const scrollTop=wrap.scrollTop;
+  const ch=wrap.clientHeight||520;
+  const rh=_aVS.rowH;
+  const start=Math.max(0,Math.floor(scrollTop/rh)-_aVS.BUF);
+  const end=Math.min(total,Math.ceil((scrollTop+ch)/rh)+_aVS.BUF);
+  tbody.innerHTML=
+    `<tr style="height:${start*rh}px;pointer-events:none;visibility:hidden"><td colspan="19"></td></tr>`+
+    _aVS.rows.slice(start,end).map((s,i)=>_buildAPIRow(s,start+i,assignments,myName)).join('')+
+    `<tr style="height:${Math.max(0,(total-end)*rh)}px;pointer-events:none;visibility:hidden"><td colspan="19"></td></tr>`;
+  // Auto-calibrate row height from first real row
+  if(!_aVS._cal&&tbody.rows[1]?.offsetHeight>0){_aVS.rowH=tbody.rows[1].offsetHeight;_aVS._cal=true;}
+  // Restore unsaved note values
+  tbody.querySelectorAll('.anote-inp').forEach(i=>{if(dirty[i.dataset.code]!==undefined)i.value=dirty[i.dataset.code];});
+  const allEl=document.getElementById('achk-all');
+  if(allEl)allEl.checked=apiFilteredIds.length>0&&apiFilteredIds.every(id=>apiChecked.has(id));
+  _ensureAPIDlg(tbody);
+}
+
+function _initAPIVS(){
+  const wrap=document.getElementById('api-tw');
+  if(!wrap||wrap._vsInit)return;
+  wrap._vsInit=true;
+  wrap.addEventListener('scroll',()=>{
+    if(_aVS.rafId)return;
+    _aVS.rafId=requestAnimationFrame(()=>{_aVS.rafId=null;_aVSPaint();});
+  },{passive:true});
+}
+
+// Repaint exactly one row without touching the rest of the DOM
+function patchAPIRow(sid){
+  const tr=document.querySelector(`#a-tbody tr[data-asid="${String(sid).replace(/"/g,'&quot;')}"]`);
+  if(!tr)return;
+  const idx=_aVS.rows.findIndex(s=>String(s.id)===String(sid));
+  if(idx<0)return;
+  const dummy=document.createElement('tbody');
+  dummy.innerHTML=_buildAPIRow(_aVS.rows[idx],idx,getAPIAssignments(),CU?.name||'');
+  if(dummy.firstElementChild)tr.replaceWith(dummy.firstElementChild);
+}
+
+// ── API TABLE: Event Delegation (set up once, survives virtual repaints) ─────
+function _ensureAPIDlg(tbody){
+  if(tbody._apiDelegated)return;
+  tbody._apiDelegated=true;
+  tbody.addEventListener('click',async e=>{
+    const row=e.target.closest('.pr');
+    if(!row)return;
+    const sid=row.dataset.asid;
+    const isControl=!!e.target.closest('button,select,input,textarea,a');
+    const actionBtn=e.target.closest('[data-a]');
+    if(actionBtn){
+      const a=actionBtn.dataset.a;
+      if(a==='wa-receiver')return apiWA(sid,'receiver');
+      if(a==='wa-captain')return apiWA(sid,'captain');
+      if(a==='save-row')return apiSave(sid,actionBtn);
+      if(a==='undo-assign'){
+        const s=apiShipments.find(x=>String(x.id)===sid);
+        if(s){setAssignedTo(s.tracking_code,'');flashAPIRow(sid);}
+        return;
+      }
+    }
+    const cb=e.target.closest('input[type="checkbox"][data-asid]');
+    if(cb){toggleAPISelection(sid,cb.checked,e.shiftKey);return;}
+    if(!isControl){
+      if(e.shiftKey){const next=!apiChecked.has(sid);toggleAPISelection(sid,next,true);}
+      else{openAPIDetail(sid);}
+    }
+  });
+  tbody.addEventListener('change',async e=>{
+    const cr=e.target.closest('.acr-sel');
+    if(cr){const row=cr.closest('.pr');const ni=row?.querySelector('.anote-inp');await saveCR(cr.dataset.code,cr.value,ni?ni.value:'');}
+  });
+}
+
+// ── LOCAL SHIPMENTS TABLE: Row Builder ───────────────────────────────────────
+function _buildShipRow(s,idx){
+  const sid=String(s.id).replace(/"/g,'&quot;');
+  const crData=getCR(s.id);
+  const note=(crData.note||localStorage.getItem('note_'+s.id)||'').replace(/"/g,'&quot;');
+  const att=parseInt(localStorage.getItem('att_'+s.id)||'0');
+  const lct=localStorage.getItem('lct_'+s.id)||'';
+  const cResult=crData.result;
+  const drv=drivers_db.find(d=>d.id===s.driver_id||d.name===s.driver_name)||{};
+  const drvPhone=drv.phone||s.driver_phone||'';
+  const brn=branches.find(b=>b.id===s.current_branch_id||b.name===s.branch_name)||{};
+  const respBranch=s.responsible_branch||localStorage.getItem('rb_'+s.id)||localStorage.getItem('rb_'+s.tracking_code)||'';
+  return`<tr class="pr" data-sid="${sid}" style="${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}">
+      <td onclick="event.stopPropagation()"><input type="checkbox" data-sid="${sid}" ${checked.has(String(s.id))?'checked':''} onchange="this.checked?checked.add(this.dataset.sid):checked.delete(this.dataset.sid)"></td>
+      <td style="color:var(--dim);font-size:10px;text-align:center">${idx+1}</td>
+      <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
+      <td style="color:var(--white);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis" title="${s.customer_name||''}">${s.customer_name||'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px">${s.customer_phone&&s.customer_phone!=='—'?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
+      <td style="color:var(--white)">${s.driver_name||'—'}${drvPhone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${drvPhone}</div>`:''}</td>
+      <td style="font-size:11px;color:var(--mute)">${brn.name||s.branch_name||'—'}</td>
+      <td style="font-size:11px;color:var(--pale)">${respBranch||'—'}</td>
+      <td>${dBadge(s.delay_days)}</td>
+      <td>${stBadge(s.status)}</td>
+      <td onclick="event.stopPropagation()"><select class="cr-sel" data-sid="${sid}" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--white);font-family:var(--font)">
+        <option value="" ${!cResult?'selected':''}>—</option>
+        <option value="solved" ${cResult==='solved'?'selected':''}>✅ تم الحل</option>
+        <option value="contacted" ${cResult==='contacted'?'selected':''}>📞 تم التواصل</option>
+        <option value="no_answer" ${cResult==='no_answer'?'selected':''}>📵 لا يرد</option>
+        <option value="pending" ${cResult==='pending'?'selected':''}>⏳ قيد المتابعة</option>
+      </select></td>
+      <td style="font-size:10px;color:var(--mute);white-space:nowrap">${lct||ctBadge(s.id)}</td>
+      <td style="text-align:center"><span class="badge ${att>2?'b-red':att>0?'b-gold':'b-dim'}" style="font-family:var(--mono)">${att}</span></td>
+      <td onclick="event.stopPropagation()"><input type="text" value="${note}" placeholder="ملاحظة..." data-sid="${sid}" class="note-inp" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--white);font-family:var(--font);width:110px"></td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-wa btn-sm" data-a="wa" data-sid="${sid}" style="font-size:11px;padding:4px 9px">💬 واتساب</button></td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-ghost btn-sm" data-a="save" data-sid="${sid}" style="font-size:11px;padding:4px 9px">💾</button></td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-red btn-sm" data-a="del" data-sid="${sid}" style="font-size:11px;padding:4px 9px">🗑️</button></td>
+    </tr>`;
+}
+
+// ── LOCAL SHIPMENTS TABLE: Virtual Scroll State ───────────────────────────────
+const _sVS={rows:[],rowH:38,BUF:10,rafId:null,_cal:false};
+
+function _sVSPaint(){
+  const wrap=document.getElementById('s-tw');
+  const tbody=document.getElementById('s-tbody');
+  if(!wrap||!tbody)return;
+  const total=_sVS.rows.length;
+  const dirty={};
+  tbody.querySelectorAll('.note-inp').forEach(i=>{if(i.value!==i.defaultValue)dirty[i.dataset.sid]=i.value;});
+  if(!total){
+    tbody.innerHTML=`<tr><td colspan="17" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج</td></tr>`;
+    _ensureShipDlg(tbody);return;
+  }
+  const scrollTop=wrap.scrollTop;
+  const ch=wrap.clientHeight||520;
+  const rh=_sVS.rowH;
+  const start=Math.max(0,Math.floor(scrollTop/rh)-_sVS.BUF);
+  const end=Math.min(total,Math.ceil((scrollTop+ch)/rh)+_sVS.BUF);
+  tbody.innerHTML=
+    `<tr style="height:${start*rh}px;pointer-events:none;visibility:hidden"><td colspan="17"></td></tr>`+
+    _sVS.rows.slice(start,end).map((s,i)=>_buildShipRow(s,start+i)).join('')+
+    `<tr style="height:${Math.max(0,(total-end)*rh)}px;pointer-events:none;visibility:hidden"><td colspan="17"></td></tr>`;
+  if(!_sVS._cal&&tbody.rows[1]?.offsetHeight>0){_sVS.rowH=tbody.rows[1].offsetHeight;_sVS._cal=true;}
+  tbody.querySelectorAll('.note-inp').forEach(i=>{if(dirty[i.dataset.sid]!==undefined)i.value=dirty[i.dataset.sid];});
+  _ensureShipDlg(tbody);
+}
+
+function _initShipVS(){
+  const wrap=document.getElementById('s-tw');
+  if(!wrap||wrap._vsInit)return;
+  wrap._vsInit=true;
+  wrap.addEventListener('scroll',()=>{
+    if(_sVS.rafId)return;
+    _sVS.rafId=requestAnimationFrame(()=>{_sVS.rafId=null;_sVSPaint();});
+  },{passive:true});
+}
+
+// Repaint exactly one local shipments row without touching the rest of the DOM
+function patchShipRow(sid){
+  const tr=document.querySelector(`#s-tbody tr[data-sid="${String(sid).replace(/"/g,'&quot;')}"]`);
+  if(!tr)return;
+  const idx=_sVS.rows.findIndex(s=>String(s.id)===String(sid));
+  if(idx<0)return;
+  const dummy=document.createElement('tbody');
+  dummy.innerHTML=_buildShipRow(_sVS.rows[idx],idx);
+  if(dummy.firstElementChild)tr.replaceWith(dummy.firstElementChild);
+}
+
+// ── LOCAL SHIPMENTS TABLE: Event Delegation ───────────────────────────────────
+function _ensureShipDlg(tbody){
+  if(tbody._del)return;
+  tbody._del=true;
+  tbody.addEventListener('click',async e=>{
+    const btn=e.target.closest('[data-a]');
+    const row=e.target.closest('.pr');
+    if(btn){
+      e.stopPropagation();
+      const sid=btn.dataset.sid,a=btn.dataset.a;
+      if(a==='wa'){
+        const att=parseInt(localStorage.getItem('att_'+sid)||'0')+1;
+        localStorage.setItem('att_'+sid,att);
+        localStorage.setItem('lct_'+sid,new Date().toLocaleString('ar-LY',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}));
+        doWA(sid);
+      }else if(a==='save'){
+        const ni=row?.querySelector('.note-inp');
+        const cr=row?.querySelector('.cr-sel');
+        const ok=await saveCR(sid,cr?cr.value:'',ni?ni.value:'');
+        if(ok){markCt(sid);btn.textContent='✅';setTimeout(()=>btn.textContent='💾',1500);}
+      }else if(a==='del'){
+        if(!confirm('هل تريد حذف هذا الطرد؟'))return;
+        deleteShipment(sid);
+      }else if(a==='detail')openDetail(sid);
+      else if(a==='return')openRetModal(sid);
+    }else if(row&&!e.target.closest('input')&&!e.target.closest('textarea')&&!e.target.closest('select'))openDetail(row.dataset.sid);
+  });
+  tbody.addEventListener('change',async e=>{
+    const cr=e.target.closest('.cr-sel');
+    if(cr){const row=cr.closest('.pr');const ni=row?.querySelector('.note-inp');await saveCR(cr.dataset.sid,cr.value,ni?ni.value:getCR(cr.dataset.sid).note);}
+  });
 }
 
 function renderAPIShipments(){
@@ -8668,137 +8933,32 @@ function renderAPIShipments(){
   apiFilteredData=list.slice();
   apiFilteredIds=apiFilteredData.map(s=>String(s.id));
 
-  // إظهار/إخفاء عمود الفرع المسؤول بناءً على وجود بيانات فيه
-  const hasRespBranch=apiShipments.some(s=>String(s.responsible_branch||'').trim());
-  const showRB=d=>{ try{document.querySelectorAll('.api-resp-branch-th,.api-resp-branch-td').forEach(el=>el.style.display=d);}catch(_){} };
-  showRB(hasRespBranch?'':'none');
-  const colspan=hasRespBranch?19:18;
-  document.querySelectorAll('#a-tbody tr td[colspan]').forEach(td=>td.setAttribute('colspan',String(colspan)));
+  _apiHasRespBranch=apiShipments.some(s=>String(s.responsible_branch||'').trim());
+  try{document.querySelectorAll('.api-resp-branch-th').forEach(el=>el.style.display=_apiHasRespBranch?'':'none');}catch(_){}
 
-  const total=list.length,totalP=Math.max(1,Math.ceil(total/aPER));
-  if(aPage>totalP)aPage=1;
-  const page=list.slice((aPage-1)*aPER,aPage*aPER);
-  document.getElementById('a-cnt').textContent=total+' طرد';
-
-  const tbody=document.getElementById('a-tbody');
-  if(!page.length){
-    tbody.innerHTML=`<tr><td colspan="19" style="text-align:center;padding:32px;color:var(--mute)">🔍 لا نتائج — اضغط "جلب الآن" لجلب البيانات من API</td></tr>`;
-    const allEl=document.getElementById('achk-all');
-    if(allEl)allEl.checked=false;
-    buildAPIPgn(total,totalP);
-    return;
-  }
-
-  tbody.innerHTML=page.map((s,idx)=>{
-    const sid=String(s.id).replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const tc=String(s.tracking_code||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const crData=getCR(s.tracking_code);
-    const note=(crData.note||'').replace(/"/g,'&quot;');
-    const cResult=crData.result;
-    const ph=s.customer_phone&&s.customer_phone!=='—'&&s.customer_phone!=='undefined';
-    const assignedTo=assignments[s.tracking_code]||'';
-    const assignCell=assignedTo
-      ?`<span class="badge b-grn" style="font-size:10px">${assignedTo}</span><button class="btn btn-ghost btn-sm" data-a="undo-assign" data-code="${tc}" style="font-size:10px;padding:2px 6px;margin-inline-start:4px">↩</button>`
-      :`<span class="badge b-dim" style="font-size:10px">⏳ غير مسند</span>`;
-    return`<tr class="pr" data-asid="${sid}" style="cursor:pointer;${assignedTo?'background:rgba(58,201,120,.08);':''}${cls(s.delay_days)==='critical'?'background:rgba(255,58,92,.04)':''}${assignedTo===myName?';border-right:2px solid var(--pur)':''}">
-      <td><input type="checkbox" data-asid="${sid}" ${apiChecked.has(sid)?'checked':''} style="width:16px;height:16px"></td>
-      <td class="mob-hide" style="color:var(--dim);font-size:10px;text-align:center">${(aPage-1)*aPER+idx+1}</td>
-      <td class="code-cell">${backofficeOrderLinkHtml(s.tracking_code)}</td>
-      <td class="mob-hide">${assignCell}</td>
-      <td style="color:var(--white);font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.client_name||''}">${s.client_name||'—'}</td>
-      <td class="mob-hide" style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.receiver_name||''}">${s.receiver_name||'—'}</td>
-      <td class="mob-hide" style="font-family:var(--mono);font-size:11px">${ph?`<span style="color:var(--blu)" dir="ltr">${s.customer_phone}</span>`:'—'}</td>
-      <td class="mob-hide" style="color:var(--white);font-size:11px">${s.captain||'—'}${s.captain_phone?`<div style="font-size:9px;color:var(--dim);font-family:var(--mono)">${s.captain_phone}</div>`:''}</td>
-      <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.current_branch||'—'}</td>
-      <td class="mob-hide api-resp-branch-td" style="font-size:11px;color:var(--blu);display:none">${s.responsible_branch||'—'}</td>
-      <td class="mob-hide" style="font-size:11px;color:var(--pale)">${s.government||'—'}</td>
-      <td class="mob-hide" style="font-size:11px;color:var(--mute)">${s.area||'—'}</td>
-      <td>${stBadge(s.status)}</td>
-      <td>${dBadge(s.delay_days)}</td>
-      <td class="mob-hide"><select class="acr-sel" data-asid="${sid}" data-code="${tc}" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--white);font-family:var(--font)">
-        <option value="" ${!cResult?'selected':''}>—</option>
-        <option value="solved" ${cResult==='solved'?'selected':''}>✅ تم الحل</option>
-        <option value="contacted" ${cResult==='contacted'?'selected':''}>📞 تم التواصل</option>
-        <option value="no_answer" ${cResult==='no_answer'?'selected':''}>📵 لا يرد</option>
-        <option value="pending" ${cResult==='pending'?'selected':''}>⏳ قيد المتابعة</option>
-      </select></td>
-      <td class="mob-hide"><input type="text" value="${note}" placeholder="ملاحظة..." data-asid="${sid}" data-code="${tc}" class="anote-inp" style="background:var(--bg4);border:1px solid var(--rim);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--white);font-family:var(--font);width:100px"></td>
-      <td style="white-space:nowrap"><div style="display:flex;gap:3px">${ph?`<button class="btn btn-wa btn-sm" data-a="wa-receiver" style="font-size:10px;padding:3px 6px" title="واتساب للمستلم">📱</button>`:''}${s.captain_phone?`<button class="btn btn-ghost btn-sm" data-a="wa-captain" style="font-size:10px;padding:3px 6px;border-color:var(--wa);color:var(--wa)" title="واتساب المندوب">🚗</button>`:''}</div></td>
-      <td class="mob-hide"><button class="btn btn-ghost btn-sm" data-a="save-row" style="font-size:11px;padding:4px 9px">💾</button></td>
-    </tr>`;
-  }).join('');
-  const allEl=document.getElementById('achk-all');
-  if(allEl)allEl.checked=apiFilteredIds.length>0&&apiFilteredIds.every(id=>apiChecked.has(id));
-
-  // Single delegated listener for clicks and selection interactions
-  if(!tbody._apiDelegated){
-    tbody._apiDelegated=true;
-    tbody.addEventListener('click',async e=>{
-      const row=e.target.closest('.pr');
-      if(!row)return;
-      const sid=row.dataset.asid;
-      const isControl=!!e.target.closest('button,select,input,textarea,a');
-      const actionBtn=e.target.closest('[data-a]');
-      if(actionBtn){
-        const a=actionBtn.dataset.a;
-        if(a==='wa-receiver')return apiWA(sid,'receiver');
-        if(a==='wa-captain')return apiWA(sid,'captain');
-        if(a==='save-row')return apiSave(sid,actionBtn);
-        if(a==='undo-assign'){
-          const s=apiShipments.find(x=>String(x.id)===sid);
-          if(s){
-            setAssignedTo(s.tracking_code,'');
-            flashAPIRow(sid);
-          }
-          return;
-        }
-      }
-      const cb=e.target.closest('input[type="checkbox"][data-asid]');
-      if(cb){
-        toggleAPISelection(sid,cb.checked,e.shiftKey);
-        return;
-      }
-      if(!isControl){
-        if(e.shiftKey){
-          const next=!apiChecked.has(sid);
-          toggleAPISelection(sid,next,true);
-        }else{
-          openAPIDetail(sid);
-        }
-      }
-    });
-    tbody.addEventListener('change',async e=>{
-      const cr=e.target.closest('.acr-sel');
-      if(cr){
-        const row=cr.closest('.pr');
-        const ni=row?.querySelector('.anote-inp');
-        await saveCR(cr.dataset.code,cr.value,ni?ni.value:'');
-      }
-    });
-  }
-
-  buildAPIPgn(total,totalP);
+  document.getElementById('a-cnt').textContent=list.length+' طرد';
+  const _awrap=document.getElementById('api-tw');
+  if(_awrap)_awrap.scrollTop=0;
+  _aVS.rows=list;
+  _initAPIVS();
+  _aVSPaint();
+  const _apgi=document.getElementById('a-pginfo');
+  if(_apgi)_apgi.textContent=list.length>0?list.length+' طرد':'لا نتائج';
 }
 function setAPISort(key){
   if(aSortKey===key)aSortDir=aSortDir==='asc'?'desc':'asc';
   else{aSortKey=key;aSortDir='asc';}
-  aPage=1;
   renderAPIShipments();
 }
 
-function buildAPIPgn(total,totalP){
-  const info=document.getElementById('a-pginfo'),pgn=document.getElementById('a-pgn');
-  if(total>0){const s=(aPage-1)*aPER+1,e=Math.min(aPage*aPER,total);info.textContent=`${s}–${e} من ${total} طرد`;}
-  else info.textContent='لا نتائج';
-  pgn.innerHTML='';
-  for(let i=Math.max(1,aPage-2);i<=Math.min(totalP,aPage+2);i++){
-    const b=document.createElement('button');
-    b.className='pgbtn'+(i===aPage?' on':'');b.textContent=i;
-    b.onclick=()=>{aPage=i;renderAPIShipments();};pgn.appendChild(b);
-  }
+function buildAPIPgn(total){
+  const info=document.getElementById('a-pginfo');
+  if(info)info.textContent=total>0?total+' طرد':'لا نتائج';
+  const pgn=document.getElementById('a-pgn');
+  if(pgn)pgn.innerHTML='';
 }
 
-function changeAPIPerPage(val){aPER=parseInt(val)||25;aPage=1;renderAPIShipments();}
+function changeAPIPerPage(val){}
 
 // Global onclick handlers for API shipment buttons
 function openAPIDetail(sid){
@@ -8937,28 +9097,26 @@ function apiMove(sid){
 
 function toggleAPISelection(sid,checked,shiftKey){
   const id=String(sid);
+  const _upCb=rid=>{const cb=document.querySelector(`#a-tbody input[data-asid="${String(rid).replace(/"/g,'\\"')}"]`);if(cb)cb.checked=apiChecked.has(rid);};
   if(shiftKey&&apiLastSelectedSid&&apiFilteredIds.length){
     const aIdx=apiFilteredIds.indexOf(String(apiLastSelectedSid));
     const bIdx=apiFilteredIds.indexOf(id);
     if(aIdx>=0&&bIdx>=0){
       const [s,e]=aIdx<bIdx?[aIdx,bIdx]:[bIdx,aIdx];
-      for(let i=s;i<=e;i++){
-        const rid=apiFilteredIds[i];
-        if(checked)apiChecked.add(rid); else apiChecked.delete(rid);
-      }
-    } else {
-      if(checked)apiChecked.add(id); else apiChecked.delete(id);
-    }
-  } else {
-    if(checked)apiChecked.add(id); else apiChecked.delete(id);
+      for(let i=s;i<=e;i++){if(checked)apiChecked.add(apiFilteredIds[i]);else apiChecked.delete(apiFilteredIds[i]);_upCb(apiFilteredIds[i]);}
+    }else{if(checked)apiChecked.add(id);else apiChecked.delete(id);_upCb(id);}
+  }else{
+    if(checked)apiChecked.add(id);else apiChecked.delete(id);_upCb(id);
   }
   apiLastSelectedSid=id;
-  renderAPIShipments();
+  const allEl=document.getElementById('achk-all');
+  if(allEl)allEl.checked=apiFilteredIds.length>0&&apiFilteredIds.every(i=>apiChecked.has(i));
 }
 function toggleAllAPIFiltered(checked){
-  if(!apiFilteredIds.length){apiChecked.clear();renderAPIShipments();return;}
-  apiFilteredIds.forEach(id=>{if(checked)apiChecked.add(id); else apiChecked.delete(id);});
-  renderAPIShipments();
+  if(checked){apiFilteredIds.forEach(id=>apiChecked.add(id));}else{apiChecked.clear();}
+  document.querySelectorAll('#a-tbody input[data-asid]').forEach(cb=>{cb.checked=apiChecked.has(cb.dataset.asid);});
+  const allEl=document.getElementById('achk-all');
+  if(allEl)allEl.checked=checked&&apiFilteredIds.length>0;
 }
 function flashAPIRow(sid){
   const row=document.querySelector(`#a-tbody tr[data-asid="${String(sid).replace(/"/g,'\\"')}"]`);
@@ -9079,25 +9237,29 @@ function enrichAPICaptainPhones(){
 }
 async function autoSyncAPI(){
   try{
-    const cfg=await sb('settings','GET',null,'?select=key,value');
     let url='',token='',interval=0,branchUrl='',branchToken='';
-    cfg.forEach(r=>{
-      if(r.key==='api_url')url=r.value||'';
-      if(r.key==='api_token')token=r.value||'';
-      if(r.key==='api_auto_interval')interval=parseInt(r.value)||0;
-      if(r.key==='branch_api_url')branchUrl=r.value||'';
-      if(r.key==='branch_api_token')branchToken=r.value||'';
-    });
-    if(!url)return;
-    // Set inputs
-    const u2=document.getElementById('api-url2');if(u2)u2.value=url;
-    const t2=document.getElementById('api-token2');if(t2)t2.value=token;
-    const u1=document.getElementById('api-url');if(u1)u1.value=url;
-    const t1=document.getElementById('api-token');if(t1)t1.value=token;
-    if(interval>0){
-      const iv=document.getElementById('api-interval2');if(iv)iv.value=interval;
+    if(!DB_DISABLED){
+      const cfg=await sb('settings','GET',null,'?select=key,value');
+      cfg.forEach(r=>{
+        if(r.key==='api_url')url=r.value||'';
+        if(r.key==='api_token')token=r.value||'';
+        if(r.key==='api_auto_interval')interval=parseInt(r.value)||0;
+        if(r.key==='branch_api_url')branchUrl=r.value||'';
+        if(r.key==='branch_api_token')branchToken=r.value||'';
+      });
+      const u2=document.getElementById('api-url2');if(u2)u2.value=url;
+      const t2=document.getElementById('api-token2');if(t2)t2.value=token;
+      const u1=document.getElementById('api-url');if(u1)u1.value=url;
+      const t1=document.getElementById('api-token');if(t1)t1.value=token;
+      if(interval>0){const iv=document.getElementById('api-interval2');if(iv)iv.value=interval;}
+    } else {
+      // DB معطّل — اقرأ من الحقول المدخلة أو localStorage مباشرة
+      url=document.getElementById('api-url2')?.value?.trim()||document.getElementById('api-url')?.value?.trim()||'';
+      token=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
+      interval=parseInt(document.getElementById('api-interval2')?.value||'0');
     }
-    // Auto-fetch on load — الجلب الوحيد عند الإقلاع
+    if(!url)return;
+    // Auto-fetch on load
     await fetchAPIShipments();
     unifiedApiFetched=true;
     // جلب بيانات الفروع تلقائياً بعد 4 ثوانٍ — يُعطي المتصفح وقتاً كافياً للرسم قبل الجلب

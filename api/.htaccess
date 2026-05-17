@@ -1,0 +1,15 @@
+# ── Security ──────────────────────────────────────────────────────────────────
+Options -Indexes
+
+# Block direct access to sensitive files
+<FilesMatch "\.(env|sql|sh|log|example)$">
+    Require all denied
+</FilesMatch>
+
+# ── Route /rest/v1/{table} → nawris_api.php ───────────────────────────────────
+RewriteEngine On
+RewriteBase /api/
+
+# Forward any /api/rest/v1/{table}[?query] to nawris_api.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^rest/v1/([^/]+)(/.*)?$ nawris_api.php [QSA,L]
