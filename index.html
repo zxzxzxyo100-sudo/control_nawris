@@ -10,7 +10,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- 15 weights → 6 weights: saves ~9 font file downloads on every page load -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Tajawal:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- XLSX loaded on-demand only when user uploads a file — saves 2-4s on startup -->
+<script>
+function _loadXLSX(cb){
+  if(window.XLSX){cb&&cb();return;}
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload=cb||null;
+  document.head.appendChild(s);
+}
+</script>
 <style>
 :root{
   /* ── Visual Ergonomics System — 8hr comfort design ── */
@@ -5970,6 +5979,7 @@ function handleSt(e,table){const f=e.target.files[0];if(f)processSt(f,table);}
 function processSt(file,table){
   const r=new FileReader();
   r.onload=async ev=>{
+    _loadXLSX(async()=>{
     try{
       const wb=XLSX.read(ev.target.result,{type:'binary'});
       const ws=wb.Sheets[wb.SheetNames[0]];
@@ -5987,6 +5997,7 @@ function processSt(file,table){
       await uploadStatic(rows,table);
     }
     catch(err){toast('خطأ في قراءة الملف: '+err.message,'e');}
+    });
   };r.readAsBinaryString(file);
 }
 async function uploadStatic(rows,table){
@@ -6063,6 +6074,7 @@ function handleShipType(e,type){const f=e.target.files[0];if(f)processShip(f,typ
 function processShip(file,forceStatus){
   const r=new FileReader();
   r.onload=async ev=>{
+    _loadXLSX(async()=>{
     try{
       const wb=XLSX.read(ev.target.result,{type:'binary'});
       const ws=wb.Sheets[wb.SheetNames[0]];
@@ -6077,6 +6089,7 @@ function processShip(file,forceStatus){
       await uploadShipments(rows,forceStatus);
     }
     catch(err){toast('خطأ: '+err.message,'e');}
+    });
   };r.readAsBinaryString(file);
 }
 async function uploadShipments(rows,forceStatus){
