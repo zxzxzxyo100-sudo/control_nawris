@@ -7956,7 +7956,7 @@ async function fetchAPIShipments(){
       let lastError=null;
       for(let attempt=0;attempt<=retries;attempt++){
         try{
-          const res=await apiFetch(pageUrl,token,'',8000); // 8s timeout (was 20s)
+          const res=await apiFetch(pageUrl,token,'',12000); // 8s timeout (was 20s)
           if(!res.ok){lastError=new Error(`HTTP ${res.status}`);continue;}
           let json=null;
           try{json=await res.json();}catch(_){lastError=new Error('Invalid JSON');continue;}
@@ -8092,9 +8092,9 @@ async function fetchAPIShipments(){
     if(!hasDelay){
       effectiveUrl.searchParams.set('delay_days','2');
     }
-    // Algoriza confirmed support for large pages — 500/page reduces 22 requests → ~5
+    // Algoriza confirmed support for large pages — 200/page reduces 22 requests → ~11 → ~5
     if(!effectiveUrl.searchParams.has('per_page')&&!effectiveUrl.searchParams.has('limit')){
-      effectiveUrl.searchParams.set('per_page','500');
+      effectiveUrl.searchParams.set('per_page','200');
     }
     const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
