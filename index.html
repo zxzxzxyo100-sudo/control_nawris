@@ -6973,8 +6973,19 @@ function sendToBranchManager(sid){
 // STAFF TRACKER
 // ══════════════════════════════════════════
 async function renderStaff(){
+  // ══ اعرض placeholder فوراً — قبل أي حسبة حتى لا تتجمد الشاشة ══
+  const _ld='<div style="text-align:center;padding:20px;color:var(--mute);font-size:12px">⏳ جارٍ التحميل...</div>';
+  const _ki=document.getElementById('staff-kpis');
+  if(_ki)_ki.innerHTML='<div style="text-align:center;padding:20px;color:var(--mute)">⏳ جارٍ الحساب...</div>';
+  const _tb0=document.getElementById('staff-tbody');
+  if(_tb0)_tb0.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--mute)">⏳ جارٍ التحميل...</td></tr>';
+  const _cE0=document.getElementById('staff-api-captains');if(_cE0)_cE0.innerHTML=_ld;
+  const _aE0=document.getElementById('staff-assign-stats');if(_aE0)_aE0.innerHTML=_ld;
+  const _crS=document.getElementById('staff-cr-summary');if(_crS)_crS.innerHTML=_ld;
+  // yield — let browser paint the loading state before heavy computation
+  await new Promise(r=>setTimeout(r,0));
+
   // ── جلب contact_results في الخلفية — لا يوقف الرسم ──────────────────────
-  // يُجلب فقط إذا مضى أكثر من 45 ثانية على آخر جلب
   const _now=Date.now();
   if(!DB_DISABLED&&_now-_crFetchedAt>45000){
     _crFetchedAt=_now;
@@ -6994,8 +7005,7 @@ async function renderStaff(){
     empStats[u.name]={name:u.name,role:u.role,followed:0,solved:0,contacted:0,no_answer:0,pending:0,items:[]};
   });
 
-  // ── دورة واحدة على apiShipments تجمع كل الحسبات دفعة واحدة ───────────────
-  // كانت 5 دورات منفصلة — أصبحت دورة واحدة: توفير ~5× في وقت المعالجة
+  // ── دورة واحدة مقسّمة على apiShipments — تُنجز دفعة 400 ثم تتنفّس ────────
   const _apiRows=[];
   const capMap={};
   const assignEmpStats={};
@@ -7003,7 +7013,10 @@ async function renderStaff(){
   let totalFollowed=0,totalSolved=0,totalContacted=0,totalNoAnswer=0,totalPending=0,totalNone=0;
   let assignedCount=0;
 
-  for(const s of apiShipments){
+  for(let _i=0;_i<apiShipments.length;_i++){
+    // yield to browser every 400 rows so the UI stays responsive
+    if(_i>0&&_i%400===0)await new Promise(r=>setTimeout(r,0));
+    const s=apiShipments[_i];
     const cr=getCR(s.id);
     const effectiveResult=isProcessedShipmentForStaff(s)?'solved':(cr.result||'');
     const rawBy=String(cr.by||(assignments[s.tracking_code]||'')).trim();
@@ -7139,12 +7152,6 @@ async function renderStaff(){
     <div style="background:var(--gd);border:1px solid var(--gb);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--gold);font-family:var(--mono)">${totalPending}</div><div style="font-size:11px;color:var(--gold)">⏳ قيد المتابعة</div></div>
     <div style="background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--mute);font-family:var(--mono)">${totalNone}</div><div style="font-size:11px;color:var(--mute)">بدون متابعة</div></div>
   `;
-  // تعيين placeholder للأقسام الثقيلة حتى تظهر
-  const _ld='<div style="text-align:center;padding:20px;color:var(--mute);font-size:12px">⏳ جارٍ التحميل...</div>';
-  const _tbody=document.getElementById('staff-tbody');if(_tbody)_tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--mute)">⏳ جارٍ التحميل...</td></tr>';
-  const _capEl=document.getElementById('staff-api-captains');if(_capEl)_capEl.innerHTML=_ld;
-  const _assignEl=document.getElementById('staff-assign-stats');if(_assignEl)_assignEl.innerHTML=_ld;
-
   // ══ Phase 2 (frame ثانٍ): جدول الموظفين + المتصدر ══════════════════════════
   requestAnimationFrame(()=>{
     const tbody=document.getElementById('staff-tbody');
