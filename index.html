@@ -2209,7 +2209,7 @@ const SK = 'NAWRIS_SECRET_2025';
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 const LOG_API_BASE = 'api';
 const MANUAL_EXCEL_SHIPMENTS_ONLY = true;
-const DB_DISABLED = true; // ← قاعدة البيانات معطّلة — يعمل من الـ API الخارجي + localStorage فقط // keep main shipments table sourced only from manual Excel upload
+const DB_DISABLED = false; // true = localStorage فقط | false = MySQL على Hostinger (تزامن بين الأجهزة) // keep main shipments table sourced only from manual Excel upload
 
 /** إعدادات عمولات الطرود (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
 let CommissionCfg = { unitBase: 100, repPercent: 5, branchPercent: 2, ratioMin: 0.25, ratioMax: 1 };
@@ -3490,6 +3490,7 @@ async function saveCR(sid,result,note){
       if(s)writeCrSnap(sid,s);
       if(result==='contacted'&&prevResult!=='contacted')registerMonthlyContacted(userName,trackingCode||sidStr);
       await logPackageAction({packageId:trackingCode||sidStr,actionType:'follow_up_update',status:result||'none'});
+      _sfDataVersion++;_sfListCache=null; // أبطل كاش قائمة الموظفين
       return true;
     }
 
@@ -3527,6 +3528,7 @@ async function saveCR(sid,result,note){
     if(s)writeCrSnap(sid,s);
     if(result==='contacted'&&prevResult!=='contacted')registerMonthlyContacted(userName,trackingCode||sidStr);
     await logPackageAction({packageId:trackingCode||sidStr,actionType:'follow_up_update',status:result||'none'});
+    _sfDataVersion++;_sfListCache=null; // أبطل كاش قائمة الموظفين
     return true;
   }catch(e){console.error('saveCR exception:',e);toast('خطأ في الحفظ','e');return false;}
 }
@@ -7344,63 +7346,43 @@ function renderStaffShipments(){
     return String(sid);
   }
 
-  // Rebuild employee dropdown (always, so new employees appear)
-  const empSel=document.getElementById('sf-femp');
-  if(empSel){
-    const prev=empSel.value;
-    while(empSel.options.length>1)empSel.remove(1);
-    const names=new Set();
-    Object.values(USERS).filter(u=>u&&u.status!=='inactive').forEach(u=>names.add(u.name));
-    shipments.forEach(s=>{const c=resolveCanonicalActiveEmployeeName(getCR(s.id).by);if(c)names.add(c);});
-    apiShipments.forEach(s=>{const c=resolveCanonicalActiveEmployeeName(getCR(s.id).by||(assignments[s.tracking_code]||''));if(c)names.add(c);});
-    [...names].sort((a,b)=>a.localeCompare(b,'ar')).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;empSel.appendChild(o);});
-    if(prev&&[...names].includes(prev))empSel.value=prev;
-  }
-
   const crLabels={delivered:'✅ تم التسليم',solved:'✅ تم الحل',contacted:'📞 تم التواصل',no_answer:'📵 لا يرد',pending:'⏳ قيد المتابعة'};
   const statusLabels={with_driver:'مع المندوب',in_company:'في الشركة',delivered:'تم التسليم',returned:'مرتجع',partially_delivered:'تسليم جزئي',transferred:'محوّل',delayed:'متأخر'};
 
-  // ── Source 1: API shipments ──
-  const apiList=apiShipments.map(s=>{
-    const cr=getCR(s.id); // s.id = 'api_'+code
-    const raw=cr.by||(assignments[s.tracking_code]||'');
-    const emp=resolveCanonicalActiveEmployeeName(raw)||resolveCanonicalActiveEmployeeName(assignments[s.tracking_code]||'')||'—';
-    return{
-      _sid:String(s.id),
-      code:s.tracking_code||'—',
-      store:s.client_name||'—',
-      captain:s.captain||'—',
-      branch:s.current_branch||'—',
-      status:s.status||'—',
-      delay:s.delay_days??0,
-      crResult:cr.result||'',
-      crNote:cr.note||'',
-      crBy:emp,
-      src:'API'
-    };
-  });
-
-  // ── Source 2: Supabase shipments ──
-  const sbList=shipments.map(s=>{
-    const cr=getCR(s.id); // s.id = integer
-    const emp=resolveCanonicalActiveEmployeeName(cr.by)||'—';
-    return{
-      _sid:String(s.id),
-      code:s.tracking_code||'—',
-      store:s.customer_name||s.client_name||'—',
-      captain:s.driver_name||'—',
-      branch:s.branch_name||'—',
-      status:s.status||'—',
-      delay:s.delay_days??0,
-      crResult:cr.result||'',
-      crNote:cr.note||'',
-      crBy:emp,
-      src:'DB'
-    };
-  });
-
-  // Merge both sources — API first, then Supabase
-  let list=[...apiList,...sbList];
+  // ── كاش القائمة الكاملة — يُبنى مرة واحدة حتى تتغير البيانات ──────────────
+  // بناء 5000 صف × getCR × resolveCanonical يأخذ 100-300ms على الأجهزة الضعيفة
+  // بعد الكاش يصبح فلترة فقط على مصفوفة جاهزة (< 5ms)
+  let list;
+  if(_sfListCache&&_sfCacheVer===_sfDataVersion){
+    list=_sfListCache;
+  }else{
+    // أعد بناء dropdown الموظفين عند تغيير البيانات فقط
+    const empSel=document.getElementById('sf-femp');
+    if(empSel){
+      const prev=empSel.value;
+      while(empSel.options.length>1)empSel.remove(1);
+      const names=new Set();
+      Object.values(USERS).filter(u=>u&&u.status!=='inactive').forEach(u=>names.add(u.name));
+      shipments.forEach(s=>{const c=resolveCanonicalActiveEmployeeName(getCR(s.id).by);if(c)names.add(c);});
+      apiShipments.forEach(s=>{const c=resolveCanonicalActiveEmployeeName(getCR(s.id).by||(assignments[s.tracking_code]||''));if(c)names.add(c);});
+      [...names].sort((a,b)=>a.localeCompare(b,'ar')).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;empSel.appendChild(o);});
+      if(prev&&[...names].includes(prev))empSel.value=prev;
+    }
+    const apiList=apiShipments.map(s=>{
+      const cr=getCR(s.id);
+      const raw=cr.by||(assignments[s.tracking_code]||'');
+      const emp=resolveCanonicalActiveEmployeeName(raw)||resolveCanonicalActiveEmployeeName(assignments[s.tracking_code]||'')||'—';
+      return{_sid:String(s.id),code:s.tracking_code||'—',store:s.client_name||'—',captain:s.captain||'—',branch:s.current_branch||'—',status:s.status||'—',delay:s.delay_days??0,crResult:cr.result||'',crNote:cr.note||'',crBy:emp,src:'API'};
+    });
+    const sbList=shipments.map(s=>{
+      const cr=getCR(s.id);
+      const emp=resolveCanonicalActiveEmployeeName(cr.by)||'—';
+      return{_sid:String(s.id),code:s.tracking_code||'—',store:s.customer_name||s.client_name||'—',captain:s.driver_name||'—',branch:s.branch_name||'—',status:s.status||'—',delay:s.delay_days??0,crResult:cr.result||'',crNote:cr.note||'',crBy:emp,src:'DB'};
+    });
+    list=[...apiList,...sbList];
+    _sfListCache=list;
+    _sfCacheVer=_sfDataVersion;
+  }
 
   // Filter
   if(fSrc){list=list.filter(s=>s.src===fSrc);}
@@ -7619,7 +7601,9 @@ try{apiProcessedCodes=new Set(JSON.parse(sessionStorage.getItem('api_processed_c
 
 let sfPage=1;
 let sfSortKey='delay', sfSortDir='desc';
-let _crFetchedAt=0; // timestamp of last contact_results fetch — prevents blocking re-fetch on every tab switch
+let _crFetchedAt=0;
+// كاش قائمة الموظفين — يُعاد البناء فقط عند تغيير البيانات (جلب/حفظ/إسناد)
+let _sfListCache=null, _sfDataVersion=0, _sfCacheVer=-1;
 
 function resetAPIFilters(){
   ['a-q','a-fd','a-fst','a-fdays','a-fcap','a-fbr','a-fgov','a-femp'].forEach(id=>{
@@ -8350,6 +8334,9 @@ async function fetchAPIShipments(){
         }catch(e){console.warn('API->Supabase sync',e);}
       },3000);
     }
+
+    // أبطل كاش الموظفين — بيانات جديدة وصلت
+    _sfDataVersion++;_sfListCache=null;
 
     // ── First paint via requestAnimationFrame — frees main thread for a browser paint cycle first ──
     requestAnimationFrame(()=>{
@@ -9247,13 +9234,16 @@ async function autoSyncAPI(){
         if(r.key==='branch_api_url')branchUrl=r.value||'';
         if(r.key==='branch_api_token')branchToken=r.value||'';
       });
-      const u2=document.getElementById('api-url2');if(u2)u2.value=url;
-      const t2=document.getElementById('api-token2');if(t2)t2.value=token;
-      const u1=document.getElementById('api-url');if(u1)u1.value=url;
-      const t1=document.getElementById('api-token');if(t1)t1.value=token;
-      if(interval>0){const iv=document.getElementById('api-interval2');if(iv)iv.value=interval;}
-    } else {
-      // DB معطّل — اقرأ من الحقول المدخلة أو localStorage مباشرة
+      if(url){
+        const u2=document.getElementById('api-url2');if(u2)u2.value=url;
+        const t2=document.getElementById('api-token2');if(t2)t2.value=token;
+        const u1=document.getElementById('api-url');if(u1)u1.value=url;
+        const t1=document.getElementById('api-token');if(t1)t1.value=token;
+        if(interval>0){const iv=document.getElementById('api-interval2');if(iv)iv.value=interval;}
+      }
+    }
+    // دائماً رجوع للحقول إذا DB فارغة أو معطّلة
+    if(!url){
       url=document.getElementById('api-url2')?.value?.trim()||document.getElementById('api-url')?.value?.trim()||'';
       token=document.getElementById('api-token2')?.value?.trim()||document.getElementById('api-token')?.value?.trim()||'';
       interval=parseInt(document.getElementById('api-interval2')?.value||'0');
@@ -9774,7 +9764,7 @@ function setAssignedTo(code,empName){
   if(empName)a[code]={emp:empName,at:Date.now()};
   else delete a[code];
   saveAPIAssignments(a);
-  // Optimistic UI update — instant feedback
+  _sfDataVersion++;_sfListCache=null; // أبطل كاش الموظفين — تغيّر الإسناد
   const s=apiShipments.find(x=>String(x.tracking_code)===String(code));
   renderAPIShipments();
   renderAssignStats();
