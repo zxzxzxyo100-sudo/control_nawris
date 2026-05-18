@@ -3,55 +3,102 @@ declare(strict_types=1);
 
 // ── CORS Headers ──
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, apikey, Prefer, Range, X-Requested-With");
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
 
+// ── PDO Singleton ─────────────────────────────────────────────────────────────
 function crm_pdo(): PDO
 {
     static $pdo = null;
-    if ($pdo instanceof PDO) {
-        return $pdo;
-    }
+    if ($pdo instanceof PDO) return $pdo;
 
-    // ── Hostinger MySQL credentials ───────────────────────────────────────────
-    // غيّر هذه القيم لتطابق إعدادات قاعدة بياناتك على Hostinger
     $host = getenv('DB_HOST') ?: 'localhost';
     $port = getenv('DB_PORT') ?: '3306';
-    $name = getenv('DB_NAME') ?: 'u495355717_ZIDON';   // ← اسم قاعدة البيانات
-    $user = getenv('DB_USER') ?: 'u495355717_zxzxzxyol00'; // ← اسم المستخدم
-    $pass = getenv('DB_PASS') ?: 'ziDONA11';                    // ← كلمة المرور التي أنشأتها
+    $name = getenv('DB_NAME') ?: 'u495355717_ZIDON';
+    $user = getenv('DB_USER') ?: 'u495355717_zxzxzxyol00';
+    $pass = getenv('DB_PASS') ?: 'ziDONA11';
 
-    $dsn = sprintf(
-        'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-        $host, $port, $name
-    );
+    $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
 
     $pdo = new PDO($dsn, $user, $pass, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::ATTR_PERSISTENT         => false, // true only if behind connection pooler (pgBouncer/ProxySQL)
+        PDO::ATTR_PERSISTENT         => false,
         PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
     ]);
 
-    // Session-level performance hints — keeps query planner honest on large tables
+    // Session-level hints for shared-hosting MySQL
     $pdo->exec("SET
-        SESSION query_cache_type      = 0,
         SESSION innodb_lock_wait_timeout = 10,
-        SESSION group_concat_max_len  = 1000000
+        SESSION group_concat_max_len     = 1000000,
+        SESSION wait_timeout             = 28800
     ");
 
     return $pdo;
 }
 
+// ── JSON response helper ──────────────────────────────────────────────────────
 function json_response(array $payload, int $status = 200): void
 {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
+}
+
+// ── Lightweight APCu-then-file TTL cache ──────────────────────────────────────
+// Works on shared hosting (no Redis required).
+// APCu is preferred (in-process, zero I/O); falls back to /tmp files.
+
+function _cache_key(string $key): string
+{
+    return 'nawris_' . md5($key);
+}
+
+function cache_get(string $key): mixed
+{
+    $ck = _cache_key($key);
+
+    // APCu path (fastest — shared memory, no disk I/O)
+    if (function_exists('apcu_fetch')) {
+        $val = apcu_fetch($ck, $ok);
+        return $ok ? $val : null;
+    }
+
+    // File fallback
+    $f = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $ck . '.json';
+    if (!is_file($f)) return null;
+    $raw = @file_get_contents($f);
+    if (!$raw) return null;
+    $data = json_decode($raw, true);
+    if (!is_array($data) || ($data['exp'] ?? 0) < time()) {
+        @unlink($f);
+        return null;
+    }
+    return $data['v'];
+}
+
+function cache_set(string $key, mixed $value, int $ttl = 300): void
+{
+    $ck = _cache_key($key);
+
+    if (function_exists('apcu_store')) {
+        apcu_store($ck, $value, $ttl);
+        return;
+    }
+
+    $f = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $ck . '.json';
+    @file_put_contents($f, json_encode(['exp' => time() + $ttl, 'v' => $value]), LOCK_EX);
+}
+
+function cache_del(string $key): void
+{
+    $ck = _cache_key($key);
+    if (function_exists('apcu_delete')) { apcu_delete($ck); return; }
+    @unlink(sys_get_temp_dir() . DIRECTORY_SEPARATOR . $ck . '.json');
 }

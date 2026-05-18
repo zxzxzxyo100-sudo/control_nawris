@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, apikey, Prefer, Range');
@@ -10,20 +9,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 require_once __DIR__ . '/db.php';
 
 // ── Config ────────────────────────────────────────────────────────────────────
-// ضع مفتاحك السري هنا — نفس القيمة في index.html (SK)
 define('NAWRIS_API_KEY', getenv('NAWRIS_API_KEY') ?: 'NAWRIS_SECRET_2025');
 
-// الجداول المسموح بها فقط — يمنع SQL injection تماماً
 const ALLOWED_TABLES = [
     'settings', 'shipments', 'contact_results', 'drivers',
     'branches', 'regions', 'stores', 'wa_templates',
     'returns', 'transfers', 'contacted_log',
 ];
 
-// معاملات Supabase الخاصة — لا تُستخدم كفلاتر
 const RESERVED_PARAMS = [
     'select', 'limit', 'offset', 'order', 'count', 'on_conflict',
     'columns', 'XDEBUG_SESSION_START',
+];
+
+// Static/reference tables that change rarely → cache aggressively (10 min)
+const STATIC_TABLES = ['branches', 'regions', 'stores', 'wa_templates'];
+
+// Per-table hard caps on rows returned — prevents accidental full-table dumps
+const TABLE_MAX_ROWS = [
+    'shipments'      => 500,
+    'contact_results'=> 2000,   // staff stats need all results
+    'contacted_log'  => 500,
+    'returns'        => 500,
+    'transfers'      => 500,
+    'drivers'        => 200,
+    'branches'       => 200,
+    'regions'        => 200,
+    'stores'         => 200,
+    'wa_templates'   => 100,
+    'settings'       => 200,
 ];
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -35,7 +49,7 @@ if ($sentKey !== NAWRIS_API_KEY) {
     json_response(['error' => 'Unauthorized'], 401);
 }
 
-// ── Table name from URL (/rest/v1/{table}) ────────────────────────────────────
+// ── Table from URL ────────────────────────────────────────────────────────────
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 if (!preg_match('#/rest/v1/([^/?]+)#', $uri, $m)) {
     json_response(['error' => 'Invalid endpoint — expected /rest/v1/{table}'], 404);
@@ -104,6 +118,7 @@ function parseFilters(array $qp): array
     return [$where, $binds];
 }
 
+// Whitelist column names: strip anything that isn't a word char or comma
 function safeColumns(string $raw): string
 {
     if (trim($raw) === '*' || trim($raw) === '') return '*';
@@ -113,6 +128,21 @@ function safeColumns(string $raw): string
     );
     $cols = array_filter($cols, fn($c) => $c !== '``');
     return $cols ? implode(', ', $cols) : '*';
+}
+
+// Sanitise ORDER BY: allow only letters, digits, underscores, commas, spaces, and "asc"/"desc"
+function safeOrder(string $raw): string
+{
+    // e.g. "delay_days.desc" → "delay_days DESC"
+    $parts = array_filter(array_map('trim', explode(',', $raw)));
+    $safe  = [];
+    foreach ($parts as $part) {
+        if (preg_match('/^([a-zA-Z0-9_]+)(?:\.(asc|desc))?$/i', $part, $pm)) {
+            $dir    = isset($pm[2]) ? strtoupper($pm[2]) : 'ASC';
+            $safe[] = "`{$pm[1]}` $dir";
+        }
+    }
+    return $safe ? implode(', ', $safe) : '';
 }
 
 // ── Main dispatch ─────────────────────────────────────────────────────────────
@@ -129,44 +159,69 @@ switch ($method) {
         [$where, $binds] = parseFilters($qp);
         $whereStr = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        // count=exact mode (Supabase compat for sbCount)
+        // count=exact — lightweight COUNT(*) only, no row fetch
         if (str_contains($prefer, 'count=exact')) {
-            $st = $pdo->prepare("SELECT COUNT(*) FROM `$table` $whereStr");
-            $st->execute($binds);
-            $count = (int)$st->fetchColumn();
+            $cacheKey = "count:{$table}:{$whereStr}:" . serialize($binds);
+            $count = cache_get($cacheKey);
+            if ($count === null) {
+                $st = $pdo->prepare("SELECT COUNT(*) FROM `$table` $whereStr");
+                $st->execute($binds);
+                $count = (int) $st->fetchColumn();
+                cache_set($cacheKey, $count, 30); // 30-second cache for counts
+            }
             $range = $_SERVER['HTTP_RANGE'] ?? '0-0';
             header("Content-Range: $range/$count");
             json_response([]);
         }
 
-        $cols   = safeColumns($qp['select'] ?? '*');
-        $limit  = min((int)($qp['limit'] ?? 1000), 10000);
-        $offset = max((int)($qp['offset'] ?? 0), 0);
+        // ── Static-table cache (branches, regions, stores, wa_templates) ──────
+        // These tables change only when an admin adds/edits entries.
+        // Cache for 10 minutes — eliminates repeated identical SELECTs.
+        $isStatic  = in_array($table, STATIC_TABLES, true);
+        $hasFilter = !empty($where);
+        if ($isStatic && !$hasFilter) {
+            $sCacheKey = "static:{$table}:" . ($qp['select'] ?? '*');
+            $cached    = cache_get($sCacheKey);
+            if ($cached !== null) {
+                json_response($cached);
+            }
+        }
+
+        $cols      = safeColumns($qp['select'] ?? '*');
+        $tableMax  = TABLE_MAX_ROWS[$table] ?? 200;
+        $requested = (int)($qp['limit'] ?? $tableMax);
+        $limit     = min(max($requested, 1), $tableMax);
+        $offset    = max((int)($qp['offset'] ?? 0), 0);
 
         $orderStr = '';
         if (!empty($qp['order'])) {
-            $ord = preg_replace('/[^a-zA-Z0-9_, ]/', '', $qp['order']);
+            $ord = safeOrder($qp['order']);
             if ($ord) $orderStr = "ORDER BY $ord";
         }
 
         $sql = "SELECT $cols FROM `$table` $whereStr $orderStr LIMIT $limit OFFSET $offset";
         $st  = $pdo->prepare($sql);
         $st->execute($binds);
-        json_response($st->fetchAll());
+        $rows = $st->fetchAll();
+
+        // Store in static-table cache
+        if ($isStatic && !$hasFilter) {
+            cache_set($sCacheKey, $rows, 600); // 10 minutes
+        }
+
+        json_response($rows);
     }
 
     // ── POST (insert / upsert) ────────────────────────────────────────────────
     case 'POST': {
         $rows = is_array($body) && isset($body[0]) ? $body : [$body];
-        $rows = array_filter($rows, fn($r) => is_array($r) && count($r));
+        $rows = array_values(array_filter($rows, fn($r) => is_array($r) && count($r)));
         if (!$rows) { json_response(['success' => true], 201); }
 
-        $rows     = array_values($rows);
-        $colNames = array_map(
+        $colNames = array_values(array_filter(array_map(
             fn($c) => preg_replace('/[^a-zA-Z0-9_]/', '', $c),
             array_keys($rows[0])
-        );
-        $colNames = array_filter($colNames);
+        )));
         if (!$colNames) { json_response(['success' => true], 201); }
 
         $colStr = '`' . implode('`, `', $colNames) . '`';
@@ -185,10 +240,24 @@ switch ($method) {
         $sql = "$verb INTO `$table` ($colStr) VALUES ($phStr)$suffix";
         $st  = $pdo->prepare($sql);
 
-        foreach ($rows as $row) {
-            $vals = [];
-            foreach ($colNames as $c) $vals[$c] = isset($row[$c]) ? $row[$c] : null;
-            $st->execute($vals);
+        // Wrap all rows in a single transaction — one commit instead of N commits
+        $pdo->beginTransaction();
+        try {
+            foreach ($rows as $row) {
+                $vals = [];
+                foreach ($colNames as $c) $vals[$c] = $row[$c] ?? null;
+                $st->execute($vals);
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            json_response(['error' => 'Insert failed: ' . $e->getMessage()], 500);
+        }
+
+        // Invalidate static-table cache on writes
+        if (in_array($table, STATIC_TABLES, true)) {
+            cache_del("static:{$table}:*");
+            cache_del("static:{$table}:" . ($qp['select'] ?? '*'));
         }
 
         json_response(['success' => true], 201);
@@ -203,10 +272,10 @@ switch ($method) {
         $setCols  = [];
         $setBinds = [];
         foreach ($body as $col => $val) {
-            $c         = preg_replace('/[^a-zA-Z0-9_]/', '', $col);
+            $c = preg_replace('/[^a-zA-Z0-9_]/', '', $col);
             if (!$c) continue;
-            $ph        = ':s_' . $c;
-            $setCols[] = "`$c` = $ph";
+            $ph           = ':s_' . $c;
+            $setCols[]    = "`$c` = $ph";
             $setBinds[$ph] = $val;
         }
         if (!$setCols) { json_response(['success' => true]); }
@@ -215,6 +284,11 @@ switch ($method) {
              . ' WHERE ' . implode(' AND ', $where);
         $st  = $pdo->prepare($sql);
         $st->execute(array_merge($setBinds, $filterBinds));
+
+        if (in_array($table, STATIC_TABLES, true)) {
+            cache_del("static:{$table}:" . ($qp['select'] ?? '*'));
+        }
+
         json_response(['success' => true]);
     }
 
@@ -226,6 +300,11 @@ switch ($method) {
         $sql = "DELETE FROM `$table` WHERE " . implode(' AND ', $where);
         $st  = $pdo->prepare($sql);
         $st->execute($binds);
+
+        if (in_array($table, STATIC_TABLES, true)) {
+            cache_del("static:{$table}:" . ($qp['select'] ?? '*'));
+        }
+
         json_response(['success' => true]);
     }
 
