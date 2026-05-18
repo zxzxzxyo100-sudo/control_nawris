@@ -7104,111 +7104,34 @@ async function renderStaff(){
     <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--pur);font-family:var(--mono)">${combinedTotal?Math.round(totalFollowed/combinedTotal*100):0}%</div><div style="font-size:11px;color:var(--mute)">نسبة الإنجاز</div></div>
   `;
 
-  // Per-employee stats + shipment list
-  const empStats={};
-  Object.entries(USERS).forEach(([uname,u])=>{
-    if(!u||u.status==='inactive')return;
-    empStats[u.name]={name:u.name,role:u.role,followed:0,solved:0,contacted:0,no_answer:0,pending:0,items:[]};
-  });
-  packageRows.forEach(r=>{
-    if(!r.crBy||r.crBy==='—')return;
-    const name=r.crBy;
-    if(!empStats[name])return;
-    if(r.crResult){
-      empStats[name].followed++;
-      if(r.crResult==='solved')empStats[name].solved++;
-      else if(r.crResult==='contacted')empStats[name].contacted++;
-      else if(r.crResult==='no_answer')empStats[name].no_answer++;
-      else if(r.crResult==='pending')empStats[name].pending++;
-    }
-    empStats[name].items.push({code:r.code||'—',result:r.crResult||'',note:r.crNote||'',src:r.src||''});
-  });
-  // Build strictly cumulative monthly contacted counts (never decrement within month).
+  // ── حسبة الشهر والترتيب (سريعة — بضع مستخدمين فقط) ─────────────────────────
   const monthKey=currentMonthKey();
   const liveMonthlyContacted={};
   (Array.isArray(contact_results_db)?contact_results_db:[]).forEach(r=>{
     const ts=String(r.updated_at||r.created_at||'').trim();
     if(!ts||!ts.startsWith(monthKey))return;
     const by=resolveCanonicalActiveEmployeeName(r.updated_by);
-    if(!by)return;
-    if(String(r.result||'')!=='contacted')return;
+    if(!by||String(r.result||'')!=='contacted')return;
     liveMonthlyContacted[by]=Number(liveMonthlyContacted[by]||0)+1;
   });
   const monthlyContacted=floorMonthlyContactedCounts(liveMonthlyContacted);
   const srvByName=n=>((serverStaffBoard&&serverStaffBoard.rows)?serverStaffBoard.rows:[]).find(x=>x.name===n);
-
-  const rows=Object.values(empStats).map(r=>{
+  const empRows=Object.values(empStats).map(r=>{
     const sc=srvByName(r.name);
-    const localMc=Number(monthlyContacted[r.name]||0);
-    const mc=Math.max(localMc,sc?Number(sc.contacted||0):0);
+    const mc=Math.max(Number(monthlyContacted[r.name]||0),sc?Number(sc.contacted||0):0);
     const solvedM=Math.max(r.solved,sc?Number(sc.resolved||0):0);
     return{...r,monthlyContacted:mc,solved:solvedM};
   }).sort((a,b)=>b.monthlyContacted-a.monthlyContacted||b.solved-a.solved||b.followed-a.followed);
-  const tbody=document.getElementById('staff-tbody');
-  if(!rows.length||!rows.some(r=>r.followed>0)){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا توجد بيانات متابعة بعد — اضغط 💾 لحفظ نتائج التواصل</td></tr>';
-  } else {
-    tbody.innerHTML=rows.filter(r=>r.followed>0).map(r=>{
-      const pct=combinedTotal?Math.round(r.followed/combinedTotal*100):0;
-      const pctColor=pct>70?'var(--grn)':pct>30?'var(--gold)':'var(--red)';
-      const codesHtml=r.items.slice(0,50).map(it=>{
-        const rc=it.result==='solved'?'var(--grn)':it.result==='contacted'?'var(--blu)':it.result==='no_answer'?'var(--red)':it.result==='pending'?'var(--gold)':'var(--mute)';
-        const noteStr=it.note?` — <span style="color:var(--pale)">${it.note}</span>`:'';
-        const srcBadge=it.src==='API'
-          ?'<span style="font-size:9px;color:var(--pur);margin-inline:4px">[API]</span>'
-          :'<span style="font-size:9px;color:var(--blu);margin-inline:4px">[DB]</span>';
-        return`<div style="font-size:10px;padding:2px 0;border-bottom:1px solid var(--rim)">${srcBadge}<span style="font-size:10px">${backofficeOrderLinkHtml(it.code)}</span> <span style="color:${rc}">${crLabels[it.result]||'—'}</span>${noteStr}</div>`;
-      }).join('');
-      return`<tr>
-        <td><strong>${r.name}</strong><div style="font-size:10px;color:var(--dim)">${r.role==='manager'?'مدير':'موظف'}</div></td>
-        <td style="font-family:var(--mono);font-weight:700">${r.followed}</td>
-        <td style="color:var(--grn);font-weight:700">${r.solved}</td>
-        <td style="color:var(--blu);font-weight:700">${r.monthlyContacted}</td>
-        <td style="color:var(--red);font-weight:700">${r.no_answer}</td>
-        <td style="color:var(--gold);font-weight:700">${r.pending}</td>
-        <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${pctColor};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pctColor};font-family:var(--mono)">${pct}%</span></div></td>
-      </tr>
-      <tr><td colspan="7" style="padding:4px 12px;background:var(--bg2)"><details><summary style="cursor:pointer;font-size:11px;color:var(--pale)">📋 عرض الأكواد (${r.items.length})</summary><div style="max-height:200px;overflow-y:auto;margin-top:6px">${codesHtml||'<div style="color:var(--mute);font-size:11px">لا أكواد</div>'}</div></details></td></tr>`;
-    }).join('');
-  }
-  // Top performer of current month (server totals preferred when available)
-  const topBox=document.getElementById('staff-top-performer');
-  if(topBox){
-    let leader=null;
-    if(serverStaffBoard&&serverStaffBoard.top&&Number(serverStaffBoard.top.contacted||0)>0){
-      const t=serverStaffBoard.top;
-      const canon=resolveCanonicalActiveEmployeeName(t.name);
-      if(canon){
-        const full=rows.find(x=>x.name===canon);
-        leader={name:canon,monthlyContacted:Number(t.contacted||0),solved:Number(t.resolved||0),role:full?full.role:'employee'};
-      }
-    }
-    if(!leader)leader=rows.find(r=>r.monthlyContacted>0&&r.role!=='manager')||rows.find(r=>r.monthlyContacted>0)||null;
-    if(!leader){
-      topBox.innerHTML='<div style="border:1px dashed var(--rim);border-radius:12px;padding:12px;color:var(--mute);font-size:12px">لا يوجد متصدر للشهر حتى الآن — ابدأ التتبع لتفعيل لوحة التحدي.</div>';
-    }else{
-      const eligible=leader.monthlyContacted>=20000;
-      const srcHint=serverStaffBoard&&Array.isArray(serverStaffBoard.rows)&&serverStaffBoard.rows.length?'<div style="font-size:10px;color:#94a3b8;margin-top:4px">متزامن من السيرفر (MySQL) عند توفر الربط والجلسة</div>':'';
-      topBox.innerHTML=`
-        <div style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:999px;background:#f59e0b;color:#fff;font-weight:900;font-family:var(--mono)">#1</span>
-            <div>
-              <div style="font-size:12px;color:#cbd5e1">Top Performer — ${monthKey}</div>
-              <div style="font-size:16px;color:#fff;font-weight:900">${leader.name}</div>
-              ${srcHint}
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span class="badge b-blu">📞 تم التواصل: ${leader.monthlyContacted}</span>
-            <span class="badge b-grn">✅ تم الحل: ${leader.solved}</span>
-            ${eligible?'<span class="badge b-gold">💰 Bonus Eligibility: 100 LYD</span>':''}
-          </div>
-        </div>`;
-    }
-  }
 
-  // CR summary
+  // ══ Phase 1 (فوري): أرقام KPI + ملخص التواصل ════════════════════════════
+  document.getElementById('staff-kpis').innerHTML=`
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--gold);font-family:var(--mono)">${shipments.length}</div><div style="font-size:11px;color:var(--mute)">طرود Supabase</div></div>
+    <div style="background:var(--prd);border:1px solid var(--prb);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--pur);font-family:var(--mono)">${apiShipments.length}</div><div style="font-size:11px;color:var(--mute)">طرود API</div></div>
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--white);font-family:var(--mono)">${combinedTotal}</div><div style="font-size:11px;color:var(--mute)">الإجمالي الكلي</div></div>
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--grn);font-family:var(--mono)">${totalFollowed}</div><div style="font-size:11px;color:var(--mute)">تمت متابعتها</div></div>
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--red);font-family:var(--mono)">${totalNone}</div><div style="font-size:11px;color:var(--mute)">بدون متابعة</div></div>
+    <div style="background:var(--bg4);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--pur);font-family:var(--mono)">${combinedTotal?Math.round(totalFollowed/combinedTotal*100):0}%</div><div style="font-size:11px;color:var(--mute)">نسبة الإنجاز</div></div>
+  `;
   document.getElementById('staff-cr-summary').innerHTML=`
     <div style="background:var(--grd);border:1px solid var(--grb);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--grn);font-family:var(--mono)">${totalSolved}</div><div style="font-size:11px;color:var(--grn)">✅ تم الحل</div></div>
     <div style="background:var(--bld);border:1px solid var(--blb);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--blu);font-family:var(--mono)">${totalContacted}</div><div style="font-size:11px;color:var(--blu)">📞 تم التواصل</div></div>
@@ -7216,69 +7139,85 @@ async function renderStaff(){
     <div style="background:var(--gd);border:1px solid var(--gb);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--gold);font-family:var(--mono)">${totalPending}</div><div style="font-size:11px;color:var(--gold)">⏳ قيد المتابعة</div></div>
     <div style="background:var(--bg4);border:1px solid var(--rim);border-radius:var(--r2);padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--mute);font-family:var(--mono)">${totalNone}</div><div style="font-size:11px;color:var(--mute)">بدون متابعة</div></div>
   `;
+  // تعيين placeholder للأقسام الثقيلة حتى تظهر
+  const _ld='<div style="text-align:center;padding:20px;color:var(--mute);font-size:12px">⏳ جارٍ التحميل...</div>';
+  const _tbody=document.getElementById('staff-tbody');if(_tbody)_tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--mute)">⏳ جارٍ التحميل...</td></tr>';
+  const _capEl=document.getElementById('staff-api-captains');if(_capEl)_capEl.innerHTML=_ld;
+  const _assignEl=document.getElementById('staff-assign-stats');if(_assignEl)_assignEl.innerHTML=_ld;
 
-  // ── API Captains Performance (capMap بُني في الدورة الواحدة أعلاه) ────────
-  const capEl=document.getElementById('staff-api-captains');
-  const capTotal=document.getElementById('staff-api-total');
-  if(capEl){
-    if(!apiShipments.length){
-      capEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--mute)">لا توجد طرود API — اضغط "جلب الآن" من تبويب طرود API</div>';
-      if(capTotal)capTotal.textContent='0 طرد';
-    } else {
-      if(capTotal)capTotal.textContent=apiShipments.length+' طرد';
-      const sorted=Object.values(capMap).sort((a,b)=>b.critical-a.critical||b.total-a.total);
-      capEl.innerHTML=`<div class="tw"><table>
-        <thead><tr><th>المندوب</th><th>الإجمالي</th><th style="color:var(--red)">🔴 حرج</th><th style="color:var(--gold)">🟡 تحذير</th><th style="color:var(--grn)">🟢 في الموعد</th><th style="color:var(--orn)">↩️ مرتجع</th><th>نسبة التسليم</th></tr></thead>
-        <tbody>${sorted.map(c=>{
-          const pct=c.total?Math.round(c.ok/c.total*100):0;
-          const pc=pct>70?'var(--grn)':pct>40?'var(--gold)':'var(--red)';
+  // ══ Phase 2 (frame ثانٍ): جدول الموظفين + المتصدر ══════════════════════════
+  requestAnimationFrame(()=>{
+    const tbody=document.getElementById('staff-tbody');
+    if(tbody){
+      if(!empRows.length||!empRows.some(r=>r.followed>0)){
+        tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--mute)">لا توجد بيانات متابعة بعد — اضغط 💾 لحفظ نتائج التواصل</td></tr>';
+      }else{
+        tbody.innerHTML=empRows.filter(r=>r.followed>0).map(r=>{
+          const pct=combinedTotal?Math.round(r.followed/combinedTotal*100):0;
+          const pctColor=pct>70?'var(--grn)':pct>30?'var(--gold)':'var(--red)';
+          const codesHtml=r.items.slice(0,50).map(it=>{
+            const rc=it.result==='solved'?'var(--grn)':it.result==='contacted'?'var(--blu)':it.result==='no_answer'?'var(--red)':it.result==='pending'?'var(--gold)':'var(--mute)';
+            const noteStr=it.note?` — <span style="color:var(--pale)">${it.note}</span>`:'';
+            const srcBadge=it.src==='API'?'<span style="font-size:9px;color:var(--pur);margin-inline:4px">[API]</span>':'<span style="font-size:9px;color:var(--blu);margin-inline:4px">[DB]</span>';
+            return`<div style="font-size:10px;padding:2px 0;border-bottom:1px solid var(--rim)">${srcBadge}<span style="font-size:10px">${backofficeOrderLinkHtml(it.code)}</span> <span style="color:${rc}">${crLabels[it.result]||'—'}</span>${noteStr}</div>`;
+          }).join('');
           return`<tr>
-            <td><strong>${c.name}</strong>${c.branch?`<div style="font-size:10px;color:var(--dim)">${c.branch}</div>`:''}</td>
-            <td style="font-family:var(--mono);font-weight:700">${c.total}</td>
-            <td style="color:var(--red);font-weight:700">${c.critical||'—'}</td>
-            <td style="color:var(--gold);font-weight:700">${c.warning||'—'}</td>
-            <td style="color:var(--grn);font-weight:700">${c.ok||'—'}</td>
-            <td style="color:var(--orn);font-weight:700">${c.returned||'—'}</td>
-            <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${pc};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pc};font-family:var(--mono)">${pct}%</span></div></td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table></div>`;
+            <td><strong>${r.name}</strong><div style="font-size:10px;color:var(--dim)">${r.role==='manager'?'مدير':'موظف'}</div></td>
+            <td style="font-family:var(--mono);font-weight:700">${r.followed}</td>
+            <td style="color:var(--grn);font-weight:700">${r.solved}</td>
+            <td style="color:var(--blu);font-weight:700">${r.monthlyContacted}</td>
+            <td style="color:var(--red);font-weight:700">${r.no_answer}</td>
+            <td style="color:var(--gold);font-weight:700">${r.pending}</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${pctColor};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pctColor};font-family:var(--mono)">${pct}%</span></div></td>
+          </tr>
+          <tr><td colspan="7" style="padding:4px 12px;background:var(--bg2)"><details><summary style="cursor:pointer;font-size:11px;color:var(--pale)">📋 عرض الأكواد (${r.items.length})</summary><div style="max-height:200px;overflow-y:auto;margin-top:6px">${codesHtml||'<div style="color:var(--mute);font-size:11px">لا أكواد</div>'}</div></details></td></tr>`;
+        }).join('');
+      }
     }
-  }
-
-  // ── Employee Assignment Summary (assignEmpStats بُني في الدورة الواحدة) ───
-  const assignStatsEl=document.getElementById('staff-assign-stats');
-  if(assignStatsEl){
-    const unassigned=apiShipments.length-assignedCount;
-    const rows=Object.values(assignEmpStats).filter(e=>e.total>0&&isAssignableEmployeeName(e.name)).sort((a,b)=>b.total-a.total);
-    if(!rows.length&&!unassigned){
-      assignStatsEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--mute)">لم يتم توزيع الطرود بعد — اذهب لتبويب طرود API ← توزيع الطرود</div>';
-    } else {
-      assignStatsEl.innerHTML=`<div class="tw"><table>
-        <thead><tr><th>الموظف</th><th>المسند</th><th style="color:var(--red)">حرج</th><th style="color:var(--gold)">تحذير</th><th style="color:var(--grn)">✅ منجز</th><th style="color:var(--gold)">⏳ قيد</th><th style="color:var(--red)">📵 لا يرد</th><th>نسبة الإنجاز</th></tr></thead>
-        <tbody>
-          ${unassigned?`<tr><td style="color:var(--mute)" colspan="8">⚠️ ${unassigned} طرد غير مسندة — <span style="color:var(--pur);cursor:pointer" onclick="gTab('api-shipments');setTimeout(openAssignPanel,200)">وزّعها الآن</span></td></tr>`:''}
-          ${rows.map(r=>{
-            const pct=r.total?Math.round(r.done/r.total*100):0;
-            const pc=pct>70?'var(--grn)':pct>40?'var(--gold)':'var(--red)';
-            return`<tr>
-              <td><strong>${r.name}</strong></td>
-              <td style="font-family:var(--mono);font-weight:800;color:var(--pur)">${r.total}</td>
-              <td style="color:var(--red)">${r.crit||'—'}</td>
-              <td style="color:var(--gold)">${r.warn||'—'}</td>
-              <td style="color:var(--grn)">${r.done||'—'}</td>
-              <td style="color:var(--gold)">${r.pending||'—'}</td>
-              <td style="color:var(--red)">${r.noAnswer||'—'}</td>
-              <td><div style="display:flex;align-items:center;gap:6px;min-width:100px"><div style="flex:1;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${pc};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pc}">${pct}%</span></div></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table></div>`;
+    const topBox=document.getElementById('staff-top-performer');
+    if(topBox){
+      let leader=null;
+      if(serverStaffBoard&&serverStaffBoard.top&&Number(serverStaffBoard.top.contacted||0)>0){
+        const t=serverStaffBoard.top;const canon=resolveCanonicalActiveEmployeeName(t.name);
+        if(canon){const full=empRows.find(x=>x.name===canon);leader={name:canon,monthlyContacted:Number(t.contacted||0),solved:Number(t.resolved||0),role:full?full.role:'employee'};}
+      }
+      if(!leader)leader=empRows.find(r=>r.monthlyContacted>0&&r.role!=='manager')||empRows.find(r=>r.monthlyContacted>0)||null;
+      if(!leader){
+        topBox.innerHTML='<div style="border:1px dashed var(--rim);border-radius:12px;padding:12px;color:var(--mute);font-size:12px">لا يوجد متصدر للشهر حتى الآن — ابدأ التتبع لتفعيل لوحة التحدي.</div>';
+      }else{
+        const eligible=leader.monthlyContacted>=20000;
+        const srcHint=serverStaffBoard&&Array.isArray(serverStaffBoard.rows)&&serverStaffBoard.rows.length?'<div style="font-size:10px;color:#94a3b8;margin-top:4px">متزامن من السيرفر (MySQL) عند توفر الربط والجلسة</div>':'';
+        topBox.innerHTML=`<div style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:999px;background:#f59e0b;color:#fff;font-weight:900;font-family:var(--mono)">#1</span><div><div style="font-size:12px;color:#cbd5e1">Top Performer — ${monthKey}</div><div style="font-size:16px;color:#fff;font-weight:900">${leader.name}</div>${srcHint}</div></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="badge b-blu">📞 تم التواصل: ${leader.monthlyContacted}</span><span class="badge b-grn">✅ تم الحل: ${leader.solved}</span>${eligible?'<span class="badge b-gold">💰 Bonus Eligibility: 100 LYD</span>':''}</div></div>`;
+      }
     }
-  }
 
-  // ── Call complete shipments table renderer ──
-  renderStaffShipments();
+    // ══ Phase 3 (frame ثالث): جدول المناديب + الإسنادات + طرود الموظفين ══════
+    requestAnimationFrame(()=>{
+      const capEl=document.getElementById('staff-api-captains');
+      const capTotal=document.getElementById('staff-api-total');
+      if(capEl){
+        if(!apiShipments.length){
+          capEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--mute)">لا توجد طرود API — اضغط "جلب الآن" من تبويب طرود API</div>';
+          if(capTotal)capTotal.textContent='0 طرد';
+        }else{
+          if(capTotal)capTotal.textContent=apiShipments.length+' طرد';
+          const sorted=Object.values(capMap).sort((a,b)=>b.critical-a.critical||b.total-a.total);
+          capEl.innerHTML=`<div class="tw"><table><thead><tr><th>المندوب</th><th>الإجمالي</th><th style="color:var(--red)">🔴 حرج</th><th style="color:var(--gold)">🟡 تحذير</th><th style="color:var(--grn)">🟢 في الموعد</th><th style="color:var(--orn)">↩️ مرتجع</th><th>نسبة التسليم</th></tr></thead><tbody>${sorted.map(c=>{const pct=c.total?Math.round(c.ok/c.total*100):0;const pc=pct>70?'var(--grn)':pct>40?'var(--gold)':'var(--red)';return`<tr><td><strong>${c.name}</strong>${c.branch?`<div style="font-size:10px;color:var(--dim)">${c.branch}</div>`:''}</td><td style="font-family:var(--mono);font-weight:700">${c.total}</td><td style="color:var(--red);font-weight:700">${c.critical||'—'}</td><td style="color:var(--gold);font-weight:700">${c.warning||'—'}</td><td style="color:var(--grn);font-weight:700">${c.ok||'—'}</td><td style="color:var(--orn);font-weight:700">${c.returned||'—'}</td><td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${pc};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pc};font-family:var(--mono)">${pct}%</span></div></td></tr>`;}).join('')}</tbody></table></div>`;
+        }
+      }
+      const assignStatsEl=document.getElementById('staff-assign-stats');
+      if(assignStatsEl){
+        const unassigned=apiShipments.length-assignedCount;
+        const aRows=Object.values(assignEmpStats).filter(e=>e.total>0&&isAssignableEmployeeName(e.name)).sort((a,b)=>b.total-a.total);
+        if(!aRows.length&&!unassigned){
+          assignStatsEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--mute)">لم يتم توزيع الطرود بعد — اذهب لتبويب طرود API ← توزيع الطرود</div>';
+        }else{
+          assignStatsEl.innerHTML=`<div class="tw"><table><thead><tr><th>الموظف</th><th>المسند</th><th style="color:var(--red)">حرج</th><th style="color:var(--gold)">تحذير</th><th style="color:var(--grn)">✅ منجز</th><th style="color:var(--gold)">⏳ قيد</th><th style="color:var(--red)">📵 لا يرد</th><th>نسبة الإنجاز</th></tr></thead><tbody>${unassigned?`<tr><td style="color:var(--mute)" colspan="8">⚠️ ${unassigned} طرد غير مسندة — <span style="color:var(--pur);cursor:pointer" onclick="gTab('api-shipments');setTimeout(openAssignPanel,200)">وزّعها الآن</span></td></tr>`:''}${aRows.map(r=>{const pct=r.total?Math.round(r.done/r.total*100):0;const pc=pct>70?'var(--grn)':pct>40?'var(--gold)':'var(--red)';return`<tr><td><strong>${r.name}</strong></td><td style="font-family:var(--mono);font-weight:800;color:var(--pur)">${r.total}</td><td style="color:var(--red)">${r.crit||'—'}</td><td style="color:var(--gold)">${r.warn||'—'}</td><td style="color:var(--grn)">${r.done||'—'}</td><td style="color:var(--gold)">${r.pending||'—'}</td><td style="color:var(--red)">${r.noAnswer||'—'}</td><td><div style="display:flex;align-items:center;gap:6px;min-width:100px"><div style="flex:1;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${pc};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pc}">${pct}%</span></div></td></tr>`;}).join('')}</tbody></table></div>`;
+        }
+      }
+      renderStaffShipments();
+    });
+  });
 }
 
 // ══════════════════════════════════════════
