@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+$_REQ_START = microtime(true); // global timer — used in X-Timing header
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
@@ -201,8 +202,13 @@ switch ($method) {
 
         $sql = "SELECT $cols FROM `$table` $whereStr $orderStr LIMIT $limit OFFSET $offset";
         $st  = $pdo->prepare($sql);
+
+        // Measure exact DB execution time (visible as X-Timing-DB in response headers)
+        global $_DB_TIME;
+        $_t0 = microtime(true);
         $st->execute($binds);
         $rows = $st->fetchAll();
+        $_DB_TIME = microtime(true) - $_t0;
 
         // Store in static-table cache
         if ($isStatic && !$hasFilter) {

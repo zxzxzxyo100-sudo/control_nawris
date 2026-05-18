@@ -8009,42 +8009,86 @@ async function fetchAPIShipments(){
       return newKeys;
     };
 
+    // Extract last_page from API response (works across common pagination shapes)
+    const getLastPage=json=>Number(
+      json?.meta?.last_page||json?.last_page||json?.data?.last_page||
+      json?.pagination?.last_page||json?.meta?.total_pages||0
+    );
+    const getCurrentPage=json=>Number(
+      json?.meta?.current_page||json?.current_page||json?.data?.current_page||
+      json?.pagination?.current_page||0
+    );
+
     const fetchAllPagesForBase=async(baseUrl,label)=>{
-      let nextCursor=null;
-      let nextPageUrl='';
-      let pageNum=0;
+      let dayRawCount=0;
+
+      // ── Page 1: always sequential — gives us last_page ───────────────────────
+      if(el)el.textContent=`⏳ ${label} — صفحة 1... [${rawByCode.size} طرد]`;
+      let firstResult;
+      try{ firstResult=await fetchPageWithRetry(baseUrl,'',2); }
+      catch(e){ throw e; }
+      const firstJson=firstResult.json;
+      const firstData=getPageRows(firstJson);
+      dayRawCount+=firstData.length;
+      appendUniqueItems(firstData);
+      if(!firstData.length)return dayRawCount;
+      if(_apiFetchGen!==myGen)return dayRawCount;
+
+      const lastPage=getLastPage(firstJson);
+      const curPage=getCurrentPage(firstJson)||1;
+
+      // ── Parallel path: API exposes last_page → fetch remaining in batches ────
+      // Reduces 21 sequential requests → ceil(20/4) = 5 parallel batches
+      // Speedup: ~21 × 300ms = 6.3s  →  1 + 5 × 300ms = 2.5s  (≈ 60% faster)
+      if(lastPage>curPage){
+        const BATCH=4; // concurrent requests per batch — stay below rate limits
+        const totalPages=Math.min(lastPage,MAX_PAGES);
+        for(let p=curPage+1;p<=totalPages;p+=BATCH){
+          if(_apiFetchGen!==myGen)return dayRawCount;
+          if(Date.now()>FETCH_DEADLINE){console.warn('API fetch: deadline reached');break;}
+          const batchNums=[];
+          for(let j=p;j<Math.min(p+BATCH,totalPages+1);j++)batchNums.push(j);
+          if(progBar)progBar.style.width=Math.round((p-1)/totalPages*80)+'%';
+          if(el)el.textContent=`⏳ ${label} — صفحات ${p}-${p+BATCH-1} (متوازية)... [${rawByCode.size} طرد]`;
+          await Promise.all(batchNums.map(async pageNum=>{
+            try{
+              const u=new URL(baseUrl);
+              u.searchParams.set('page',String(pageNum));
+              const r=await fetchPageWithRetry(u.toString(),'',2);
+              const data=getPageRows(r.json);
+              dayRawCount+=data.length;
+              appendUniqueItems(data);
+            }catch(e){console.warn(`${label} page ${pageNum} failed:`,e?.message||e);}
+          }));
+        }
+        return dayRawCount;
+      }
+
+      // ── Sequential fallback: cursor or next-URL pagination ───────────────────
+      let nextCursor=getNextCursor(firstJson)||null;
+      let nextPageUrl=getNextPageUrl(firstJson,baseUrl)||getNextPageByNumber(firstJson,baseUrl)||'';
       const seenCursors=new Set();
       const seenPageUrls=new Set();
-      let dayRawCount=0;
-      do{
+      let pageNum=1;
+      while((nextPageUrl||nextCursor)&&pageNum<MAX_PAGES){
+        if(_apiFetchGen!==myGen)break;
+        if(Date.now()>FETCH_DEADLINE){console.warn('API fetch: deadline reached');break;}
         pageNum++;
         const pageUrl=String(nextPageUrl||baseUrl).trim();
         if(nextPageUrl){
-          if(seenPageUrls.has(pageUrl)){
-            console.warn(`Pagination stopped (${label}): repeated next URL.`);
-            break;
-          }
+          if(seenPageUrls.has(pageUrl)){console.warn(`${label}: repeated next URL`);break;}
           seenPageUrls.add(pageUrl);
         }
         const cursorForPage=nextPageUrl?'':String(nextCursor||'').trim();
         if(!nextPageUrl&&cursorForPage){
-          if(seenCursors.has(cursorForPage)){
-            console.warn(`Pagination stopped (${label}): repeated next_cursor (${cursorForPage}).`);
-            break;
-          }
+          if(seenCursors.has(cursorForPage)){console.warn(`${label}: repeated cursor`);break;}
           seenCursors.add(cursorForPage);
         }
         if(el)el.textContent=`⏳ ${label} — صفحة ${pageNum}... [${rawByCode.size} طرد]`;
-
         let pageResult=null;
-        try{
-          pageResult=await fetchPageWithRetry(pageUrl,cursorForPage,2);
-        }catch(fetchErr){
-          // Don't fully block users if later pages fail (e.g. unstable cursor modes / server 500).
-          if(rawByCode.size>0){
-            console.warn(`Pagination warning (${label}): stopped at page ${pageNum} due to ${fetchErr?.message||fetchErr}`);
-            break;
-          }
+        try{ pageResult=await fetchPageWithRetry(pageUrl,cursorForPage,2); }
+        catch(fetchErr){
+          if(rawByCode.size>0){console.warn(`${label} stopped at page ${pageNum}:`,fetchErr?.message);break;}
           throw fetchErr;
         }
         const json=pageResult.json;
@@ -8052,11 +8096,9 @@ async function fetchAPIShipments(){
         nextCursor=getNextCursor(json)||null;
         nextPageUrl=getNextPageUrl(json,pageUrl)||getNextPageByNumber(json,pageUrl)||'';
         dayRawCount+=pageData.length;
-        const newCount=appendUniqueItems(pageData);
-
+        appendUniqueItems(pageData);
         if(!pageData.length)break;
-        if(Date.now()>FETCH_DEADLINE){console.warn('API fetch: deadline reached, stopping pagination');break;}
-      }while((nextPageUrl||nextCursor)&&pageNum<MAX_PAGES);
+      }
       return dayRawCount;
     };
 

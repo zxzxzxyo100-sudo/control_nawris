@@ -45,9 +45,24 @@ function crm_pdo(): PDO
 // ── JSON response helper ──────────────────────────────────────────────────────
 function json_response(array $payload, int $status = 200): void
 {
+    global $_REQ_START, $_DB_TIME;
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    // ── Profiling headers — visible in DevTools → Network → Headers tab ──────
+    $encStart = microtime(true);
+    $json     = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $encMs    = round((microtime(true) - $encStart) * 1000, 1);
+    $totalMs  = isset($_REQ_START) ? round((microtime(true) - $_REQ_START) * 1000, 1) : 0;
+    $dbMs     = isset($_DB_TIME)   ? round($_DB_TIME * 1000, 1) : 0;
+
+    header("X-Timing-DB: {$dbMs}ms");         // MySQL query duration
+    header("X-Timing-Encode: {$encMs}ms");    // json_encode() duration
+    header("X-Timing-Total: {$totalMs}ms");   // End-to-end PHP time
+    header("X-Row-Count: " . count($payload)); // Rows returned
+    header("X-Payload-KB: " . round(strlen($json) / 1024, 1)); // Payload size in KB
+
+    echo $json;
     exit;
 }
 
