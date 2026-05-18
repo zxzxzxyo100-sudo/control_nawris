@@ -7819,4 +7819,5 @@ function renderAssignStats(){
     }).join('')}`;
 }
 
-window.addEventListener('load',init);
+// Safe init: works whether load already fired or not
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",safeInit);}else{safeInit();}function safeInit(){try{init();}catch(e){console.error("init failed:",e);var ld=document.getElementById("loading");if(ld)ld.className="gone";}}
