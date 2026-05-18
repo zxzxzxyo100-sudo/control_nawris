@@ -5529,12 +5529,12 @@ let _apiFetchInProgress=false;
 let _apiFetchController=null;
 let _apiFetchGen=0; // incremented on every new fetch; stale processing loops compare against this to bail early
 async function fetchAPIShipments(){
+async function fetchAPIShipments(){
+  // Guard: check in-progress BEFORE aborting — prevents restart loop on weak CPUs
+  if(_apiFetchInProgress){await new Promise(r=>setTimeout(r,300));if(_apiFetchInProgress)return;}
   if(_apiFetchController){try{_apiFetchController.abort();}catch(_){}}
-  if(_apiFetchInProgress){
-    await new Promise(r=>setTimeout(r,300));
-    if(_apiFetchInProgress)return; // still running after wait → bail, don't interleave
-  }
-  const myGen=++_apiFetchGen; // capture this call's generation
+
+
   _apiFetchController=new AbortController();
   _apiFetchInProgress=true;
   try{window._ctDischargeBackend=null;}catch(_){}
