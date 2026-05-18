@@ -6303,6 +6303,13 @@ async function uploadShipments(rows,forceStatus){
 // ══════════════════════════════════════════
 // CORS proxy via Cloudflare Worker — sends cursor separately to avoid encoding issues
 const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
+
+// ── pickTrackingCode helpers — module-level so they are allocated ONCE, not once per shipment ──
+const _ptcKeyNorm=k=>String(k||'').toLowerCase().replace(/[‎‏‪-‮]/g,'').replace(/[\s_\-]/g,'').replace(/[أإآٱ]/g,'ا');
+const _ptcCodeKeySet=new Set(['trackingcode','trackingno','trackingnumber','parcelcode','ordercode','code','awb','reference','orderid','id','الرمز','كود','كودالشحنة','رقمالشحنة','رقمالطلب','رقمالتتبع','رمزالشحنة'].map(_ptcKeyNorm));
+const _ptcCodeLikeKey=k=>{const n=_ptcKeyNorm(k);return n.includes('code')||n.includes('track')||n.includes('awb')||n.includes('orderid')||n.includes('رقم')||n.includes('رمز')||n.includes('كود');};
+const _ptcCleanCode=v=>String(v==null?'':v).trim().replace(/[‎‏‪-‮]/g,'');
+const _ptcLooksLike=v=>{if(!v||v.length<4||v.length>48)return false;if(/\s/.test(v))return false;if(!/^[\dA-Za-z]+$/.test(v))return false;return /\d/.test(v);};
 async function apiFetch(baseUrl,token,cursor,timeoutMs=20000){
   const cleanToken=token?token.replace(/^(Bearer|Token)\s*/i,'').trim():'';
   const reqUrl=String(baseUrl||'').trim();
@@ -7777,30 +7784,8 @@ async function fetchAPIShipments(){
     const rawByCode=new Map();
     const normalizedBaseUrl=url.replace(/[?&]cursor=[^&]*/g,'').replace(/[?&]$/,'');
     const pickTrackingCode=(item,fallbackIndex=0)=>{
-      const keyNorm=(k)=>String(k||'')
-        .toLowerCase()
-        .replace(/[\u200e\u200f\u202a-\u202e]/g,'')
-        .replace(/[\s_\-]/g,'')
-        .replace(/[أإآٱ]/g,'ا');
-      const codeKeySet=new Set([
-        'trackingcode','trackingno','trackingnumber','parcelcode','ordercode','code','awb','reference','orderid','id',
-        'الرمز','كود','كودالشحنة','رقمالشحنة','رقمالطلب','رقمالتتبع','رمزالشحنة'
-      ].map(keyNorm));
-      const codeLikeKey=(k)=>{
-        const n=keyNorm(k);
-        return n.includes('code')||n.includes('track')||n.includes('awb')||n.includes('orderid')||n.includes('رقم')||n.includes('رمز')||n.includes('كود');
-      };
-      const cleanCodeValue=(v)=>String(v==null?'':v).trim().replace(/[\u200e\u200f\u202a-\u202e]/g,'');
-      const looksLikeParcelCode=v=>{
-        if(!v||v.length<4||v.length>48)return false;
-        if(/\s/.test(v))return false;
-        // UI/API regex: allow alphanumeric codes including trailing letters like R.
-        if(!/^[\dA-Za-z]+$/.test(v))return false;
-        // Keep parcel sanity: code should include at least one digit.
-        return /\d/.test(v);
-      };
-      // Hard fix: if payload has "code", always treat it as text and use it directly.
-      const payloadCode=cleanCodeValue(item?.code);
+      // uses module-level _ptc* constants — allocated once, not per call
+      const payloadCode=_ptcCleanCode(item?.code);
       if(payloadCode)return payloadCode.toUpperCase();
       // Hard-priority direct fields from API payload.
       const directPriority=[
@@ -7818,8 +7803,8 @@ async function fetchAPIShipments(){
         item?.reference
       ];
       for(const raw of directPriority){
-        const v=cleanCodeValue(raw);
-        if(looksLikeParcelCode(v))return v.toUpperCase();
+        const v=_ptcCleanCode(raw);
+        if(_ptcLooksLike(v))return v.toUpperCase();
       }
       const namedCandidates=[
         item?.tracking_code,
@@ -7847,8 +7832,8 @@ async function fetchAPIShipments(){
       ];
       try{
         Object.entries(item||{}).forEach(([k,v])=>{
-          const nk=keyNorm(k);
-          if(codeKeySet.has(nk)||codeLikeKey(nk)){
+          const nk=_ptcKeyNorm(k);
+          if(_ptcCodeKeySet.has(nk)||_ptcCodeLikeKey(nk)){
             if(typeof v==='string'||typeof v==='number')namedCandidates.push(v);
             else if(v&&typeof v==='object'){
               Object.values(v).forEach(sub=>{
@@ -7859,10 +7844,10 @@ async function fetchAPIShipments(){
         });
       }catch(_){}
       const candidates=namedCandidates
-        .map(v=>cleanCodeValue(v))
+        .map(v=>_ptcCleanCode(v))
         .filter(Boolean);
       if(!candidates.length)return 'API-'+Date.now()+'-'+fallbackIndex;
-      const hits=candidates.map((v,idx)=>({v,idx})).filter(x=>looksLikeParcelCode(x.v));
+      const hits=candidates.map((v,idx)=>({v,idx})).filter(x=>_ptcLooksLike(x.v));
       if(hits.length){
         const score=v=>{
           let s=0;
@@ -8082,7 +8067,10 @@ async function fetchAPIShipments(){
     if(!hasDelay){
       effectiveUrl.searchParams.set('delay_days','2');
     }
-    // per_page محذوف — قد يُسبب مشاكل مع بعض الـ APIs
+    // Request larger pages to reduce sequential HTTP round-trips (100→200 = half the requests)
+    if(!effectiveUrl.searchParams.has('per_page')&&!effectiveUrl.searchParams.has('limit')){
+      effectiveUrl.searchParams.set('per_page','200');
+    }
     const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
 
@@ -8207,19 +8195,18 @@ async function fetchAPIShipments(){
       if(status==='returned')apiProcessedCodes.delete(code);
     };
 
-    // ── Single synchronous pass — pure JS (no DOM), < 50ms for 5,000 records ──
-    // الـ setTimeout كان يضيف 63 وقفة لـ 5000 طرد — حذفناها وأبقينا yield واحدة في الأخير
+    // ── Chunked processing pass — yields every 300 rows for low-end CPUs ─────
     if(progBar)progBar.style.width='0%';
     for(let i=0;i<rawData.length;i++){
       processRow(rawData[i],i);
-      // فحص الإلغاء + تحديث شريط التقدم كل 500 صف فقط (بدل كل 80)
-      if(i%500===0){
+      if(i%300===0){
         if(_apiFetchGen!==myGen)return;
         const pct=Math.round(i/rawData.length*100);
         if(progBar)progBar.style.width=pct+'%';
         if(progPct)progPct.textContent=pct+'٪';
         if(progLbl)progLbl.textContent=`معالجة ${i} / ${rawData.length} طرد`;
         if(el)el.textContent=`⏳ معالجة ${i}/${rawData.length}...`;
+        await new Promise(r=>setTimeout(r,0));
       }
     }
     if(_apiFetchGen!==myGen)return;
