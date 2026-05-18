@@ -8092,9 +8092,9 @@ async function fetchAPIShipments(){
     if(!hasDelay){
       effectiveUrl.searchParams.set('delay_days','2');
     }
-    // Request larger pages to reduce sequential HTTP round-trips (100→200 = half the requests)
+    // Algoriza confirmed support for large pages — 500/page reduces 22 requests → ~5
     if(!effectiveUrl.searchParams.has('per_page')&&!effectiveUrl.searchParams.has('limit')){
-      effectiveUrl.searchParams.set('per_page','200');
+      effectiveUrl.searchParams.set('per_page','500');
     }
     const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
