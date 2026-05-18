@@ -7014,8 +7014,8 @@ async function renderStaff(){
   let assignedCount=0;
 
   for(let _i=0;_i<apiShipments.length;_i++){
-    // yield to browser every 400 rows so the UI stays responsive
-    if(_i>0&&_i%400===0)await new Promise(r=>setTimeout(r,0));
+    // yield to browser every 200 rows — tuned for low-end CPUs (i3/Celeron)
+    if(_i>0&&_i%200===0)await new Promise(r=>setTimeout(r,0));
     const s=apiShipments[_i];
     const cr=getCR(s.id);
     const effectiveResult=isProcessedShipmentForStaff(s)?'solved':(cr.result||'');
@@ -7231,21 +7231,27 @@ async function renderStaff(){
 // STAFF COMPLETE SHIPMENTS TABLE
 // ══════════════════════════════════════════
 function normEmpName(n){return String(n||'').replace(/\s+/g,' ').trim();}
-/** يطابق اسم المتابِع من السجلات مع الاسم في USERS (مسافات/تطبيع) ويُرجع null للمحذوفين أو غير الموجودين */
+// Cached Map for O(1) name resolution — rebuilt only when USERS changes
+let _usersNameMap=null;
+function _buildUsersNameMap(){
+  if(_usersNameMap)return _usersNameMap;
+  _usersNameMap=new Map();
+  for(const[,u]of Object.entries(USERS||{})){
+    if(!u||u.status==='inactive')continue;
+    _usersNameMap.set(normEmpName(u.name),u.name);
+  }
+  return _usersNameMap;
+}
 function resolveCanonicalActiveEmployeeName(n){
   const raw=String(n||'').trim();
   if(!raw||raw==='—')return null;
-  const norm=normEmpName(raw);
-  for(const [,u] of Object.entries(USERS||{})){
-    if(!u||u.status==='inactive')continue;
-    if(normEmpName(u.name)===norm)return u.name;
-  }
-  return null;
+  return _buildUsersNameMap().get(normEmpName(raw))||null;
 }
 
-function renderStaffShipments(){
+async function renderStaffShipments(){
   const tbody=document.getElementById('sf-tbody');
   if(!tbody)return;
+  if(!_sfListCache)tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--mute)">⏳ جارٍ التحميل...</td></tr>';
 
   const q=(document.getElementById('sf-q')?.value||'').trim().toLowerCase();
   const fRes=document.getElementById('sf-fres')?.value||'';
@@ -7302,6 +7308,8 @@ function renderStaffShipments(){
   if(_sfListCache&&_sfCacheVer===_sfDataVersion){
     list=_sfListCache;
   }else{
+    // yield before heavy list build so browser paints placeholder first
+    await new Promise(r=>setTimeout(r,0));
     // أعد بناء dropdown الموظفين عند تغيير البيانات فقط
     const empSel=document.getElementById('sf-femp');
     if(empSel){
