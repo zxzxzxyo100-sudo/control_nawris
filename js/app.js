@@ -4993,6 +4993,7 @@ async function renderStaff(){
     const topBox=document.getElementById('staff-top-performer');
     if(topBox){
       // ── بطاقات KPI الموظفين (مدمجة مع staff-top-performer) ────────────────
+      console.log('[KPI-DEBUG] empRows total:',empRows.length,'followed>0:',empRows.filter(r=>r.followed>0).length,'sample:',empRows.slice(0,3).map(r=>({n:r.name,f:r.followed,s:r.solved})));
       const activeEmps=empRows.filter(r=>r.followed>0);
       let kpiHtml='';
       if(activeEmps.length){
