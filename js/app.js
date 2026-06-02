@@ -4990,104 +4990,56 @@ async function renderStaff(){
         }).join('');
       }
     }
-    // ── بطاقات KPI للموظفين ─────────────────────────────────────────────────
-    let empKpisEl=document.getElementById('staff-emp-kpis');
-    if(!empKpisEl){
-      const perfPane=document.querySelector('[data-staff-pane="performance"]');
-      if(perfPane){
-        const tw=perfPane.querySelector('.tw');
-        empKpisEl=document.createElement('div');
-        empKpisEl.id='staff-emp-kpis';
-        empKpisEl.style.marginBottom='16px';
-        if(tw)perfPane.insertBefore(empKpisEl,tw);
-        else perfPane.appendChild(empKpisEl);
-      }
-    }
-    if(empKpisEl){
-      const activeEmps=empRows.filter(r=>r.followed>0);
-      if(!activeEmps.length){
-        empKpisEl.innerHTML='';
-      }else{
-        const scoredEmps=activeEmps.map(r=>{
-          const f=r.followed||1;
-          const compRate=(r.solved+r.contacted)/f*100;
-          const solveRate=r.solved/f*100;
-          const noAnsRate=r.no_answer/f*100;
-          const cScore=Math.min(compRate/75,1)*60;
-          const sScore=Math.min(solveRate/40,1)*20;
-          const nScore=Math.max(0,1-noAnsRate/40)*20;
-          const overall=Math.round(cScore+sScore+nScore);
-          return{...r,compRate,solveRate,noAnsRate,overall};
-        }).sort((a,b)=>b.overall-a.overall);
-        // ملخص الفريق
-        const teamAvg=Math.round(scoredEmps.reduce((s,r)=>s+r.overall,0)/scoredEmps.length);
-        const greens=scoredEmps.filter(r=>r.overall>=70).length;
-        const golds=scoredEmps.filter(r=>r.overall>=45&&r.overall<70).length;
-        const reds=scoredEmps.filter(r=>r.overall<45).length;
-        const summaryHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <div style="background:var(--bg4);border:1px solid var(--rim);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--mute)">👥 الإجمالي</span><strong style="font-family:var(--mono);color:var(--white)">${scoredEmps.length}</strong></div>
-          <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--grn)">✅ متميز</span><strong style="font-family:var(--mono);color:var(--grn)">${greens}</strong></div>
-          <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--gold)">⚡ مقبول</span><strong style="font-family:var(--mono);color:var(--gold)">${golds}</strong></div>
-          <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--red)">⚠️ يحتاج تحسيناً</span><strong style="font-family:var(--mono);color:var(--red)">${reds}</strong></div>
-          <div style="background:var(--bg4);border:1px solid var(--rim);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--mute)">🏆 متوسط الدرجات</span><strong style="font-family:var(--mono);color:var(--pur)">${teamAvg}</strong></div>
-        </div>`;
-        const cardsHtml=scoredEmps.map((r,i)=>{
-          const zoneColor=r.overall>=70?'var(--grn)':r.overall>=45?'var(--gold)':'var(--red)';
-          const zoneBg=r.overall>=70?'rgba(16,185,129,.1)':r.overall>=45?'rgba(245,158,11,.1)':'rgba(239,68,68,.1)';
-          const zoneBorder=r.overall>=70?'rgba(16,185,129,.3)':r.overall>=45?'rgba(245,158,11,.3)':'rgba(239,68,68,.3)';
-          const zoneLabel=r.overall>=70?'متميز':r.overall>=45?'مقبول':'يحتاج تحسيناً';
-          const cColor=r.compRate>=70?'var(--grn)':r.compRate>=40?'var(--gold)':'var(--red)';
-          const sColor=r.solveRate>=40?'var(--grn)':r.solveRate>=20?'var(--gold)':'var(--red)';
-          const nColor=r.noAnsRate<25?'var(--grn)':r.noAnsRate<40?'var(--gold)':'var(--red)';
-          const contribPct=combinedTotal?Math.round(r.followed/combinedTotal*100):0;
-          return`<div style="background:var(--bg3);border:1px solid var(--rim);border-right:3px solid ${zoneColor};border-radius:14px;padding:14px;overflow:hidden">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="width:30px;height:30px;border-radius:8px;background:var(--bg4);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--pale);font-family:var(--mono);flex-shrink:0">#${i+1}</div>
-      <div>
-        <div style="font-size:13px;font-weight:800;color:var(--white)">${r.name}</div>
-        <div style="font-size:10px;color:var(--dim)">${r.role==='manager'?'مدير':'موظف'} · ${r.followed} طرد</div>
-      </div>
-    </div>
-    <div style="text-align:left;flex-shrink:0">
-      <div style="font-size:24px;font-weight:900;font-family:var(--mono);color:${zoneColor};line-height:1">${r.overall}</div>
-      <div style="font-size:9px;background:${zoneBg};border:1px solid ${zoneBorder};color:${zoneColor};border-radius:99px;padding:2px 7px;margin-top:3px;text-align:center">${zoneLabel}</div>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
-    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
-      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">✅ الإنجاز</div>
-      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${cColor}">${r.compRate.toFixed(0)}%</div>
-      <div style="font-size:8px;color:var(--dim)">هدف ≥٧٥%</div>
-    </div>
-    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
-      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">🔧 الحل</div>
-      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${sColor}">${r.solveRate.toFixed(0)}%</div>
-      <div style="font-size:8px;color:var(--dim)">هدف ≥٤٠%</div>
-    </div>
-    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
-      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">📵 لا يرد</div>
-      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${nColor}">${r.noAnsRate.toFixed(0)}%</div>
-      <div style="font-size:8px;color:var(--dim)">هدف &lt;٢٥%</div>
-    </div>
-  </div>
-  <div style="margin-bottom:8px">
-    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mute);margin-bottom:3px"><span>الإنجاز الكلي</span><span style="font-family:var(--mono);font-weight:700;color:${zoneColor}">${r.overall}/100</span></div>
-    <div style="background:var(--bg5);border-radius:99px;height:5px;overflow:hidden"><div style="width:${r.overall}%;height:100%;background:${zoneColor};border-radius:99px"></div></div>
-  </div>
-  <div style="display:flex;gap:5px;flex-wrap:wrap">
-    <span style="font-size:9px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:6px;padding:2px 6px;color:var(--grn)">✅ ${r.solved} حل</span>
-    <span style="font-size:9px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:6px;padding:2px 6px;color:var(--blu)">📞 ${r.contacted} تواصل</span>
-    <span style="font-size:9px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:2px 6px;color:var(--red)">📵 ${r.no_answer} لا يرد</span>
-    ${contribPct?`<span style="font-size:9px;background:var(--bg4);border:1px solid var(--rim);border-radius:6px;padding:2px 6px;color:var(--pale)">📊 ${contribPct}% من الكل</span>`:''}
-  </div>
-</div>`;
-        }).join('');
-        empKpisEl.innerHTML=summaryHtml+'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">'+cardsHtml+'</div>';
-      }
-    }
     const topBox=document.getElementById('staff-top-performer');
     if(topBox){
+      // ── بطاقات KPI الموظفين (مدمجة مع staff-top-performer) ────────────────
+      const activeEmps=empRows.filter(r=>r.followed>0);
+      let kpiHtml='';
+      if(activeEmps.length){
+        const sc2=activeEmps.map(r=>{
+          const f=r.followed||1;
+          const comp=(r.solved+(r.contacted||0))/f*100;
+          const solv=r.solved/f*100;
+          const noA=(r.no_answer||0)/f*100;
+          const ov=Math.round(Math.min(comp/75,1)*60+Math.min(solv/40,1)*20+Math.max(0,1-noA/40)*20);
+          return{...r,comp,solv,noA,ov};
+        }).sort((a,b)=>b.ov-a.ov);
+        const avg=Math.round(sc2.reduce((s,x)=>s+x.ov,0)/sc2.length);
+        const g=sc2.filter(x=>x.ov>=70).length,y=sc2.filter(x=>x.ov>=45&&x.ov<70).length,rd=sc2.filter(x=>x.ov<45).length;
+        kpiHtml=`<div style="margin-bottom:14px">
+<div style="font-size:12px;font-weight:800;color:var(--pale);margin-bottom:10px;display:flex;align-items:center;gap:7px">📊 مؤشرات أداء الموظفين <span style="font-size:10px;color:var(--mute);font-weight:400">مرتّبة حسب الإنجاز</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+  <span style="font-size:10px;background:var(--bg4);border:1px solid var(--rim);border-radius:8px;padding:4px 10px;color:var(--pale)">👥 ${sc2.length} موظف</span>
+  <span style="font-size:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:4px 10px;color:var(--grn)">✅ متميز: ${g}</span>
+  <span style="font-size:10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:4px 10px;color:var(--gold)">⚡ مقبول: ${y}</span>
+  <span style="font-size:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:4px 10px;color:var(--red)">⚠️ يحتاج تحسيناً: ${rd}</span>
+  <span style="font-size:10px;background:var(--bg4);border:1px solid var(--rim);border-radius:8px;padding:4px 10px;color:var(--pur)">🏆 متوسط: ${avg}/100</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
+${sc2.map((r,i)=>{
+  const zc=r.ov>=70?'var(--grn)':r.ov>=45?'var(--gold)':'var(--red)';
+  const zl=r.ov>=70?'متميز':r.ov>=45?'مقبول':'يحتاج تحسيناً';
+  const cc=r.comp>=70?'var(--grn)':r.comp>=40?'var(--gold)':'var(--red)';
+  const sc=r.solv>=40?'var(--grn)':r.solv>=20?'var(--gold)':'var(--red)';
+  const nc=r.noA<25?'var(--grn)':r.noA<40?'var(--gold)':'var(--red)';
+  const cp=combinedTotal?Math.round(r.followed/combinedTotal*100):0;
+  return`<div style="background:var(--bg3);border:1px solid var(--rim);border-right:3px solid ${zc};border-radius:12px;padding:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+  <div style="display:flex;align-items:center;gap:7px">
+    <span style="font-size:10px;font-weight:900;color:var(--dim);font-family:var(--mono)">#${i+1}</span>
+    <div><div style="font-size:12px;font-weight:800;color:var(--white)">${r.name}</div><div style="font-size:9px;color:var(--dim)">${r.role==='manager'?'مدير':'موظف'} · ${r.followed} طرد${cp?` · ${cp}% من الكل`:''}</div></div>
+  </div>
+  <div style="text-align:left"><div style="font-size:20px;font-weight:900;font-family:var(--mono);color:${zc};line-height:1">${r.ov}</div><div style="font-size:8px;color:${zc};text-align:center">${zl}</div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px">
+  <div style="background:var(--bg4);border-radius:7px;padding:5px;text-align:center"><div style="font-size:8px;color:var(--mute)">✅ إنجاز</div><div style="font-size:14px;font-weight:900;font-family:var(--mono);color:${cc}">${r.comp.toFixed(0)}%</div><div style="font-size:7px;color:var(--dim)">≥٧٥%</div></div>
+  <div style="background:var(--bg4);border-radius:7px;padding:5px;text-align:center"><div style="font-size:8px;color:var(--mute)">🔧 حل</div><div style="font-size:14px;font-weight:900;font-family:var(--mono);color:${sc}">${r.solv.toFixed(0)}%</div><div style="font-size:7px;color:var(--dim)">≥٤٠%</div></div>
+  <div style="background:var(--bg4);border-radius:7px;padding:5px;text-align:center"><div style="font-size:8px;color:var(--mute)">📵 لا يرد</div><div style="font-size:14px;font-weight:900;font-family:var(--mono);color:${nc}">${r.noA.toFixed(0)}%</div><div style="font-size:7px;color:var(--dim)">&lt;٢٥%</div></div>
+</div>
+<div style="background:var(--bg5);border-radius:99px;height:4px;overflow:hidden"><div style="width:${r.ov}%;height:100%;background:${zc};border-radius:99px"></div></div>
+</div>`;}).join('')}
+</div></div>`;
+      }
       let leader=null;
       if(serverStaffBoard&&serverStaffBoard.top&&Number(serverStaffBoard.top.contacted||0)>0){
         const t=serverStaffBoard.top;const canon=resolveCanonicalActiveEmployeeName(t.name);
@@ -5095,11 +5047,11 @@ async function renderStaff(){
       }
       if(!leader)leader=empRows.find(r=>r.monthlyContacted>0&&r.role!=='manager')||empRows.find(r=>r.monthlyContacted>0)||null;
       if(!leader){
-        topBox.innerHTML='<div style="border:1px dashed var(--rim);border-radius:12px;padding:12px;color:var(--mute);font-size:12px">لا يوجد متصدر للشهر حتى الآن — ابدأ التتبع لتفعيل لوحة التحدي.</div>';
+        topBox.innerHTML=kpiHtml+'<div style="border:1px dashed var(--rim);border-radius:12px;padding:12px;color:var(--mute);font-size:12px">لا يوجد متصدر للشهر حتى الآن — ابدأ التتبع لتفعيل لوحة التحدي.</div>';
       }else{
         const eligible=leader.monthlyContacted>=20000;
         const srcHint=serverStaffBoard&&Array.isArray(serverStaffBoard.rows)&&serverStaffBoard.rows.length?'<div style="font-size:10px;color:#94a3b8;margin-top:4px">متزامن من السيرفر (MySQL) عند توفر الربط والجلسة</div>':'';
-        topBox.innerHTML=`<div style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:999px;background:#f59e0b;color:#fff;font-weight:900;font-family:var(--mono)">#1</span><div><div style="font-size:12px;color:#cbd5e1">Top Performer — ${monthKey}</div><div style="font-size:16px;color:#fff;font-weight:900">${leader.name}</div>${srcHint}</div></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="badge b-blu">📞 تم التواصل: ${leader.monthlyContacted}</span><span class="badge b-grn">✅ تم الحل: ${leader.solved}</span>${eligible?'<span class="badge b-gold">💰 Bonus Eligibility: 100 LYD</span>':''}</div></div>`;
+        topBox.innerHTML=kpiHtml+`<div style="background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:999px;background:#f59e0b;color:#fff;font-weight:900;font-family:var(--mono)">#1</span><div><div style="font-size:12px;color:#cbd5e1">Top Performer — ${monthKey}</div><div style="font-size:16px;color:#fff;font-weight:900">${leader.name}</div>${srcHint}</div></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="badge b-blu">📞 تم التواصل: ${leader.monthlyContacted}</span><span class="badge b-grn">✅ تم الحل: ${leader.solved}</span>${eligible?'<span class="badge b-gold">💰 Bonus Eligibility: 100 LYD</span>':''}</div></div>`;
       }
     }
 
