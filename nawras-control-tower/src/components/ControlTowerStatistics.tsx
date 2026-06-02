@@ -443,7 +443,7 @@ export function ControlTowerStatistics({
             trendTitle={dischargeTrendTitle}
             trendVariant="forward"
             dynamicTitleColor
-            valueCaption={`معدل كفاءة التفريغ بناءً على متوسط عمر ${eff.averageAge.toFixed(2)} يوم`}
+            valueCaption={`معدل كفاءة التفريغ بناءً على متوسط عمر ${eff?.averageAge.toFixed(2) ?? '—'} يوم`}
             icon={<Hourglass className="h-5 w-5 text-sky-400" aria-hidden />}
           />
         ) : (
