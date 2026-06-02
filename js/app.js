@@ -4990,6 +4990,91 @@ async function renderStaff(){
         }).join('');
       }
     }
+    // ── بطاقات KPI للموظفين ─────────────────────────────────────────────────
+    const empKpisEl=document.getElementById('staff-emp-kpis');
+    if(empKpisEl){
+      const activeEmps=empRows.filter(r=>r.followed>0);
+      if(!activeEmps.length){
+        empKpisEl.innerHTML='';
+      }else{
+        const scoredEmps=activeEmps.map(r=>{
+          const f=r.followed||1;
+          const compRate=(r.solved+r.contacted)/f*100;
+          const solveRate=r.solved/f*100;
+          const noAnsRate=r.no_answer/f*100;
+          const cScore=Math.min(compRate/75,1)*60;
+          const sScore=Math.min(solveRate/40,1)*20;
+          const nScore=Math.max(0,1-noAnsRate/40)*20;
+          const overall=Math.round(cScore+sScore+nScore);
+          return{...r,compRate,solveRate,noAnsRate,overall};
+        }).sort((a,b)=>b.overall-a.overall);
+        // ملخص الفريق
+        const teamAvg=Math.round(scoredEmps.reduce((s,r)=>s+r.overall,0)/scoredEmps.length);
+        const greens=scoredEmps.filter(r=>r.overall>=70).length;
+        const golds=scoredEmps.filter(r=>r.overall>=45&&r.overall<70).length;
+        const reds=scoredEmps.filter(r=>r.overall<45).length;
+        const summaryHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <div style="background:var(--bg4);border:1px solid var(--rim);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--mute)">👥 الإجمالي</span><strong style="font-family:var(--mono);color:var(--white)">${scoredEmps.length}</strong></div>
+          <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--grn)">✅ متميز</span><strong style="font-family:var(--mono);color:var(--grn)">${greens}</strong></div>
+          <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--gold)">⚡ مقبول</span><strong style="font-family:var(--mono);color:var(--gold)">${golds}</strong></div>
+          <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--red)">⚠️ يحتاج تحسيناً</span><strong style="font-family:var(--mono);color:var(--red)">${reds}</strong></div>
+          <div style="background:var(--bg4);border:1px solid var(--rim);border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:7px"><span style="font-size:11px;color:var(--mute)">🏆 متوسط الدرجات</span><strong style="font-family:var(--mono);color:var(--pur)">${teamAvg}</strong></div>
+        </div>`;
+        const cardsHtml=scoredEmps.map((r,i)=>{
+          const zoneColor=r.overall>=70?'var(--grn)':r.overall>=45?'var(--gold)':'var(--red)';
+          const zoneBg=r.overall>=70?'rgba(16,185,129,.1)':r.overall>=45?'rgba(245,158,11,.1)':'rgba(239,68,68,.1)';
+          const zoneBorder=r.overall>=70?'rgba(16,185,129,.3)':r.overall>=45?'rgba(245,158,11,.3)':'rgba(239,68,68,.3)';
+          const zoneLabel=r.overall>=70?'متميز':r.overall>=45?'مقبول':'يحتاج تحسيناً';
+          const cColor=r.compRate>=70?'var(--grn)':r.compRate>=40?'var(--gold)':'var(--red)';
+          const sColor=r.solveRate>=40?'var(--grn)':r.solveRate>=20?'var(--gold)':'var(--red)';
+          const nColor=r.noAnsRate<25?'var(--grn)':r.noAnsRate<40?'var(--gold)':'var(--red)';
+          const contribPct=combinedTotal?Math.round(r.followed/combinedTotal*100):0;
+          return`<div style="background:var(--bg3);border:1px solid var(--rim);border-right:3px solid ${zoneColor};border-radius:14px;padding:14px;overflow:hidden">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--bg4);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--pale);font-family:var(--mono);flex-shrink:0">#${i+1}</div>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--white)">${r.name}</div>
+        <div style="font-size:10px;color:var(--dim)">${r.role==='manager'?'مدير':'موظف'} · ${r.followed} طرد</div>
+      </div>
+    </div>
+    <div style="text-align:left;flex-shrink:0">
+      <div style="font-size:24px;font-weight:900;font-family:var(--mono);color:${zoneColor};line-height:1">${r.overall}</div>
+      <div style="font-size:9px;background:${zoneBg};border:1px solid ${zoneBorder};color:${zoneColor};border-radius:99px;padding:2px 7px;margin-top:3px;text-align:center">${zoneLabel}</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
+    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
+      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">✅ الإنجاز</div>
+      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${cColor}">${r.compRate.toFixed(0)}%</div>
+      <div style="font-size:8px;color:var(--dim)">هدف ≥٧٥%</div>
+    </div>
+    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
+      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">🔧 الحل</div>
+      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${sColor}">${r.solveRate.toFixed(0)}%</div>
+      <div style="font-size:8px;color:var(--dim)">هدف ≥٤٠%</div>
+    </div>
+    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
+      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">📵 لا يرد</div>
+      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${nColor}">${r.noAnsRate.toFixed(0)}%</div>
+      <div style="font-size:8px;color:var(--dim)">هدف &lt;٢٥%</div>
+    </div>
+  </div>
+  <div style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mute);margin-bottom:3px"><span>الإنجاز الكلي</span><span style="font-family:var(--mono);font-weight:700;color:${zoneColor}">${r.overall}/100</span></div>
+    <div style="background:var(--bg5);border-radius:99px;height:5px;overflow:hidden"><div style="width:${r.overall}%;height:100%;background:${zoneColor};border-radius:99px"></div></div>
+  </div>
+  <div style="display:flex;gap:5px;flex-wrap:wrap">
+    <span style="font-size:9px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:6px;padding:2px 6px;color:var(--grn)">✅ ${r.solved} حل</span>
+    <span style="font-size:9px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:6px;padding:2px 6px;color:var(--blu)">📞 ${r.contacted} تواصل</span>
+    <span style="font-size:9px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:2px 6px;color:var(--red)">📵 ${r.no_answer} لا يرد</span>
+    ${contribPct?`<span style="font-size:9px;background:var(--bg4);border:1px solid var(--rim);border-radius:6px;padding:2px 6px;color:var(--pale)">📊 ${contribPct}% من الكل</span>`:''}
+  </div>
+</div>`;
+        }).join('');
+        empKpisEl.innerHTML=summaryHtml+'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">'+cardsHtml+'</div>';
+      }
+    }
     const topBox=document.getElementById('staff-top-performer');
     if(topBox){
       let leader=null;
