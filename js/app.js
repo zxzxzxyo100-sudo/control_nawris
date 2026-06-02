@@ -5017,8 +5017,70 @@ async function renderStaff(){
           if(capTotal)capTotal.textContent='0 طرد';
         }else{
           if(capTotal)capTotal.textContent=apiShipments.length+' طرد';
-          const sorted=Object.values(capMap).sort((a,b)=>b.critical-a.critical||b.total-a.total);
-          capEl.innerHTML=`<div class="tw"><table><thead><tr><th>المندوب</th><th>الإجمالي</th><th style="color:var(--red)">🔴 حرج</th><th style="color:var(--gold)">🟡 تحذير</th><th style="color:var(--grn)">🟢 في الموعد</th><th style="color:var(--orn)">↩️ مرتجع</th><th>نسبة التسليم</th></tr></thead><tbody>${sorted.map(c=>{const pct=c.total?Math.round(c.ok/c.total*100):0;const pc=pct>70?'var(--grn)':pct>40?'var(--gold)':'var(--red)';return`<tr><td><strong>${c.name}</strong>${c.branch?`<div style="font-size:10px;color:var(--dim)">${c.branch}</div>`:''}</td><td style="font-family:var(--mono);font-weight:700">${c.total}</td><td style="color:var(--red);font-weight:700">${c.critical||'—'}</td><td style="color:var(--gold);font-weight:700">${c.warning||'—'}</td><td style="color:var(--grn);font-weight:700">${c.ok||'—'}</td><td style="color:var(--orn);font-weight:700">${c.returned||'—'}</td><td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${pc};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pc};font-family:var(--mono)">${pct}%</span></div></td></tr>`;}).join('')}</tbody></table></div>`;
+          // ── حساب KPI لكل مندوب ────────────────────────────────────────────
+          const capKpiList=Object.values(capMap).map(c=>{
+            const delivRate=c.total?c.ok/c.total*100:0;
+            const critRate =c.total?c.critical/c.total*100:0;
+            const retRate  =c.total?c.returned/c.total*100:0;
+            // درجة الأداء الكلية (0–100)
+            const dScore=Math.min(delivRate/70,1)*50;
+            const cScore=Math.max(0,1-critRate/30)*30;
+            const rScore=Math.max(0,1-retRate/30)*20;
+            const overall=Math.round(dScore+cScore+rScore);
+            return{...c,delivRate,critRate,retRate,overall};
+          }).sort((a,b)=>b.overall-a.overall);
+          // ── رسم بطاقات KPI ───────────────────────────────────────────────
+          capEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">'+capKpiList.map((c,i)=>{
+            const zone=c.overall>=70?'grn':c.overall>=45?'gold':'red';
+            const zoneLabel=c.overall>=70?'متميز':c.overall>=45?'مقبول':'يحتاج متابعة';
+            const zoneColor=c.overall>=70?'var(--grn)':c.overall>=45?'var(--gold)':'var(--red)';
+            const zoneBg=c.overall>=70?'rgba(16,185,129,.12)':c.overall>=45?'rgba(245,158,11,.12)':'rgba(239,68,68,.12)';
+            const zoneBorder=c.overall>=70?'rgba(16,185,129,.3)':c.overall>=45?'rgba(245,158,11,.3)':'rgba(239,68,68,.3)';
+            const dColor=c.delivRate>=70?'var(--grn)':c.delivRate>=40?'var(--gold)':'var(--red)';
+            const cColor=c.critRate<10?'var(--grn)':c.critRate<25?'var(--gold)':'var(--red)';
+            const rColor=c.retRate<15?'var(--grn)':c.retRate<30?'var(--gold)':'var(--red)';
+            return`<div style="background:var(--bg3);border:1px solid var(--rim);border-radius:14px;padding:14px;position:relative;overflow:hidden;border-right:3px solid ${zoneColor}">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--pale);font-family:var(--mono);flex-shrink:0">#${i+1}</div>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--white)">${c.name}</div>
+        ${c.branch?`<div style="font-size:10px;color:var(--dim)">${c.branch}</div>`:''}
+      </div>
+    </div>
+    <div style="text-align:left;flex-shrink:0">
+      <div style="font-size:22px;font-weight:900;font-family:var(--mono);color:${zoneColor};line-height:1">${c.overall}</div>
+      <div style="font-size:9px;background:${zoneBg};border:1px solid ${zoneBorder};color:${zoneColor};border-radius:99px;padding:2px 7px;margin-top:2px;text-align:center">${zoneLabel}</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
+    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
+      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">🟢 التسليم</div>
+      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${dColor}">${c.delivRate.toFixed(0)}%</div>
+      <div style="font-size:8px;color:var(--dim)">هدف ≥٧٠%</div>
+    </div>
+    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
+      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">🔴 الحرج</div>
+      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${cColor}">${c.critRate.toFixed(0)}%</div>
+      <div style="font-size:8px;color:var(--dim)">هدف &lt;١٠%</div>
+    </div>
+    <div style="background:var(--bg4);border-radius:8px;padding:7px 8px;text-align:center">
+      <div style="font-size:9px;color:var(--mute);margin-bottom:2px">↩️ المرتجع</div>
+      <div style="font-size:15px;font-weight:900;font-family:var(--mono);color:${rColor}">${c.retRate.toFixed(0)}%</div>
+      <div style="font-size:8px;color:var(--dim)">هدف &lt;١٥%</div>
+    </div>
+  </div>
+  <div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mute);margin-bottom:3px"><span>الإنجاز الكلي</span><span style="font-family:var(--mono);font-weight:700;color:${zoneColor}">${c.overall}/100</span></div>
+    <div style="background:var(--bg5);border-radius:99px;height:5px;overflow:hidden"><div style="width:${c.overall}%;height:100%;background:${zoneColor};border-radius:99px;transition:width .4s ease"></div></div>
+  </div>
+  <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">
+    <span style="font-size:9px;background:var(--bg4);border:1px solid var(--rim);border-radius:6px;padding:2px 6px;color:var(--pale)">📦 ${c.total} إجمالي</span>
+    ${c.critical?`<span style="font-size:9px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:2px 6px;color:var(--red)">🔴 ${c.critical} حرج</span>`:''}
+    ${c.warning?`<span style="font-size:9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:2px 6px;color:var(--gold)">🟡 ${c.warning} تحذير</span>`:''}
+  </div>
+</div>`;
+          }).join('')+'</div>';
         }
       }
       const assignStatsEl=document.getElementById('staff-assign-stats');
