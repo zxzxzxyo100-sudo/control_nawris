@@ -4991,7 +4991,18 @@ async function renderStaff(){
       }
     }
     // ── بطاقات KPI للموظفين ─────────────────────────────────────────────────
-    const empKpisEl=document.getElementById('staff-emp-kpis');
+    let empKpisEl=document.getElementById('staff-emp-kpis');
+    if(!empKpisEl){
+      const perfPane=document.querySelector('[data-staff-pane="performance"]');
+      if(perfPane){
+        const tw=perfPane.querySelector('.tw');
+        empKpisEl=document.createElement('div');
+        empKpisEl.id='staff-emp-kpis';
+        empKpisEl.style.marginBottom='16px';
+        if(tw)perfPane.insertBefore(empKpisEl,tw);
+        else perfPane.appendChild(empKpisEl);
+      }
+    }
     if(empKpisEl){
       const activeEmps=empRows.filter(r=>r.followed>0);
       if(!activeEmps.length){
