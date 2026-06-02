@@ -4782,6 +4782,7 @@ function sendToBranchManager(sid){
 // STAFF TRACKER
 // ══════════════════════════════════════════
 async function renderStaff(){
+  console.log('renderStaff v9 called');
   // ══ اعرض placeholder فوراً — قبل أي حسبة حتى لا تتجمد الشاشة ══
   const _ld='<div style="text-align:center;padding:20px;color:var(--mute);font-size:12px">⏳ جارٍ التحميل...</div>';
   const _ki=document.getElementById('staff-kpis');
