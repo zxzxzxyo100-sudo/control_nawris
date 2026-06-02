@@ -4994,9 +4994,8 @@ async function renderStaff(){
     const topBox=document.getElementById('staff-top-performer');
     if(topBox){
       // ── بطاقات KPI الموظفين (مدمجة مع staff-top-performer) ────────────────
-      console.log('[KPI-DEBUG] empRows total:',empRows.length,'followed>0:',empRows.filter(r=>r.followed>0).length,'sample:',empRows.slice(0,3).map(r=>({n:r.name,f:r.followed,s:r.solved})));
       const activeEmps=empRows.filter(r=>r.followed>0);
-      let kpiHtml='';
+      let kpiHtml=`<div style="font-size:11px;padding:6px 10px;margin-bottom:10px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.4);border-radius:8px;color:#c4b5fd">📊 KPI: ${activeEmps.length} موظف نشط — empRows: ${empRows.length}</div>`;
       if(activeEmps.length){
         const sc2=activeEmps.map(r=>{
           const f=r.followed||1;
