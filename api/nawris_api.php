@@ -125,10 +125,10 @@ function safeColumns(string $raw): string
 {
     if (trim($raw) === '*' || trim($raw) === '') return '*';
     $cols = array_map(
-        fn($c) => '`' . preg_replace('/[^a-zA-Z0-9_]/', '', trim($c)) . '`',
+        function($c) { return '`' . preg_replace('/[^a-zA-Z0-9_]/', '', trim($c)) . '`'; },
         explode(',', $raw)
     );
-    $cols = array_filter($cols, fn($c) => $c !== '``');
+    $cols = array_filter($cols, function($c) { return $c !== '``'; });
     return $cols ? implode(', ', $cols) : '*';
 }
 
@@ -228,11 +228,11 @@ switch ($method) {
     // ── POST (insert / upsert) ────────────────────────────────────────────────
     case 'POST': {
         $rows = is_array($body) && isset($body[0]) ? $body : [$body];
-        $rows = array_values(array_filter($rows, fn($r) => is_array($r) && count($r)));
+        $rows = array_values(array_filter($rows, function($r) { return is_array($r) && count($r); }));
         if (!$rows) { json_response(['success' => true], 201); }
 
         $colNames = array_values(array_filter(array_map(
-            fn($c) => preg_replace('/[^a-zA-Z0-9_]/', '', $c),
+            function($c) { return preg_replace('/[^a-zA-Z0-9_]/', '', $c); },
             array_keys($rows[0])
         )));
         if (!$colNames) { json_response(['success' => true], 201); }
@@ -246,7 +246,7 @@ switch ($method) {
         $verb   = $isIgnore ? 'INSERT IGNORE' : 'INSERT';
         $suffix = '';
         if ($isUpsert) {
-            $updates = implode(', ', array_map(fn($c) => "`$c` = VALUES(`$c`)", $colNames));
+            $updates = implode(', ', array_map(function($c) { return "`$c` = VALUES(`$c`)"; }, $colNames));
             $suffix  = " ON DUPLICATE KEY UPDATE $updates";
         }
 
