@@ -13,7 +13,7 @@ require_once __DIR__ . '/db.php';
 define('NAWRIS_API_KEY', getenv('NAWRIS_API_KEY') ?: 'NAWRIS_SECRET_2025');
 
 const ALLOWED_TABLES = [
-    'settings', 'shipments', 'contact_results', 'drivers',
+    'settings', 'shipments', 'shipments_view', 'contact_results', 'drivers',
     'branches', 'regions', 'stores', 'wa_templates',
     'returns', 'transfers', 'contacted_log',
 ];
@@ -29,8 +29,9 @@ const STATIC_TABLES = ['branches', 'regions', 'stores', 'wa_templates'];
 // Per-table hard caps on rows returned — prevents accidental full-table dumps
 const TABLE_MAX_ROWS = [
     'shipments'      => 500,
+    'shipments_view' => 1000,   // view joins shipments+drivers — higher cap for full load
     'contact_results'=> 2000,   // staff stats need all results
-    'contacted_log'  => 500,
+    'contacted_log'  => 5000,   // IDs only (shipment_id), needs all rows for contacted set
     'returns'        => 500,
     'transfers'      => 500,
     'drivers'        => 200,
@@ -184,6 +185,8 @@ switch ($method) {
             $sCacheKey = "static:{$table}:" . ($qp['select'] ?? '*');
             $cached    = cache_get($sCacheKey);
             if ($cached !== null) {
+                // الجداول الثابتة: أخبر المتصفح بحفظ الرد 5 دقائق
+                header('Cache-Control: public, max-age=300, stale-while-revalidate=60');
                 json_response($cached);
             }
         }
@@ -213,6 +216,10 @@ switch ($method) {
         // Store in static-table cache
         if ($isStatic && !$hasFilter) {
             cache_set($sCacheKey, $rows, 600); // 10 minutes
+            header('Cache-Control: public, max-age=300, stale-while-revalidate=60');
+        } else {
+            // البيانات الديناميكية: لا تُخزَّن في المتصفح
+            header('Cache-Control: no-store');
         }
 
         json_response($rows);

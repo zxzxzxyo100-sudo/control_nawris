@@ -8,8 +8,9 @@
 <!-- preconnect cuts font TTFB by ~200ms on slow connections -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 15 weights → 6 weights: saves ~9 font file downloads on every page load -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Tajawal:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<!-- font-display=swap: renders text immediately with fallback, swaps when font loads -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Tajawal:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Tajawal:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
 <!-- XLSX loaded on-demand only when user uploads a file — saves 2-4s on startup -->
 <script>
 function _loadXLSX(cb){
@@ -320,13 +321,13 @@ function _loadXLSX(cb){
       <button class="btn btn-ghost btn-sm" onclick="resetAllFilters()" title="مسح كل الفلاتر">✕ مسح الفلاتر</button>
     </div>
     <div class="fbar" style="margin-top:6px;flex-wrap:wrap">
-      <select class="fi" id="s-fd" onchange="renderShipments()" style="min-width:120px">
+      <select class="fi" id="s-fd" onchange="_dRShip()" style="min-width:120px">
         <option value="">كل التأخير</option>
         <option value="critical">🔴 +8 يوم</option>
         <option value="warning">🟡 متأخر 2+ يوم</option>
         <option value="ok">🟢 في الموعد</option>
       </select>
-      <select class="fi" id="s-fst" onchange="renderShipments()" style="min-width:120px">
+      <select class="fi" id="s-fst" onchange="_dRShip()" style="min-width:120px">
         <option value="">كل الحالات</option>
         <option value="with_driver">مع المندوب</option>
         <option value="in_company">في الشركة</option>
@@ -334,12 +335,12 @@ function _loadXLSX(cb){
         <option value="returned">مرتجع</option>
         <option value="delivered">مُسلَّم</option>
       </select>
-      <select class="fi" id="s-fb" onchange="renderShipments()" style="min-width:120px"><option value="">كل الفروع الحالية</option></select>
-      <select class="fi" id="s-frb" onchange="renderShipments()" style="min-width:120px"><option value="">كل الفروع المسؤولة</option></select>
-      <select class="fi" id="s-fd2" onchange="renderShipments()" style="min-width:120px"><option value="">كل المناديب</option></select>
-      <select class="fi" id="s-fr" onchange="renderShipments()" style="min-width:120px"><option value="">كل المناطق</option></select>
-      <select class="fi" id="s-fstore" onchange="renderShipments()" style="min-width:120px"><option value="">كل المتاجر</option></select>
-      <select class="fi" id="s-fdays" onchange="renderShipments()" style="min-width:130px">
+      <select class="fi" id="s-fb" onchange="_dRShip()" style="min-width:120px"><option value="">كل الفروع الحالية</option></select>
+      <select class="fi" id="s-frb" onchange="_dRShip()" style="min-width:120px"><option value="">كل الفروع المسؤولة</option></select>
+      <select class="fi" id="s-fd2" onchange="_dRShip()" style="min-width:120px"><option value="">كل المناديب</option></select>
+      <select class="fi" id="s-fr" onchange="_dRShip()" style="min-width:120px"><option value="">كل المناطق</option></select>
+      <select class="fi" id="s-fstore" onchange="_dRShip()" style="min-width:120px"><option value="">كل المتاجر</option></select>
+      <select class="fi" id="s-fdays" onchange="_dRShip()" style="min-width:130px">
         <option value="">أيام التأخير</option>
         <option value="0-5">0-5 أيام</option>
         <option value="6-10">6-10 أيام</option>
@@ -348,12 +349,12 @@ function _loadXLSX(cb){
         <option value="31-60">31-60 يوم</option>
         <option value="60+">+60 يوم</option>
       </select>
-      <select class="fi" id="s-fcontact" onchange="renderShipments()" style="min-width:130px">
+      <select class="fi" id="s-fcontact" onchange="_dRShip()" style="min-width:130px">
         <option value="">كل التواصل</option>
         <option value="contacted">✅ تم التواصل</option>
         <option value="not_contacted">⏳ لم يتم</option>
       </select>
-      <select class="fi" id="s-fcr" onchange="renderShipments()" style="min-width:130px">
+      <select class="fi" id="s-fcr" onchange="_dRShip()" style="min-width:130px">
         <option value="">نتيجة التواصل</option>
         <option value="solved">✅ تم الحل</option>
         <option value="contacted">📞 تم التواصل</option>
@@ -422,8 +423,8 @@ function _loadXLSX(cb){
     </div>
     <!-- Filters -->
     <div class="fbar" style="margin-bottom:12px">
-      <input class="fi fi-grow" id="d-q" type="text" placeholder="🔍 بحث بالاسم أو الفرع..." oninput="renderDrivers()">
-      <select class="fi" id="d-fs" onchange="renderDrivers()">
+      <input class="fi fi-grow" id="d-q" type="text" placeholder="🔍 بحث بالاسم أو الفرع..." oninput="_dRDrv()">
+      <select class="fi" id="d-fs" onchange="_dRDrv()">
         <option value="crit">الأعلى حرجاً</option>
         <option value="total">الأكثر طروداً</option>
         <option value="name">الاسم</option>
@@ -498,9 +499,9 @@ function _loadXLSX(cb){
         </div>
       </div>
       <div class="flt-drawer-body">
-        <input class="fi fi-grow" id="r-q" type="text" placeholder="🔍 بحث بالكود، العميل، المندوب..." oninput="renderReturns()">
-        <select class="fi" id="r-fbranch" onchange="renderReturns()"></select>
-        <select class="fi" id="r-fdelay" onchange="renderReturns()">
+        <input class="fi fi-grow" id="r-q" type="text" placeholder="🔍 بحث بالكود، العميل، المندوب..." oninput="_dRRet()">
+        <select class="fi" id="r-fbranch" onchange="_dRRet()"></select>
+        <select class="fi" id="r-fdelay" onchange="_dRRet()">
           <option value="">كل أيام التأخير</option>
           <option value="0-2">0-2 أيام</option>
           <option value="3-7">3-7 أيام</option>
@@ -595,10 +596,10 @@ function _loadXLSX(cb){
         </div>
       </div>
       <div class="flt-drawer-body">
-        <input class="fi fi-grow" id="t-q" type="text" placeholder="🔍 بحث بالكود أو المسار..." oninput="renderTransfers()">
-        <select class="fi" id="t-from-branch" onchange="renderTransfers()"></select>
-        <select class="fi" id="t-to-branch" onchange="renderTransfers()"></select>
-        <select class="fi" id="t-fdays" onchange="renderTransfers()">
+        <input class="fi fi-grow" id="t-q" type="text" placeholder="🔍 بحث بالكود أو المسار..." oninput="_dRTrn()">
+        <select class="fi" id="t-from-branch" onchange="_dRTrn()"></select>
+        <select class="fi" id="t-to-branch" onchange="_dRTrn()"></select>
+        <select class="fi" id="t-fdays" onchange="_dRTrn()">
           <option value="">كل أيام التأخير</option>
           <option value="0-2">0-2 أيام</option>
           <option value="3-7">3-7 أيام</option>
@@ -723,7 +724,7 @@ function _loadXLSX(cb){
     <div class="fbar">
       <button class="btn btn-ghost btn-sm" onclick="openApiFiltersDrawer()">⚙️ تصفية</button>
       <label class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="a-show-processed" onchange="renderAPIShipments()">
+        <input type="checkbox" id="a-show-processed" onchange="_dRAPI()">
         إظهار المعالَجة فقط
       </label>
     </div>
@@ -739,13 +740,13 @@ function _loadXLSX(cb){
       <div class="flt-drawer-body" style="width:100%;box-sizing:border-box">
         <p style="font-size:10px;color:var(--dim);line-height:1.5;margin:0">«كل التأخير» = تصنيف (حرج/تحذير/موعد). «أيام التأخير» = نطاق رقمي. يمكن الجمع بينهما لتضييق أدق.</p>
         <input class="fi fi-grow" id="a-q" type="text" placeholder="🔍 كود، متجر، مستلم، مندوب، فرع، محافظة، مسند…" oninput="_dRAPI()" style="width:100%;min-width:0;box-sizing:border-box">
-        <select class="fi" id="a-fd" onchange="renderAPIShipments()" style="min-width:120px">
+        <select class="fi" id="a-fd" onchange="_dRAPI()" style="min-width:120px">
           <option value="">كل التأخير</option>
           <option value="critical">🔴 +8 يوم</option>
           <option value="warning">🟡 متأخر 2+ يوم</option>
           <option value="ok">🟢 في الموعد</option>
         </select>
-        <select class="fi" id="a-fst" onchange="renderAPIShipments()" style="min-width:120px">
+        <select class="fi" id="a-fst" onchange="_dRAPI()" style="min-width:120px">
           <option value="">كل الحالات</option>
           <option value="with_driver">مع المندوب</option>
           <option value="in_company">في الشركة</option>
@@ -753,11 +754,11 @@ function _loadXLSX(cb){
           <option value="returned">مرتجع</option>
           <option value="delivered">مُسلَّم</option>
         </select>
-        <select class="fi manager-only" id="a-femp" onchange="renderAPIShipments()" style="min-width:140px"><option value="">كل الموظفين</option></select>
-        <select class="fi" id="a-fcap" onchange="renderAPIShipments()" style="min-width:120px"><option value="">كل المناديب</option></select>
-        <select class="fi" id="a-fbr" onchange="renderAPIShipments()" style="min-width:120px"><option value="">كل الفروع</option></select>
-        <select class="fi" id="a-fgov" onchange="renderAPIShipments()" style="min-width:120px"><option value="">كل المحافظات</option></select>
-        <select class="fi" id="a-fdays" onchange="renderAPIShipments()" style="min-width:130px">
+        <select class="fi manager-only" id="a-femp" onchange="_dRAPI()" style="min-width:140px"><option value="">كل الموظفين</option></select>
+        <select class="fi" id="a-fcap" onchange="_dRAPI()" style="min-width:120px"><option value="">كل المناديب</option></select>
+        <select class="fi" id="a-fbr" onchange="_dRAPI()" style="min-width:120px"><option value="">كل الفروع</option></select>
+        <select class="fi" id="a-fgov" onchange="_dRAPI()" style="min-width:120px"><option value="">كل المحافظات</option></select>
+        <select class="fi" id="a-fdays" onchange="_dRAPI()" style="min-width:130px">
           <option value="">أيام التأخير</option>
           <option value="0-5">0-5 أيام</option>
           <option value="6-10">6-10 أيام</option>
@@ -926,13 +927,13 @@ function _loadXLSX(cb){
             <span style="font-size:11px;color:var(--mute)">📅 التاريخ</span>
             <input class="fi" id="sf-log-date" type="date" onchange="handleStaffDateChange()" style="font-size:11px;min-width:140px;padding:4px 8px">
           </div>
-          <select class="fi" id="sf-fsrc" onchange="renderStaffShipments()" style="font-size:11px;min-width:110px">
+          <select class="fi" id="sf-fsrc" onchange="_dRStaff()" style="font-size:11px;min-width:110px">
             <option value="">كل المصادر</option>
             <option value="API">📡 طرود API</option>
             <option value="DB">🗄️ طرود Supabase</option>
           </select>
-          <select class="fi" id="sf-femp" onchange="renderStaffShipments()" style="font-size:11px;min-width:130px"><option value="">كل الموظفين</option></select>
-          <select class="fi" id="sf-fres" onchange="renderStaffShipments()" style="font-size:11px;min-width:130px">
+          <select class="fi" id="sf-femp" onchange="_dRStaff()" style="font-size:11px;min-width:130px"><option value="">كل الموظفين</option></select>
+          <select class="fi" id="sf-fres" onchange="_dRStaff()" style="font-size:11px;min-width:130px">
             <option value="">كل النتائج</option>
             <option value="none">⬜ بدون متابعة</option>
             <option value="solved">✅ تم الحل</option>
@@ -940,7 +941,7 @@ function _loadXLSX(cb){
             <option value="no_answer">📵 لا يرد</option>
             <option value="pending">⏳ قيد المتابعة</option>
           </select>
-          <input class="fi" id="sf-q" type="text" placeholder="🔍 بحث..." oninput="renderStaffShipments()" style="font-size:11px;min-width:160px">
+          <input class="fi" id="sf-q" type="text" placeholder="🔍 بحث..." oninput="_dRStaff()" style="font-size:11px;min-width:160px">
           <button class="btn btn-ghost btn-sm" onclick="['sf-q'].forEach(id=>{let el=document.getElementById(id);if(el)el.value='';});['sf-femp','sf-fres','sf-fsrc'].forEach(id=>{let el=document.getElementById(id);if(el)el.selectedIndex=0;});renderStaffShipments()">✕ مسح</button>
         </div>
       </div>

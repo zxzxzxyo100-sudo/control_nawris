@@ -56,11 +56,27 @@ function json_response(array $payload, int $status = 200): void
     $totalMs  = isset($_REQ_START) ? round((microtime(true) - $_REQ_START) * 1000, 1) : 0;
     $dbMs     = isset($_DB_TIME)   ? round($_DB_TIME * 1000, 1) : 0;
 
-    header("X-Timing-DB: {$dbMs}ms");         // MySQL query duration
-    header("X-Timing-Encode: {$encMs}ms");    // json_encode() duration
-    header("X-Timing-Total: {$totalMs}ms");   // End-to-end PHP time
-    header("X-Row-Count: " . count($payload)); // Rows returned
-    header("X-Payload-KB: " . round(strlen($json) / 1024, 1)); // Payload size in KB
+    header("X-Timing-DB: {$dbMs}ms");
+    header("X-Timing-Encode: {$encMs}ms");
+    header("X-Timing-Total: {$totalMs}ms");
+    header("X-Row-Count: " . count($payload));
+    header("X-Payload-KB: " . round(strlen($json) / 1024, 1));
+
+    // ── gzip compression — يُقلل الحجم 70-80٪ على الاتصالات البطيئة ──────────
+    $acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
+    if (
+        str_contains($acceptEncoding, 'gzip')
+        && strlen($json) > 1024          // لا فائدة من ضغط الردود الصغيرة
+        && function_exists('gzencode')
+    ) {
+        $compressed = gzencode($json, 6); // مستوى 6: توازن جيد بين السرعة والحجم
+        if ($compressed !== false && strlen($compressed) < strlen($json)) {
+            header('Content-Encoding: gzip');
+            header('Vary: Accept-Encoding');
+            echo $compressed;
+            exit;
+        }
+    }
 
     echo $json;
     exit;
