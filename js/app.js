@@ -4158,7 +4158,7 @@ async function uploadShipments(rows,forceStatus){
 const PROXY='https://misty-wildflower-54d1.medodaw519.workers.dev';
 
 // ── pickTrackingCode helpers — module-level so they are allocated ONCE, not once per shipment ──
-const _ptcKeyNorm=k=>String(k||'').toLowerCase().replace(.replace(/[\u200e\u200f\u202a-\u202e]/g,'').replace(/[\s_\-]/g,'').replace(/[أإآٱ]/g,'ا');
+const _ptcKeyNorm=k=>String(k||'').toLowerCase().replace(/[\u200e\u200f\u202a-\u202e]/g,'').replace(/[\s_\-]/g,'').replace(/[أإآٱ]/g,'ا');
 const _ptcCodeKeySet=new Set(['trackingcode','trackingno','trackingnumber','parcelcode','ordercode','code','awb','reference','orderid','id','الرمز','كود','كودالشحنة','رقمالشحنة','رقمالطلب','رقمالتتبع','رمزالشحنة'].map(_ptcKeyNorm));
 const _ptcCodeLikeKey=k=>{const n=_ptcKeyNorm(k);return n.includes('code')||n.includes('track')||n.includes('awb')||n.includes('orderid')||n.includes('رقم')||n.includes('رمز')||n.includes('كود');};
 const _ptcCleanCode=v=>String(v==null?'':v).trim().replace(/[\u200e\u200f\u202a-\u202e]/g,'');
