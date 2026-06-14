@@ -65,7 +65,7 @@ function json_response(array $payload, int $status = 200): void
     // ── gzip compression — يُقلل الحجم 70-80٪ على الاتصالات البطيئة ──────────
     $acceptEncoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
     if (
-        str_contains($acceptEncoding, 'gzip')
+        strpos($acceptEncoding, 'gzip') !== false
         && strlen($json) > 1024          // لا فائدة من ضغط الردود الصغيرة
         && function_exists('gzencode')
     ) {
