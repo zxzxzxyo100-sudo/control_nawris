@@ -6058,9 +6058,9 @@ async function fetchAPIShipments(){
     if(!hasDelay){
       effectiveUrl.searchParams.set('delay_days','2');
     }
-    // Algoriza confirmed support for large pages — 200/page reduces 22 requests → ~11 → ~5
+    // Algoriza supports up to 500/page (confirmed via Postman) — reduces cursor hops by ~60%
     if(!effectiveUrl.searchParams.has('per_page')&&!effectiveUrl.searchParams.has('limit')){
-      effectiveUrl.searchParams.set('per_page','200');
+      effectiveUrl.searchParams.set('per_page','500');
     }
     const startDelay=parseInt(String(effectiveUrl.searchParams.get('delay_days')||'2'),10)||2;
     await fetchAllPagesForBase(effectiveUrl.toString(),`api fetch`);
