@@ -3905,8 +3905,6 @@ function dropShip(e){e.preventDefault();e.currentTarget.classList.remove('drag')
 function handleShip(e){const f=e.target.files[0];if(f)processShip(f);}
 function dropShipType(e,type){e.preventDefault();e.currentTarget.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processShip(f,type);}
 function handleShipType(e,type){const f=e.target.files[0];if(f)processShip(f,type);}
-function dropShipType(e,type){e.preventDefault();e.currentTarget.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processShip(f,type);}
-function handleShipType(e,type){const f=e.target.files[0];if(f)processShip(f,type);}
 function processShip(file,forceStatus){
   const r=new FileReader();
   r.onload=async ev=>{
@@ -5692,7 +5690,6 @@ function reconcileApiProcessedFromStatus(nextShipments){
 let _apiFetchInProgress=false;
 let _apiFetchController=null;
 let _apiFetchGen=0; // incremented on every new fetch; stale processing loops compare against this to bail early
-async function fetchAPIShipments(){
 async function fetchAPIShipments(){
   // Guard: check in-progress BEFORE aborting — prevents restart loop on weak CPUs
   if(_apiFetchInProgress){await new Promise(r=>setTimeout(r,300));if(_apiFetchInProgress)return;}
