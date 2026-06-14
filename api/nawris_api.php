@@ -162,7 +162,7 @@ switch ($method) {
         $whereStr = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
         // count=exact — lightweight COUNT(*) only, no row fetch
-        if (str_contains($prefer, 'count=exact')) {
+        if (strpos($prefer,'count=exact') !== false) {
             $cacheKey = "count:{$table}:{$whereStr}:" . serialize($binds);
             $count = cache_get($cacheKey);
             if ($count === null) {
@@ -240,8 +240,8 @@ switch ($method) {
         $colStr = '`' . implode('`, `', $colNames) . '`';
         $phStr  = ':' . implode(', :', $colNames);
 
-        $isUpsert = str_contains($prefer, 'merge-duplicates');
-        $isIgnore = str_contains($prefer, 'ignore-duplicates');
+        $isUpsert = strpos($prefer,'merge-duplicates') !== false;
+        $isIgnore = strpos($prefer,'ignore-duplicates') !== false;
 
         $verb   = $isIgnore ? 'INSERT IGNORE' : 'INSERT';
         $suffix = '';
