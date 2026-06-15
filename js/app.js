@@ -2,12 +2,12 @@
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-const SB = 'https://nawris.nawras-ly.com/api';
+const SB = 'https://your-domain.com/path-to-api/api.php'; 
 const SK = 'NAWRIS_SECRET_2025';
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 const LOG_API_BASE = 'api';
 const MANUAL_EXCEL_SHIPMENTS_ONLY = true;
-const DB_DISABLED = false; // true = localStorage فقط | false = MySQL على Hostinger (تزامن بين الأجهزة) // keep main shipments table sourced only from manual Excel upload
+const DB_DISABLED = false; // تفعيل الاتصال الآن ليعمل عبر السيرفر الخاص بك
 
 /** إعدادات عمولات الطرود (وحدة أساسية + نسب + وزن تسليم/مرتجع) — تُحفظ محلياً وتُزامن مع Supabase عند التعديل */
 let CommissionCfg = { unitBase: 100, repPercent: 5, branchPercent: 2, ratioMin: 0.25, ratioMax: 1 };
@@ -198,50 +198,45 @@ function closeSidebar(){
 }
 
 // ══════════════════════════════════════════
-// SUPABASE
+// استبدال دوال الاتصال لتتوافق مع معمارية الـ PHP الجديدة
 // ══════════════════════════════════════════
-async function sb(table,method='GET',body=null,params=''){
-  if(DB_DISABLED)return method==='GET'?[]:true;
-  const r=await fetch(`${SB}/rest/v1/${table}${params}`,{method,headers:H,body:body?JSON.stringify(body):null});
-  if(!r.ok){const e=await r.text();throw new Error(e);}
-  return method==='GET'?r.json():true;
-}
-async function sbAll(table,baseParams=''){
-  if(DB_DISABLED)return [];
-  let all=[];
-  const batchSize=1000;
-  for(let page=0;;page++){
-    const url=new URL(`${SB}/rest/v1/${table}`);
-    if(baseParams){
-      const qIdx=baseParams.indexOf('?');
-      const paramStr=qIdx>=0?baseParams.substring(qIdx+1):baseParams;
-      paramStr.split('&').forEach(p=>{if(p){const [k,v]=p.split('=');if(k)url.searchParams.set(k,v||'');}});
+async function sb(table, method='GET', body=null, params=''){
+  if(DB_DISABLED) return method==='GET'?[]:true;
+  
+  let url = `${SB}?table=${table}`;
+  if(params) {
+    if(params.includes('key=eq.')) {
+      const match = params.match(/key=eq\.([^&]+)/);
+      if(match) url += `&key=eq.${match[1]}`;
     }
-    url.searchParams.set('limit',batchSize);
-    url.searchParams.set('offset',page*batchSize);
-    const r=await fetch(url.toString(),{headers:H});
-    if(r.status===416)break;
-    if(!r.ok){const e=await r.text();throw new Error(e);}
-    const batch=await r.json();
-    if(!batch||!batch.length)break;
-    all=all.concat(batch);
-    if(batch.length<batchSize)break;
   }
-  return all;
+
+  const r = await fetch(url, {
+    method: method === 'GET' ? 'GET' : 'POST',
+    headers: H,
+    body: body ? JSON.stringify(body) : null
+  });
+  
+  if(!r.ok) { const e = await r.text(); throw new Error(e); }
+  return method==='GET' ? r.json() : true;
 }
-async function sbUp(table,data,conflict='merge-duplicates'){
-  if(DB_DISABLED)return true;
-  const prefer=conflict==='ignore'?'resolution=ignore-duplicates,return=minimal':'resolution=merge-duplicates,return=minimal';
-  const r=await fetch(`${SB}/rest/v1/${table}`,{method:'POST',headers:{...H,'Prefer':prefer},body:JSON.stringify(Array.isArray(data)?data:[data])});
-  if(!r.ok){const e=await r.text();throw new Error(e);}
-  return true;
+
+async function sbAll(table, baseParams=''){
+  if(DB_DISABLED) return [];
+  return sb(table, 'GET', null, baseParams);
 }
+
+async function sbUp(table, data, conflict='merge-duplicates'){
+  if(DB_DISABLED) return true;
+  return sb(table, 'POST', data);
+}
+
 async function sbCount(table){
-  if(DB_DISABLED)return 0;
-  const r=await fetch(`${SB}/rest/v1/${table}?select=id`,{headers:{...H,'Prefer':'count=exact','Range':'0-0'}});
-  const cr=r.headers.get('content-range');
-  if(cr){const m=cr.match(/\/(\d+)/);if(m)return parseInt(m[1]);}
-  return 0;
+  if(DB_DISABLED) return 0;
+  try {
+    const res = await sb(table, 'GET');
+    return Array.isArray(res) ? res.length : 0;
+  } catch(e) { return 0; }
 }
 
 // ══════════════════════════════════════════
