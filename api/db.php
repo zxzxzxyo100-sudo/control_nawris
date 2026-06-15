@@ -20,7 +20,7 @@ function crm_pdo(): PDO
     $port = getenv('DB_PORT') ?: '3306';
     $name = getenv('DB_NAME') ?: 'u495355717_ZIDON';
     $user = getenv('DB_USER') ?: 'u495355717_zxzxzxyol00';
-    $pass = getenv('DB_PASS') ?: 'ziDONA11';
+    $pass = getenv('DB_PASS') ?: 'Zidona11$';
 
     $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
 
