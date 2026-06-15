@@ -11,9 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // 1. بيانات الاتصال بقاعدة بيانات MySQL (تجدها في لوحة Hostinger)
 $host = "localhost";
-$dbname = "اسم_قاعدة_البيانات";
-$username = "اسم_المستخدم";
-$password = "كلمة_المرور";
+$dbname = "u495355717_ZIDON";
+$username = "u495355717_zxzxzxyo100";
+$password = "Zidona11$";
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
