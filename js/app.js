@@ -2,7 +2,7 @@
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-const SB = 'https://your-domain.com/path-to-api/api.php'; 
+const SB = 'https://nawris.nawras-ly.com/api/api.php'; // 👈 لاحظ إضافة /api/ قبل اسم الملف
 const SK = 'NAWRIS_SECRET_2025';
 const H = {'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 const LOG_API_BASE = 'api';
