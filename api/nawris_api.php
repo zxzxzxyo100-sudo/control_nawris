@@ -1,19 +1,5 @@
 <?php
 declare(strict_types=1);
-// TEMP DIAGNOSTIC — reveal fatal errors as JSON (remove after debugging)
-ini_set('display_errors', '1');
-error_reporting(E_ALL);
-set_exception_handler(function ($e) {
-    http_response_code(500);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode([
-        'diagnostic' => true,
-        'error'      => $e->getMessage(),
-        'file'       => $e->getFile(),
-        'line'       => $e->getLine(),
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-});
 $_REQ_START = microtime(true); // global timer — used in X-Timing header
 
 header('Access-Control-Allow-Origin: *');
