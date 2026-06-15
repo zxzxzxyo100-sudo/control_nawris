@@ -91,7 +91,7 @@ function _cache_key(string $key): string
     return 'nawris_' . md5($key);
 }
 
-function cache_get(string $key): mixed
+function cache_get(string $key)
 {
     $ck = _cache_key($key);
 
@@ -114,7 +114,7 @@ function cache_get(string $key): mixed
     return $data['v'];
 }
 
-function cache_set(string $key, mixed $value, int $ttl = 300): void
+function cache_set(string $key, $value, int $ttl = 300): void
 {
     $ck = _cache_key($key);
 

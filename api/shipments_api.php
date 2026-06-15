@@ -120,7 +120,7 @@ try {
     );
     $columnsStmt->execute([':table_name' => $table]);
     $columns = array_map(
-        static fn (array $row): string => (string)$row['column_name'],
+        static function (array $row): string { return (string)$row['column_name']; },
         $columnsStmt->fetchAll()
     );
     $columnsMap = array_fill_keys($columns, true);
@@ -159,9 +159,9 @@ try {
         }
 
         $apiIds = array_values(array_unique(array_filter(array_map(
-            static fn ($v): string => trim((string)$v),
+            static function ($v): string { return trim((string)$v); },
             $apiIds
-        ), static fn (string $v): bool => $v !== '')));
+        ), static function (string $v): bool { return $v !== ''; })));
 
         if ($apiIds === []) {
             json_response([
@@ -364,7 +364,7 @@ try {
 
     $sampleSql = "SELECT id FROM `{$table}` WHERE {$whereSql} ORDER BY id ASC LIMIT 20";
     $sampleIds = array_map(
-        static fn (array $row): int => (int)$row['id'],
+        static function (array $row): int { return (int)$row['id']; },
         $pdo->query($sampleSql)->fetchAll()
     );
 

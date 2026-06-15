@@ -24,8 +24,12 @@ final class ShipmentSyncService
         'delay_days', 'upload_date', 'api_source', 'updated_at',
     ];
 
-    public function __construct(private readonly PDO $pdo)
+    /** @var PDO */
+    private $pdo;
+
+    public function __construct(PDO $pdo)
     {
+        $this->pdo = $pdo;
     }
 
     // ── Enqueue ────────────────────────────────────────────────────────────
@@ -160,7 +164,7 @@ final class ShipmentSyncService
      *
      * @return array<string,mixed>|null
      */
-    private function mapRecord(mixed $record): ?array
+    private function mapRecord($record): ?array
     {
         if (!is_array($record)) {
             return null;
@@ -205,7 +209,7 @@ final class ShipmentSyncService
         $colList = '`' . implode('`, `', self::UPSERT_COLUMNS) . '`';
 
         $updateParts = array_map(
-            static fn(string $col): string => "`{$col}` = VALUES(`{$col}`)",
+            static function (string $col): string { return "`{$col}` = VALUES(`{$col}`)"; },
             self::UPDATE_ON_CONFLICT
         );
         $onDuplicate = implode(', ', $updateParts);
